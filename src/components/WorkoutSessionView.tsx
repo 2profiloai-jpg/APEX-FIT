@@ -2,22 +2,23 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { WorkoutSession, SessionExercise, WorkoutSet, Exercise, ExerciseCategory, WorkoutPlan } from '../types';
-import { X, Plus, Save, Timer, ChevronDown, ChevronUp, Trash2, Play, Pause, RotateCcw } from 'lucide-react';
+import { X, Plus, Save, Timer, ChevronDown, ChevronUp, Trash2, Play, Pause, RotateCcw, Brain } from 'lucide-react';
 import GripButton from './ui/GripButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import { cn } from '../lib/utils';
+import { getPostWorkoutAdvice } from '../services/geminiService';
 
 const Stepper = ({ value, onChange, step = 1, min = 0, label }: { value: number, onChange: (v: number) => void, step?: number, min?: number, label?: string }) => {
   return (
-    <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg p-1 h-10">
-      <button onClick={() => onChange(Math.max(min, value - step))} className="w-6 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">-</button>
+    <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg p-1 h-12">
+      <button onClick={() => onChange(Math.max(min, value - step))} className="w-8 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">-</button>
       <div className="flex flex-col items-center justify-center flex-1">
-        <span className="font-mono font-bold text-sm leading-none">{value}</span>
+        <span className="font-mono font-bold text-base leading-none">{value}</span>
         {label && <span className="text-[8px] text-zinc-500 uppercase leading-none mt-0.5">{label}</span>}
       </div>
-      <button onClick={() => onChange(value + step)} className="w-6 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">+</button>
+      <button onClick={() => onChange(value + step)} className="w-8 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">+</button>
     </div>
   );
 };
@@ -38,6 +39,8 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
     return [];
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [postWorkoutAdvice, setPostWorkoutAdvice] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
   const [pickerCategory, setPickerCategory] = useState<ExerciseCategory | null>(null);
@@ -167,15 +170,21 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
     if (!auth.currentUser) return;
     setIsSaving(true);
     try {
-      await addDoc(collection(db, 'users', auth.currentUser.uid, 'sessions'), {
+      const sessionData = {
         userId: auth.currentUser.uid,
         startTime: new Date().toISOString(),
         endTime: new Date().toISOString(),
         exercises: exercises
-      });
+      };
+      await addDoc(collection(db, 'users', auth.currentUser.uid, 'sessions'), sessionData);
       localStorage.removeItem('apex_active_session');
       toast.success('Allenamento salvato con successo!');
-      onSessionEnd();
+      
+      // Fetch post workout advice
+      setShowSummary(true);
+      const advice = await getPostWorkoutAdvice(sessionData);
+      setPostWorkoutAdvice(advice);
+      
     } catch (error) {
       console.error("Errore salvataggio:", error);
       toast.error('Errore durante il salvataggio della sessione.');
@@ -183,6 +192,38 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
       setIsSaving(false);
     }
   };
+
+  if (showSummary) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 text-center"
+      >
+        <div className="w-20 h-20 bg-lime-400 rounded-full flex items-center justify-center mb-6">
+          <Brain className="text-black w-10 h-10" />
+        </div>
+        <h2 className="text-4xl font-black tracking-tighter italic uppercase mb-2">Analisi<br/>Completata</h2>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 mb-8 max-w-sm w-full shadow-2xl">
+          {postWorkoutAdvice ? (
+            <p className="text-zinc-300 font-medium leading-relaxed">
+              {postWorkoutAdvice}
+            </p>
+          ) : (
+            <div className="animate-pulse flex flex-col items-center gap-4">
+              <div className="h-4 bg-zinc-800 rounded w-3/4"></div>
+              <div className="h-4 bg-zinc-800 rounded w-full"></div>
+              <div className="h-4 bg-zinc-800 rounded w-5/6"></div>
+              <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-4">Lo Strategista sta analizzando i tuoi RPE...</p>
+            </div>
+          )}
+        </div>
+        <GripButton onClick={onSessionEnd} className="w-full max-w-sm">
+          TORNA ALLA DASHBOARD
+        </GripButton>
+      </motion.div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -256,12 +297,12 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
               </div>
               
               <div className="p-4 space-y-4">
-                <div className="grid grid-cols-5 gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 px-2">
-                  <div className="col-span-1">Serie</div>
-                  <div className="col-span-1">Tipo</div>
-                  <div className="col-span-1 text-center">KG</div>
-                  <div className="col-span-1 text-center">Reps</div>
-                  <div className="col-span-1 text-center">RPE</div>
+                <div className="grid grid-cols-12 gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 px-2">
+                  <div className="col-span-1 text-center">Set</div>
+                  <div className="col-span-2">Tipo</div>
+                  <div className="col-span-3 text-center">KG</div>
+                  <div className="col-span-3 text-center">Reps</div>
+                  <div className="col-span-3 text-center">RPE</div>
                 </div>
 
                 {ex.sets.map((set, setIdx) => (
@@ -299,10 +340,10 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                       <select 
                         value={set.rpe || 0} 
                         onChange={(e) => updateSet(exIdx, setIdx, 'rpe', parseInt(e.target.value))}
-                        className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-1 text-center font-mono text-sm appearance-none text-lime-400"
+                        className="w-full h-12 bg-zinc-950 border border-zinc-800 rounded-lg px-1 text-center font-mono text-sm appearance-none text-lime-400"
                       >
                         <option value={0}>-</option>
-                        {[5,6,7,8,9,10].map(r => <option key={r} value={r}>@{r}</option>)}
+                        {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>{r}</option>)}
                       </select>
                     </div>
                   </div>

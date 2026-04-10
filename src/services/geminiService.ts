@@ -17,7 +17,8 @@ const getAI = () => {
 
 export const getStrategistAdvice = async (
   history: WorkoutSession[],
-  biometrics: BiometricLog
+  biometrics: BiometricLog,
+  nutrition?: { consumed: number, target: number, goal: string }
 ) => {
   const aiClient = getAI();
   if (!aiClient) {
@@ -30,20 +31,25 @@ export const getStrategistAdvice = async (
 
   const prompt = `
     Sei "Lo Strategista", il motore logico centrale di Apex Lift Ultimate.
-    Analizza la cronologia e la biometria per fornire una raccomandazione di allenamento.
+    Analizza la cronologia, la biometria e l'alimentazione per fornire una raccomandazione.
     
     Biometria di Oggi:
     - HRV: ${biometrics.hrv}
     - Sonno: ${biometrics.sleepHours}h
     - Stress: ${biometrics.stressLevel}/10
     
+    Alimentazione di Oggi:
+    - Assunte: ${nutrition?.consumed || 0} kcal
+    - Obiettivo: ${nutrition?.target || 0} kcal
+    - Scopo: ${nutrition?.goal || 'Mantenimento'}
+    
     Cronologia Recente:
     ${JSON.stringify(history.slice(-3))}
     
     REGOLE FONDAMENTALI PER IL CONSIGLIO (tip):
-    1. Tecnica e Salute: Dai un consiglio biomeccanico specifico per i gruppi muscolari allenati di recente (es. "Ricorda di deprimere le scapole per proteggere la colonna").
-    2. Bio-feedback: Usa i dati biometrici per consigliare idratazione, recupero o volume (es. "HRV basso, mantieni un buffer più alto").
-    3. Ottimizzazione Workout (RPE): Analizza gli RPE recenti. Se la media RPE < 6, suggerisci di aumentare il carico o le ripetizioni. Se RPE 9-10, suggerisci di mantenere il peso o scaricare se il volume è alto.
+    1. Analisi Scostamento Nutrizionale: Se c'è un forte scostamento tra calorie assunte e obiettivo, fallo notare (es. "Oggi sei sotto di 400kcal rispetto al tuo obiettivo di massa. Considera uno snack proteico prima di dormire.").
+    2. Bio-feedback: Usa i dati biometrici per consigliare idratazione, recupero o volume.
+    3. Ottimizzazione Workout (RPE): Analizza gli RPE recenti se rilevanti.
     4. CONSTRAINT: NIENTE frasi motivazionali generiche (max 10% del testo). Sii analitico, scientifico e diretto.
     
     Ritorna solo JSON:
@@ -67,5 +73,71 @@ export const getStrategistAdvice = async (
   } catch (error) {
     console.error("Strategist Error:", error);
     return { readinessScore: 70, intensity: "Technical", tip: "Errore di connessione con l'IA. Concentrati sulla tecnica oggi." };
+  }
+};
+
+export const parseFoodInput = async (input: string) => {
+  const aiClient = getAI();
+  if (!aiClient) {
+    throw new Error("AI non configurata");
+  }
+
+  const prompt = `
+    L'utente ha inserito questo pasto in linguaggio naturale: "${input}"
+    Stima i valori nutrizionali totali.
+    
+    Ritorna SOLO un oggetto JSON con questa struttura esatta:
+    {
+      "name": "Nome riassuntivo del pasto (es. Pasta al pomodoro e pollo)",
+      "kcal": numero totale di calorie stimate,
+      "carbs": grammi di carboidrati stimati,
+      "protein": grammi di proteine stimate,
+      "fat": grammi di grassi stimati
+    }
+  `;
+
+  try {
+    const response = await aiClient.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+    return JSON.parse(response.text || "{}");
+  } catch (error) {
+    console.error("Food Parsing Error:", error);
+    throw error;
+  }
+};
+
+export const getPostWorkoutAdvice = async (sessionData: any) => {
+  const aiClient = getAI();
+  if (!aiClient) {
+    return "Ottimo lavoro! Per ricevere consigli personalizzati dall'IA su cosa cambiare nel prossimo allenamento, configura la tua API Key.";
+  }
+
+  const prompt = `
+    Sei "Lo Strategista", un coach di powerbuilding di élite.
+    L'utente ha appena terminato questo allenamento:
+    ${JSON.stringify(sessionData)}
+    
+    Analizza i dati (kg, reps, RPE) e fornisci un feedback POST-ALLENAMENTO di massimo 3 frasi.
+    Regole:
+    1. Se l'RPE medio è basso (sotto 6), consiglia esplicitamente di aumentare i carichi la prossima volta.
+    2. Se l'RPE è alto (9-10) su molti set, consiglia di fare attenzione al recupero o di abbassare il volume.
+    3. Sii specifico su un esercizio se noti qualcosa di rilevante.
+    4. Niente saluti o frasi motivazionali inutili. Vai dritto al punto su COME e COSA cambiare la prossima volta.
+  `;
+
+  try {
+    const response = await aiClient.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+    });
+    return response.text || "Ottimo allenamento completato.";
+  } catch (error) {
+    console.error("Post-Workout AI Error:", error);
+    return "Allenamento salvato. Analisi IA non disponibile al momento.";
   }
 };

@@ -13,7 +13,7 @@ export interface UserProfile {
   goal?: 'lose' | 'maintain' | 'gain';
 }
 
-export type ExerciseCategory = 'Petto' | 'Schiena' | 'Gambe' | 'Spalle' | 'Bicipiti' | 'Tricipiti' | 'Core';
+export type ExerciseCategory = 'Petto' | 'Schiena' | 'Gambe' | 'Spalle' | 'Bicipiti' | 'Tricipiti' | 'Core' | 'Cardio';
 
 export interface Exercise {
   id: string;
@@ -70,4 +70,29 @@ export interface BiometricLog {
   hrv: number;
   sleepHours: number;
   stressLevel: number;
+}
+
+export interface FoodItem {
+  id: string;
+  name: string;
+  kcal: number;
+  carbs?: number;
+  protein?: number;
+  fat?: number;
+}
+
+export interface MealLog {
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  type: 'Colazione' | 'Pranzo' | 'Cena' | 'Spuntini';
+  foods: FoodItem[];
+}
+
+export interface FavoriteMeal {
+  id: string;
+  userId: string;
+  name: string;
+  type: 'Colazione' | 'Pranzo' | 'Cena' | 'Spuntini';
+  foods: FoodItem[];
 }

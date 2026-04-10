@@ -10,7 +10,7 @@ import GripButton from './ui/GripButton';
 import { toast } from 'sonner';
 
 export default function WorkoutHub() {
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDay, setSelectedDay] = useState<string>('Lunedì');
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [activeSessionPlan, setActiveSessionPlan] = useState<WorkoutPlan | 'free' | null>(null);
   
@@ -25,13 +25,13 @@ export default function WorkoutHub() {
     if (!auth.currentUser) return;
     const q = query(
       collection(db, 'users', auth.currentUser.uid, 'plans'),
-      where('date', '==', selectedDate)
+      where('dayOfWeek', '==', selectedDay)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkoutPlan)));
     });
     return unsubscribe;
-  }, [selectedDate]);
+  }, [selectedDay]);
 
   const openPlanBuilder = () => {
     window.history.pushState({ modal: 'planBuilder' }, '');
@@ -84,7 +84,7 @@ export default function WorkoutHub() {
       await addDoc(collection(db, 'users', auth.currentUser.uid, 'plans'), {
         userId: auth.currentUser.uid,
         name: planName,
-        date: selectedDate,
+        dayOfWeek: selectedDay,
         exercises: plannedExercises
       });
       toast.success('Scheda salvata con successo!');
@@ -128,22 +128,7 @@ export default function WorkoutHub() {
     setPlannedExercises(plannedExercises.filter((_, i) => i !== index));
   };
 
-  // Generate next 7 days for the date picker
-  const dates = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return d.toISOString().split('T')[0];
-  });
-
-  const formatDateLabel = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const today = new Date().toISOString().split('T')[0];
-    if (dateStr === today) return 'Oggi';
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    if (dateStr === tomorrow.toISOString().split('T')[0]) return 'Domani';
-    return d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric' });
-  };
+  const weekDays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
 
   if (activeSessionPlan) {
     return (
@@ -176,8 +161,8 @@ export default function WorkoutHub() {
             />
           </div>
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Data</label>
-            <div className="text-lime-400 font-mono font-bold text-lg">{formatDateLabel(selectedDate)} ({selectedDate})</div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Giorno</label>
+            <div className="text-lime-400 font-mono font-bold text-lg">{selectedDay}</div>
           </div>
         </div>
 
@@ -221,7 +206,7 @@ export default function WorkoutHub() {
                       onChange={(e) => updatePlannedExercise(idx, 'targetRpe', parseInt(e.target.value) || 0)}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center font-mono appearance-none"
                     >
-                      {[5,6,7,8,9,10].map(r => <option key={r} value={r}>@{r}</option>)}
+                      {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
                   </div>
                 </div>
@@ -258,7 +243,7 @@ export default function WorkoutHub() {
               </div>
               
               <div className="flex gap-2 overflow-x-auto pb-4 mb-4 hide-scrollbar">
-                {(['Petto', 'Schiena', 'Gambe', 'Spalle', 'Bicipiti', 'Tricipiti', 'Core'] as ExerciseCategory[]).map(cat => (
+                {(['Petto', 'Schiena', 'Gambe', 'Spalle', 'Bicipiti', 'Tricipiti', 'Core', 'Cardio'] as ExerciseCategory[]).map(cat => (
                   <button
                     key={cat}
                     onClick={() => setPickerCategory(pickerCategory === cat ? null : cat)}
@@ -295,21 +280,17 @@ export default function WorkoutHub() {
         <h2 className="text-3xl font-black tracking-tighter italic uppercase mb-6">Programmazione</h2>
         
         {/* Date Selector */}
-        <div className="flex gap-3 overflow-x-auto pb-4 hide-scrollbar">
-          {dates.map(dateStr => {
-            const isSelected = dateStr === selectedDate;
-            const d = new Date(dateStr);
+        <div className="flex gap-3 overflow-x-auto pb-4 hide-scrollbar snap-x">
+          {weekDays.map(day => {
+            const isSelected = day === selectedDay;
             return (
               <button
-                key={dateStr}
-                onClick={() => setSelectedDate(dateStr)}
-                className={`flex flex-col items-center justify-center min-w-[70px] h-[80px] rounded-2xl transition-colors ${isSelected ? 'bg-lime-400 text-black' : 'bg-zinc-900 text-zinc-400 border border-zinc-800'}`}
+                key={day}
+                onClick={() => setSelectedDay(day)}
+                className={`flex-shrink-0 snap-center flex flex-col items-center justify-center min-w-[90px] h-[60px] rounded-2xl transition-colors ${isSelected ? 'bg-lime-400 text-black' : 'bg-zinc-900 text-zinc-400 border border-zinc-800'}`}
               >
-                <span className="text-xs font-bold uppercase tracking-widest mb-1">
-                  {d.toLocaleDateString('it-IT', { weekday: 'short' })}
-                </span>
-                <span className="text-2xl font-black">
-                  {d.getDate()}
+                <span className="text-xs font-bold uppercase tracking-widest">
+                  {day}
                 </span>
               </button>
             );
@@ -319,7 +300,7 @@ export default function WorkoutHub() {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-xl font-black italic uppercase">Schede per {formatDateLabel(selectedDate)}</h3>
+          <h3 className="text-xl font-black italic uppercase">Schede per {selectedDay}</h3>
         </div>
 
         {plans.length === 0 ? (

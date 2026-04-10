@@ -3,6 +3,7 @@ import { UserProfile } from '../types';
 import { User } from 'firebase/auth';
 import { auth } from '../firebase';
 import { LogOut, Settings, Award, Shield, Bell, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
 import GripButton from './ui/GripButton';
 
 export default function Profile({ profile, user }: { profile: UserProfile | null, user: User }) {
@@ -13,14 +14,13 @@ export default function Profile({ profile, user }: { profile: UserProfile | null
           <img src={user.photoURL || ''} className="w-full h-full rounded-2xl object-cover" alt="Profile" referrerPolicy="no-referrer" />
         </div>
         <h2 className="text-3xl font-black tracking-tighter italic uppercase">{profile?.displayName}</h2>
-        <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-1">Apex Livello 14 • Atleta Elite</p>
       </div>
 
       <div className="space-y-2">
-        <ProfileLink icon={<Award size={18} />} label="Traguardi" />
-        <ProfileLink icon={<Bell size={18} />} label="Notifiche" />
-        <ProfileLink icon={<Shield size={18} />} label="Privacy e Sicurezza" />
-        <ProfileLink icon={<Settings size={18} />} label="Preferenze" />
+        <ProfileLink icon={<Award size={18} />} label="Traguardi" onClick={() => toast.info('Traguardi in arrivo presto!')} />
+        <ProfileLink icon={<Bell size={18} />} label="Notifiche" onClick={() => toast.info('Impostazioni notifiche in arrivo!')} />
+        <ProfileLink icon={<Shield size={18} />} label="Privacy e Sicurezza" onClick={() => toast.info('Privacy in arrivo!')} />
+        <ProfileLink icon={<Settings size={18} />} label="Preferenze" onClick={() => toast.info('Preferenze in arrivo!')} />
       </div>
 
       <GripButton variant="danger" className="w-full" onClick={() => auth.signOut()}>
@@ -30,9 +30,9 @@ export default function Profile({ profile, user }: { profile: UserProfile | null
   );
 }
 
-function ProfileLink({ icon, label }: { icon: React.ReactNode, label: string }) {
+function ProfileLink({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick?: () => void }) {
   return (
-    <button className="w-full flex items-center justify-between p-4 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 rounded-2xl transition-colors">
+    <button onClick={onClick} className="w-full flex items-center justify-between p-4 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 rounded-2xl transition-colors">
       <div className="flex items-center gap-3">
         <div className="text-zinc-500">{icon}</div>
         <span className="font-bold text-sm text-zinc-300">{label}</span>

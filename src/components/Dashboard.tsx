@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, WorkoutSession, BiometricLog } from '../types';
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { Zap, TrendingUp, Clock, ChevronRight, Brain, Dumbbell, Plus, Calculator, Save, User as UserIcon, Target, Flame } from 'lucide-react';
+import { Zap, TrendingUp, Clock, ChevronRight, Brain, Dumbbell, Plus, Calculator, Save, User as UserIcon, Target, Flame, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { getStrategistAdvice } from '../services/geminiService';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from 'recharts';
+import { getStrategistAdvice, parseFoodInput } from '../services/geminiService';
 import GripButton from './ui/GripButton';
 
 export default function Dashboard({ profile }: { profile: UserProfile | null }) {
@@ -20,6 +21,147 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
   const [activityLevel, setActivityLevel] = useState(profile?.activityLevel || 1.2);
   const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>(profile?.goal || 'maintain');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Meal Tracker State
+  type MealItem = { id: string, name: string, kcal: number };
+  const [meals, setMeals] = useState<{ [key: string]: MealItem[] }>({ Colazione: [], Pranzo: [], Cena: [], Spuntini: [] });
+  const [newFood, setNewFood] = useState({ meal: '', name: '', kcal: '' });
+  const todayDate = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    if (!profile) return;
+    const q = query(collection(db, 'users', profile.uid, 'meals'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const todayMeals = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as any))
+        .filter(m => m.date === todayDate);
+      
+      const newMealsState: { [key: string]: MealItem[] } = { Colazione: [], Pranzo: [], Cena: [], Spuntini: [] };
+      todayMeals.forEach(m => {
+        if (newMealsState[m.type]) {
+          newMealsState[m.type] = m.foods;
+        }
+      });
+      setMeals(newMealsState);
+    });
+    return unsubscribe;
+  }, [profile, todayDate]);
+
+  const saveMealsToFirebase = async (updatedMeals: { [key: string]: MealItem[] }) => {
+    if (!profile) return;
+    try {
+      for (const mealType of Object.keys(updatedMeals)) {
+        const mealId = `${todayDate}_${mealType}`;
+        await updateDoc(doc(db, 'users', profile.uid, 'meals', mealId), {
+          date: todayDate,
+          type: mealType,
+          foods: updatedMeals[mealType]
+        }).catch(async (e) => {
+          // If document doesn't exist, create it
+          const { setDoc } = await import('firebase/firestore');
+          await setDoc(doc(db, 'users', profile.uid, 'meals', mealId), {
+            userId: profile.uid,
+            date: todayDate,
+            type: mealType,
+            foods: updatedMeals[mealType]
+          });
+        });
+      }
+    } catch (error) {
+      console.error("Error saving meals:", error);
+    }
+  };
+
+  const addFood = (meal: string) => {
+    if (!newFood.name || !newFood.kcal) return;
+    const updatedMeals = {
+      ...meals,
+      [meal]: [...meals[meal], { id: Date.now().toString(), name: newFood.name, kcal: parseInt(newFood.kcal) }]
+    };
+    setMeals(updatedMeals);
+    saveMealsToFirebase(updatedMeals);
+    setNewFood({ meal: '', name: '', kcal: '' });
+  };
+
+  const removeFood = (meal: string, id: string) => {
+    const updatedMeals = {
+      ...meals,
+      [meal]: meals[meal].filter(f => f.id !== id)
+    };
+    setMeals(updatedMeals);
+    saveMealsToFirebase(updatedMeals);
+  };
+
+  const [isParsingFood, setIsParsingFood] = useState(false);
+
+  const handleAIFoodParse = async (meal: string, input: string) => {
+    if (!input.trim()) return;
+    setIsParsingFood(true);
+    try {
+      const result = await parseFoodInput(input);
+      if (result && result.name && result.kcal) {
+        const updatedMeals = {
+          ...meals,
+          [meal]: [...meals[meal], { id: Date.now().toString(), name: result.name, kcal: result.kcal }]
+        };
+        setMeals(updatedMeals);
+        saveMealsToFirebase(updatedMeals);
+        setNewFood({ meal: '', name: '', kcal: '' });
+        toast.success(`Aggiunto: ${result.name} (${result.kcal} kcal)`);
+      } else {
+        toast.error("Non sono riuscito a stimare le calorie.");
+      }
+    } catch (error) {
+      toast.error("Errore durante l'analisi del pasto.");
+    } finally {
+      setIsParsingFood(false);
+    }
+  };
+
+  const totalConsumed = (Object.values(meals) as MealItem[][]).flat().reduce((sum, item) => sum + item.kcal, 0);
+
+  // Weekly History State
+  const [weeklyMeals, setWeeklyMeals] = useState<{ date: string, kcal: number }[]>([]);
+
+  useEffect(() => {
+    if (!profile) return;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const startDateStr = sevenDaysAgo.toISOString().split('T')[0];
+
+    const q = query(
+      collection(db, 'users', profile.uid, 'meals')
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const allMeals = snapshot.docs.map(doc => doc.data() as any);
+      
+      // Group by date
+      const dailyTotals: { [date: string]: number } = {};
+      
+      // Initialize last 7 days with 0
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        dailyTotals[d.toISOString().split('T')[0]] = 0;
+      }
+
+      allMeals.forEach(meal => {
+        if (dailyTotals[meal.date] !== undefined) {
+          const mealTotal = meal.foods.reduce((sum: number, food: any) => sum + food.kcal, 0);
+          dailyTotals[meal.date] += mealTotal;
+        }
+      });
+
+      const chartData = Object.keys(dailyTotals).sort().map(date => ({
+        date: date.substring(5).replace('-', '/'), // MM/DD
+        kcal: dailyTotals[date]
+      }));
+
+      setWeeklyMeals(chartData);
+    });
+    return unsubscribe;
+  }, [profile]);
 
   useEffect(() => {
     if (profile) {
@@ -54,9 +196,23 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
         sleepHours: 7.5,
         stressLevel: 4
       };
-      getStrategistAdvice(recentSessions, mockBiometrics).then(setAdvice);
+      
+      let bmr = 0;
+      if (gender === 'male') {
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+      } else {
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+      }
+      const tdee = Math.round(bmr * activityLevel);
+      const target = goal === 'lose' ? tdee - 500 : goal === 'gain' ? tdee + 300 : tdee;
+
+      getStrategistAdvice(recentSessions, mockBiometrics, {
+        consumed: totalConsumed,
+        target: target,
+        goal: goal
+      }).then(setAdvice);
     }
-  }, [profile, recentSessions]);
+  }, [profile, recentSessions, totalConsumed, weight, height, age, gender, activityLevel, goal]);
 
   const handleSaveBiometrics = async () => {
     if (!profile) return;
@@ -215,21 +371,44 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-1 gap-4"
           >
-            <div className="bg-lime-400 text-black rounded-3xl p-6 flex items-center justify-between shadow-xl shadow-lime-400/10">
-              <div>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex items-center justify-between shadow-xl">
+              <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <Target size={16} />
-                  <h3 className="font-black uppercase tracking-tighter text-xs">Target Calorico</h3>
+                  <Target size={16} className="text-lime-400" />
+                  <h3 className="font-black uppercase tracking-tighter text-xs text-zinc-400">Progresso Calorico</h3>
                 </div>
-                <div className="text-5xl font-black tracking-tighter italic uppercase">
-                  {results.target} <span className="text-sm font-bold">kcal</span>
+                <div className="text-4xl font-black tracking-tighter italic uppercase text-white mt-2">
+                  {totalConsumed} <span className="text-sm font-bold text-zinc-500">/ {results.target} kcal</span>
                 </div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mt-2 opacity-70">
-                  Basato sul tuo obiettivo di {goal === 'lose' ? 'dimagrimento' : goal === 'gain' ? 'ipertrofia' : 'mantenimento'}
+                <p className="text-[10px] font-bold uppercase tracking-widest mt-2 text-zinc-500">
+                  {goal === 'lose' ? 'Deficit' : goal === 'gain' ? 'Surplus' : 'Mantenimento'}
                 </p>
               </div>
-              <div className="w-16 h-16 bg-black/10 rounded-2xl flex items-center justify-center">
-                <Flame size={32} />
+              <div className="w-24 h-24 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Consumed', value: Math.min(totalConsumed, results.target) },
+                        { name: 'Remaining', value: Math.max(results.target - totalConsumed, 0) }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={45}
+                      startAngle={90}
+                      endAngle={-270}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      <Cell fill={totalConsumed > results.target ? '#f87171' : '#a3e635'} />
+                      <Cell fill="#27272a" />
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex items-center justify-center flex-col">
+                  <Flame size={20} className={totalConsumed > results.target ? 'text-red-400' : 'text-lime-400'} />
+                </div>
               </div>
             </div>
 
@@ -243,17 +422,119 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
                 <div className="text-xl font-black italic uppercase tracking-tighter">{results.tdee} <span className="text-[10px] text-zinc-500">kcal</span></div>
               </div>
             </div>
+
+            {/* Weekly History Chart */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 mt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp size={16} className="text-lime-400" />
+                <h3 className="font-black uppercase tracking-tighter text-sm italic text-zinc-400">Andamento Settimanale</h3>
+              </div>
+              <div className="h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weeklyMeals}>
+                    <XAxis dataKey="date" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip 
+                      cursor={{ fill: '#27272a' }}
+                      contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px' }}
+                      itemStyle={{ color: '#a3e635', fontWeight: 'bold' }}
+                    />
+                    <Bar dataKey="kcal" fill="#a3e635" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Meal Tracker */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 mt-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-black uppercase tracking-tighter text-sm italic">Diario Alimentare</h3>
+                <div className="text-right">
+                  <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Rimanenti</div>
+                  <div className={`text-xl font-black italic ${results.target - totalConsumed < 0 ? 'text-red-400' : 'text-lime-400'}`}>
+                    {results.target - totalConsumed} <span className="text-[10px]">kcal</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {['Colazione', 'Pranzo', 'Cena', 'Spuntini'].map(meal => {
+                  const mealTotal = meals[meal].reduce((sum, item) => sum + item.kcal, 0);
+                  return (
+                    <div key={meal} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm text-zinc-300 uppercase tracking-widest">{meal}</span>
+                        <span className="text-xs font-bold text-zinc-500">{mealTotal} kcal</span>
+                      </div>
+                      
+                      <div className="bg-zinc-950 rounded-xl border border-zinc-800 p-2 space-y-2">
+                        {meals[meal].map(item => (
+                          <div key={item.id} className="flex items-center justify-between bg-zinc-900 p-2 rounded-lg">
+                            <span className="text-xs font-medium text-zinc-300 truncate pr-2">{item.name}</span>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <span className="text-xs font-mono text-zinc-400">{item.kcal} kcal</span>
+                              <button onClick={() => removeFood(meal, item.id)} className="text-zinc-600 hover:text-red-400">
+                                <X size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        <div className="flex items-center gap-2 pt-1">
+                          <input 
+                            type="text" 
+                            placeholder="Alimento o descrivi (es. 100g pasta)..."
+                            value={newFood.meal === meal ? newFood.name : ''}
+                            onChange={(e) => setNewFood({ meal, name: e.target.value, kcal: newFood.meal === meal ? newFood.kcal : '' })}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && newFood.name && !newFood.kcal) {
+                                handleAIFoodParse(meal, newFood.name);
+                              } else if (e.key === 'Enter' && newFood.name && newFood.kcal) {
+                                addFood(meal);
+                              }
+                            }}
+                            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:ring-1 ring-lime-400 outline-none"
+                            disabled={isParsingFood}
+                          />
+                          <input 
+                            type="number" 
+                            placeholder="kcal"
+                            value={newFood.meal === meal ? newFood.kcal : ''}
+                            onChange={(e) => setNewFood({ meal, name: newFood.meal === meal ? newFood.name : '', kcal: e.target.value })}
+                            className="w-16 bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-2 text-center font-mono text-xs text-white focus:ring-1 ring-lime-400 outline-none"
+                            disabled={isParsingFood}
+                          />
+                          <button 
+                            onClick={() => {
+                              if (newFood.name && !newFood.kcal) {
+                                handleAIFoodParse(meal, newFood.name);
+                              } else {
+                                addFood(meal);
+                              }
+                            }}
+                            disabled={isParsingFood}
+                            className={`${isParsingFood ? 'bg-zinc-700' : newFood.name && !newFood.kcal ? 'bg-purple-500 hover:bg-purple-600' : 'bg-lime-400 hover:bg-lime-500'} text-black p-2 rounded-lg transition-colors`}
+                          >
+                            {isParsingFood ? <Clock size={16} className="animate-spin" /> : newFood.name && !newFood.kcal ? <Brain size={16} className="text-white" /> : <Plus size={16} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </motion.section>
         )}
       </AnimatePresence>
 
       {/* Strategist Advice */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Brain size={20} className="text-lime-400" />
+      <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+        <div className="flex items-center gap-2 mb-3 relative z-10">
+          <Brain size={20} className="text-purple-400" />
           <h3 className="font-black uppercase tracking-tighter text-sm italic text-zinc-400">Consiglio dello Strategista</h3>
         </div>
-        <p className="font-bold text-lg leading-tight text-zinc-100 italic">
+        <p className="font-bold text-lg leading-tight text-zinc-100 italic relative z-10">
           "{advice?.tip || 'Analizzando le tue performance recenti per ottimizzare la sessione di oggi...'}"
         </p>
       </section>
