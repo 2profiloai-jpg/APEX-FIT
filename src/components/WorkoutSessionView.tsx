@@ -9,6 +9,19 @@ import { toast } from 'sonner';
 import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import { cn } from '../lib/utils';
 
+const Stepper = ({ value, onChange, step = 1, min = 0, label }: { value: number, onChange: (v: number) => void, step?: number, min?: number, label?: string }) => {
+  return (
+    <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg p-1 h-10">
+      <button onClick={() => onChange(Math.max(min, value - step))} className="w-6 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">-</button>
+      <div className="flex flex-col items-center justify-center flex-1">
+        <span className="font-mono font-bold text-sm leading-none">{value}</span>
+        {label && <span className="text-[8px] text-zinc-500 uppercase leading-none mt-0.5">{label}</span>}
+      </div>
+      <button onClick={() => onChange(value + step)} className="w-6 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">+</button>
+    </div>
+  );
+};
+
 export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { sessionId?: string | null, plan?: WorkoutPlan | null, onSessionEnd: () => void }) {
   const [exercises, setExercises] = useState<SessionExercise[]>(() => {
     if (plan && plan.exercises) {
@@ -35,6 +48,52 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
   const [restTimer, setRestTimer] = useState<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const restTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Persistence
+  useEffect(() => {
+    if (!plan && sessionId === 'new') {
+      const saved = localStorage.getItem('apex_active_session');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.exercises && parsed.exercises.length > 0) {
+            setExercises(parsed.exercises);
+            setTimerSeconds(parsed.timerSeconds || 0);
+            toast.info('Sessione precedente recuperata');
+          }
+        } catch (e) {}
+      }
+    }
+  }, [plan, sessionId]);
+
+  useEffect(() => {
+    if (exercises.length > 0) {
+      localStorage.setItem('apex_active_session', JSON.stringify({
+        exercises,
+        timerSeconds,
+        lastUpdated: new Date().toISOString()
+      }));
+    }
+  }, [exercises, timerSeconds]);
+
+  // Handle Back Button
+  useEffect(() => {
+    window.history.pushState({ modal: 'activeSession' }, '');
+    const handlePopState = () => {
+      if (showExercisePicker) {
+        setShowExercisePicker(false);
+      } else {
+        const confirmExit = window.confirm("Vuoi uscire dall'allenamento? I dati correnti verranno mantenuti in bozza.");
+        if (confirmExit) {
+          onSessionEnd();
+        } else {
+          window.history.pushState({ modal: 'activeSession' }, '');
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showExercisePicker, onSessionEnd]);
 
   useEffect(() => {
     if (isTimerRunning) {
@@ -114,6 +173,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
         endTime: new Date().toISOString(),
         exercises: exercises
       });
+      localStorage.removeItem('apex_active_session');
       toast.success('Allenamento salvato con successo!');
       onSessionEnd();
     } catch (error) {
@@ -205,13 +265,13 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                 </div>
 
                 {ex.sets.map((set, setIdx) => (
-                  <div key={setIdx} className="grid grid-cols-5 gap-2 items-center">
-                    <div className="col-span-1 font-mono text-sm font-bold text-zinc-600">{setIdx + 1}</div>
-                    <div className="col-span-1">
+                  <div key={setIdx} className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-1 font-mono text-sm font-bold text-zinc-600 text-center">{setIdx + 1}</div>
+                    <div className="col-span-2">
                       <select 
                         value={set.tag}
                         onChange={(e) => updateSet(exIdx, setIdx, 'tag', e.target.value as any)}
-                        className="bg-transparent text-[10px] font-bold uppercase text-zinc-400 focus:outline-none"
+                        className="bg-transparent text-[10px] font-bold uppercase text-zinc-400 focus:outline-none appearance-none"
                       >
                         <option value="Warm-up">Risc.</option>
                         <option value="Working">Allen.</option>
@@ -219,27 +279,32 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                         <option value="Drop">Drop</option>
                       </select>
                     </div>
-                    <input 
-                      type="number" 
-                      value={set.weight || ''} 
-                      onChange={(e) => updateSet(exIdx, setIdx, 'weight', parseFloat(e.target.value))}
-                      className="col-span-1 bg-zinc-800 rounded-lg py-2 text-center font-mono font-bold text-white focus:ring-1 ring-lime-400 outline-none"
-                      placeholder="0"
-                    />
-                    <input 
-                      type="number" 
-                      value={set.reps || ''} 
-                      onChange={(e) => updateSet(exIdx, setIdx, 'reps', parseInt(e.target.value))}
-                      className="col-span-1 bg-zinc-800 rounded-lg py-2 text-center font-mono font-bold text-white focus:ring-1 ring-lime-400 outline-none"
-                      placeholder="0"
-                    />
-                    <input 
-                      type="number" 
-                      value={set.rpe || ''} 
-                      onChange={(e) => updateSet(exIdx, setIdx, 'rpe', parseInt(e.target.value))}
-                      className="col-span-1 bg-zinc-800 rounded-lg py-2 text-center font-mono font-bold text-lime-400 focus:ring-1 ring-lime-400 outline-none"
-                      placeholder="7"
-                    />
+                    <div className="col-span-3">
+                      <Stepper 
+                        value={set.weight} 
+                        onChange={(v) => updateSet(exIdx, setIdx, 'weight', v)} 
+                        step={1.25} 
+                        min={0} 
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <Stepper 
+                        value={set.reps} 
+                        onChange={(v) => updateSet(exIdx, setIdx, 'reps', v)} 
+                        step={1} 
+                        min={0} 
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <select 
+                        value={set.rpe || 0} 
+                        onChange={(e) => updateSet(exIdx, setIdx, 'rpe', parseInt(e.target.value))}
+                        className="w-full h-10 bg-zinc-950 border border-zinc-800 rounded-lg px-1 text-center font-mono text-sm appearance-none text-lime-400"
+                      >
+                        <option value={0}>-</option>
+                        {[5,6,7,8,9,10].map(r => <option key={r} value={r}>@{r}</option>)}
+                      </select>
+                    </div>
                   </div>
                 ))}
 

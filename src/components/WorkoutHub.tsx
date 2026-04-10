@@ -33,6 +33,42 @@ export default function WorkoutHub() {
     return unsubscribe;
   }, [selectedDate]);
 
+  const openPlanBuilder = () => {
+    window.history.pushState({ modal: 'planBuilder' }, '');
+    setIsBuildingPlan(true);
+  };
+
+  const openExercisePicker = () => {
+    window.history.pushState({ modal: 'exercisePicker' }, '');
+    setShowExercisePicker(true);
+  };
+
+  const closeExercisePicker = () => {
+    setShowExercisePicker(false);
+    if (window.history.state?.modal === 'exercisePicker') {
+      window.history.back();
+    }
+  };
+
+  const closePlanBuilder = () => {
+    setIsBuildingPlan(false);
+    if (window.history.state?.modal === 'planBuilder') {
+      window.history.back();
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showExercisePicker) {
+        setShowExercisePicker(false);
+      } else if (isBuildingPlan) {
+        setIsBuildingPlan(false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showExercisePicker, isBuildingPlan]);
+
   const handleSavePlan = async () => {
     if (!auth.currentUser) return;
     if (!planName.trim()) {
@@ -123,7 +159,7 @@ export default function WorkoutHub() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-black tracking-tighter italic uppercase">Crea Scheda</h2>
-          <button onClick={() => setIsBuildingPlan(false)} className="p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white">
+          <button onClick={closePlanBuilder} className="p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white">
             <X size={20} />
           </button>
         </div>
@@ -160,30 +196,33 @@ export default function WorkoutHub() {
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Serie</label>
-                    <input 
-                      type="number" 
+                    <select 
                       value={pe.targetSets}
                       onChange={(e) => updatePlannedExercise(idx, 'targetSets', parseInt(e.target.value) || 0)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-center font-mono"
-                    />
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center font-mono appearance-none"
+                    >
+                      {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Reps</label>
-                    <input 
-                      type="text" 
+                    <select 
                       value={pe.targetReps}
                       onChange={(e) => updatePlannedExercise(idx, 'targetReps', e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-center font-mono"
-                    />
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center font-mono appearance-none"
+                    >
+                      {['1-5', '6-8', '8-12', '12-15', '15-20', 'Max'].map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">RPE</label>
-                    <input 
-                      type="number" 
-                      value={pe.targetRpe}
+                    <select 
+                      value={pe.targetRpe || 8}
                       onChange={(e) => updatePlannedExercise(idx, 'targetRpe', parseInt(e.target.value) || 0)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-center font-mono"
-                    />
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center font-mono appearance-none"
+                    >
+                      {[5,6,7,8,9,10].map(r => <option key={r} value={r}>@{r}</option>)}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -191,7 +230,7 @@ export default function WorkoutHub() {
           })}
 
           <button 
-            onClick={() => setShowExercisePicker(true)}
+            onClick={openExercisePicker}
             className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-bold uppercase tracking-widest hover:border-lime-400 hover:text-lime-400 transition-colors flex items-center justify-center gap-2"
           >
             <Plus size={20} /> Aggiungi Esercizio
@@ -213,7 +252,7 @@ export default function WorkoutHub() {
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-black italic uppercase">Seleziona Esercizio</h3>
-                <button onClick={() => setShowExercisePicker(false)} className="p-2 bg-zinc-900 rounded-full">
+                <button onClick={closeExercisePicker} className="p-2 bg-zinc-900 rounded-full">
                   <X size={20} />
                 </button>
               </div>
@@ -290,7 +329,7 @@ export default function WorkoutHub() {
             </div>
             <p className="text-zinc-400 font-medium">Nessuna scheda programmata per questo giorno.</p>
             <button 
-              onClick={() => setIsBuildingPlan(true)}
+              onClick={openPlanBuilder}
               className="bg-lime-400 text-black font-bold px-6 py-3 rounded-full uppercase tracking-widest text-sm w-full"
             >
               Crea Scheda

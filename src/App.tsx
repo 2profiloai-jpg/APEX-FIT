@@ -120,6 +120,35 @@ export default function App() {
     };
   }, []);
 
+  const [exitWarning, setExitWarning] = useState(false);
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      // If there's a hash, it means a modal is open and it will handle its own popstate
+      if (window.location.hash || window.history.state?.modal) {
+        return;
+      }
+
+      if (activeTab !== 'dashboard') {
+        setActiveTab('dashboard');
+        window.history.pushState(null, '', window.location.pathname);
+      } else {
+        if (!exitWarning) {
+          setExitWarning(true);
+          toast('Premi di nuovo indietro per uscire', { duration: 2000 });
+          window.history.pushState(null, '', window.location.pathname);
+          setTimeout(() => setExitWarning(false), 2000);
+        } else {
+          window.history.back();
+        }
+      }
+    };
+
+    window.history.pushState(null, '', window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeTab, exitWarning]);
+
   const handleLogin = () => {
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider);

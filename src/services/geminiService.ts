@@ -30,7 +30,7 @@ export const getStrategistAdvice = async (
 
   const prompt = `
     Sei "Lo Strategista", il motore logico centrale di Apex Lift Ultimate.
-    Basandoti sulla cronologia recente degli allenamenti dell'utente e sui dati biometrici di oggi, fornisci una raccomandazione concisa per l'allenamento.
+    Analizza la cronologia e la biometria per fornire una raccomandazione di allenamento.
     
     Biometria di Oggi:
     - HRV: ${biometrics.hrv}
@@ -40,10 +40,11 @@ export const getStrategistAdvice = async (
     Cronologia Recente:
     ${JSON.stringify(history.slice(-3))}
     
-    Istruzioni:
-    1. Calcola un "Readiness Score" (0-100).
-    2. Suggerisci se l'utente dovrebbe andare "Pesante" (Heavy), "Tecnico" (Technical), o "Scarico" (Deload).
-    3. Fornisci un consiglio specifico per la sessione di oggi in italiano.
+    REGOLE FONDAMENTALI PER IL CONSIGLIO (tip):
+    1. Tecnica e Salute: Dai un consiglio biomeccanico specifico per i gruppi muscolari allenati di recente (es. "Ricorda di deprimere le scapole per proteggere la colonna").
+    2. Bio-feedback: Usa i dati biometrici per consigliare idratazione, recupero o volume (es. "HRV basso, mantieni un buffer più alto").
+    3. Ottimizzazione Workout (RPE): Analizza gli RPE recenti. Se la media RPE < 6, suggerisci di aumentare il carico o le ripetizioni. Se RPE 9-10, suggerisci di mantenere il peso o scaricare se il volume è alto.
+    4. CONSTRAINT: NIENTE frasi motivazionali generiche (max 10% del testo). Sii analitico, scientifico e diretto.
     
     Ritorna solo JSON:
     {
