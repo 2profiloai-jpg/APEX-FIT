@@ -13,7 +13,8 @@ import {
   Zap, 
   TrendingUp,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'sonner';
@@ -29,6 +30,42 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'workout' | 'library' | 'profile'>('dashboard');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+      // Update UI notify the user they can install the PWA
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    // Show the install prompt
+    deferredPrompt.prompt();
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+    } else {
+      console.log('User dismissed the install prompt');
+    }
+  };
 
   useEffect(() => {
     const handleStartWorkout = () => {
@@ -40,10 +77,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let profileUnsubscribe: (() => void) | null = null;
+
+    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userRef = doc(db, 'users', user.uid);
+        
+        // Check if exists first to create default if needed
+        const userDoc = await getDoc(userRef);
         if (!userDoc.exists()) {
           const newProfile: UserProfile = {
             uid: user.uid,
@@ -53,14 +95,29 @@ export default function App() {
             lastSync: new Date().toISOString(),
             preferences: {}
           };
-          await setDoc(doc(db, 'users', user.uid), newProfile);
-          setProfile(newProfile);
-        } else {
-          setProfile(userDoc.data() as UserProfile);
+          await setDoc(userRef, newProfile);
+        }
+
+        // Listen to real-time updates
+        profileUnsubscribe = onSnapshot(userRef, (doc) => {
+          if (doc.exists()) {
+            setProfile(doc.data() as UserProfile);
+          }
+        });
+      } else {
+        setProfile(null);
+        if (profileUnsubscribe) {
+          profileUnsubscribe();
         }
       }
     });
-    return unsubscribe;
+
+    return () => {
+      authUnsubscribe();
+      if (profileUnsubscribe) {
+        profileUnsubscribe();
+      }
+    };
   }, []);
 
   const handleLogin = () => {
@@ -74,7 +131,7 @@ export default function App() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-md"
+          className="max-w-md w-full"
         >
           <div className="mb-8 flex justify-center">
             <div className="w-20 h-20 bg-lime-400 rounded-full flex items-center justify-center">
@@ -85,13 +142,26 @@ export default function App() {
           <p className="text-zinc-400 mb-8 font-medium">
             L'ecosistema fitness di nuova generazione. Periodizzazione algoritmica, integrazione biometrica e monitoraggio delle performance d'élite.
           </p>
-          <button 
-            onClick={handleLogin}
-            className="w-full bg-white text-black font-bold py-4 px-8 rounded-full flex items-center justify-center gap-3 hover:bg-lime-400 transition-colors"
-          >
-            <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-            INIZIA LA TUA ASCESA
-          </button>
+          
+          <div className="space-y-4">
+            <button 
+              onClick={handleLogin}
+              className="w-full bg-white text-black font-bold py-4 px-8 rounded-full flex items-center justify-center gap-3 hover:bg-lime-400 transition-colors"
+            >
+              <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
+              INIZIA LA TUA ASCESA
+            </button>
+
+            {isInstallable && (
+              <button 
+                onClick={handleInstallClick}
+                className="w-full bg-zinc-900 border border-zinc-800 text-white font-bold py-4 px-8 rounded-full flex items-center justify-center gap-3 hover:border-lime-400 transition-colors"
+              >
+                <Download className="w-5 h-5 text-lime-400" />
+                INSTALLA L'APP
+              </button>
+            )}
+          </div>
         </motion.div>
       </div>
     );

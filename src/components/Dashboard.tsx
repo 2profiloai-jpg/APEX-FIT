@@ -22,6 +22,17 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    if (profile) {
+      if (profile.weight) setWeight(profile.weight);
+      if (profile.height) setHeight(profile.height);
+      if (profile.age) setAge(profile.age);
+      if (profile.gender) setGender(profile.gender);
+      if (profile.activityLevel) setActivityLevel(profile.activityLevel);
+      if (profile.goal) setGoal(profile.goal);
+    }
+  }, [profile]);
+
+  useEffect(() => {
     if (!profile) return;
     const q = query(
       collection(db, 'users', profile.uid, 'sessions'),
