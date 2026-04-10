@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "userProfile": {
+      "title": "User Profile",
+      "description": "User settings and current readiness state.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "readinessScore": { "type": "number", "description": "0-100 score calculated from biometrics." },
+        "lastSync": { "type": "string", "format": "date-time" },
+        "preferences": { "type": "object" }
+      },
+      "required": ["uid", "email"]
+    },
+    "exercise": {
+      "title": "Exercise",
+      "description": "Anatomy and biomechanics data for an exercise.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["Push", "Pull", "Legs", "Core", "Full Body"] },
+        "targetMuscles": { "type": "array", "items": { "type": "string" } },
+        "videoUrl": { "type": "string" },
+        "instructions": { "type": "string" }
+      },
+      "required": ["id", "name", "category"]
+    },
+    "workoutSession": {
+      "title": "Workout Session",
+      "description": "A logged workout session.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "exercises": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "exerciseId": { "type": "string" },
+              "sets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "weight": { "type": "number" },
+                    "reps": { "type": "number" },
+                    "rpe": { "type": "number" },
+                    "tag": { "type": "string", "enum": ["Warm-up", "Working", "Top", "Back-off", "Drop", "Cluster", "Myo-rep"] }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": ["userId", "startTime"]
+    },
+    "biometricLog": {
+      "title": "Biometric Log",
+      "description": "Daily biometric data.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "hrv": { "type": "number" },
+        "sleepHours": { "type": "number" },
+        "stressLevel": { "type": "number" }
+      },
+      "required": ["userId", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "userProfile",
+      "description": "User profile data."
+    },
+    "/exercises/{exerciseId}": {
+      "schema": "exercise",
+      "description": "Global exercise library."
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": "workoutSession",
+      "description": "User workout logs."
+    },
+    "/users/{userId}/biometrics/{logId}": {
+      "schema": "biometricLog",
+      "description": "User biometric history."
+    }
+  }
+}

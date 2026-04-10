@@ -1,0 +1,44 @@
+import React from 'react';
+import { UserProfile } from '../types';
+import { User } from 'firebase/auth';
+import { auth } from '../firebase';
+import { LogOut, Settings, Award, Shield, Bell, ChevronRight } from 'lucide-react';
+import GripButton from './ui/GripButton';
+
+export default function Profile({ profile, user }: { profile: UserProfile | null, user: User }) {
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col items-center text-center">
+        <div className="w-24 h-24 rounded-3xl bg-zinc-800 border-2 border-lime-400 p-1 mb-4">
+          <img src={user.photoURL || ''} className="w-full h-full rounded-2xl object-cover" alt="Profile" referrerPolicy="no-referrer" />
+        </div>
+        <h2 className="text-3xl font-black tracking-tighter italic uppercase">{profile?.displayName}</h2>
+        <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-1">Apex Livello 14 • Atleta Elite</p>
+      </div>
+
+      <div className="space-y-2">
+        <ProfileLink icon={<Award size={18} />} label="Traguardi" />
+        <ProfileLink icon={<Bell size={18} />} label="Notifiche" />
+        <ProfileLink icon={<Shield size={18} />} label="Privacy e Sicurezza" />
+        <ProfileLink icon={<Settings size={18} />} label="Preferenze" />
+      </div>
+
+      <GripButton variant="danger" className="w-full" onClick={() => auth.signOut()}>
+        <LogOut size={20} /> DISCONNETTI
+      </GripButton>
+    </div>
+  );
+}
+
+function ProfileLink({ icon, label }: { icon: React.ReactNode, label: string }) {
+  return (
+    <button className="w-full flex items-center justify-between p-4 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 rounded-2xl transition-colors">
+      <div className="flex items-center gap-3">
+        <div className="text-zinc-500">{icon}</div>
+        <span className="font-bold text-sm text-zinc-300">{label}</span>
+      </div>
+      <ChevronRight size={16} className="text-zinc-700" />
+    </button>
+  );
+}
+

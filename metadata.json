@@ -1,0 +1,5 @@
+{
+  "name": "Apex Lift Ultimate",
+  "description": "A next-generation fitness ecosystem featuring algorithmic periodization, biometric integration, and a grip-friendly workout interface.",
+  "requestFramePermissions": ["camera"]
+}
