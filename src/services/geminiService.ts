@@ -62,7 +62,7 @@ export const getStrategistAdvice = async (
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -88,7 +88,6 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
     
     Calcola in modo PRECISO e REALISTICO le calorie e i macronutrienti. 
     Se le quantità non sono specificate, usa porzioni medie da ristorante/casa italiana (es. 1 panino = 80-100g, 1 piatto di pasta = 100g).
-    Se hai bisogno di dati precisi su prodotti confezionati, usa la ricerca web.
     
     DEVI RITORNARE ESCLUSIVAMENTE UN OGGETTO JSON VALIDO. Nessun altro testo, nessuna formattazione markdown.
     Struttura esatta:
@@ -120,9 +119,11 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash-preview",
       contents: contents,
-      tools: [{ googleSearch: {} }]
+      config: {
+        responseMimeType: "application/json"
+      }
     });
     
     let text = response.text || "{}";
@@ -164,7 +165,7 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash-preview",
       contents: prompt,
     });
     return response.text || "Ottimo allenamento completato.";
