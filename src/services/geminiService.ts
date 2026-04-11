@@ -100,16 +100,12 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
     }
   `;
 
-  const contents: any = {
-    parts: [
-      { text: prompt }
-    ]
-  };
+  const contents: any[] = [prompt];
 
   if (imageBase64) {
     const mimeType = imageBase64.split(';')[0].split(':')[1];
     const base64Data = imageBase64.split(',')[1];
-    contents.parts.unshift({
+    contents.unshift({
       inlineData: {
         mimeType: mimeType,
         data: base64Data
