@@ -76,7 +76,7 @@ export const getStrategistAdvice = async (
   }
 };
 
-export const parseFoodInput = async (input: string) => {
+export const parseFoodInput = async (input: string, imageBase64?: string) => {
   const aiClient = getAI();
   if (!aiClient) {
     throw new Error("AI non configurata");
@@ -84,7 +84,8 @@ export const parseFoodInput = async (input: string) => {
 
   const prompt = `
     L'utente ha inserito questo pasto in linguaggio naturale: "${input}"
-    Stima i valori nutrizionali totali.
+    ${imageBase64 ? "L'utente ha anche fornito un'immagine del pasto." : ""}
+    Stima i valori nutrizionali totali. Usa la ricerca web (Google Search) per ottenere dati precisi se necessario, specialmente per prodotti specifici o porzioni esatte.
     
     Ritorna SOLO un oggetto JSON con questa struttura esatta:
     {
@@ -96,10 +97,28 @@ export const parseFoodInput = async (input: string) => {
     }
   `;
 
+  const contents: any = {
+    parts: [
+      { text: prompt }
+    ]
+  };
+
+  if (imageBase64) {
+    const mimeType = imageBase64.split(';')[0].split(':')[1];
+    const base64Data = imageBase64.split(',')[1];
+    contents.parts.unshift({
+      inlineData: {
+        mimeType: mimeType,
+        data: base64Data
+      }
+    });
+  }
+
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
+      model: "gemini-3.1-pro-preview",
+      contents: contents,
+      tools: [{ googleSearch: {} }],
       config: {
         responseMimeType: "application/json"
       }

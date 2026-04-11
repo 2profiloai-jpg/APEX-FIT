@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, WorkoutSession, BiometricLog } from '../types';
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { Zap, TrendingUp, Clock, ChevronRight, Brain, Dumbbell, Plus, Calculator, Save, User as UserIcon, Target, Flame, X } from 'lucide-react';
+import { Zap, TrendingUp, Clock, ChevronRight, Brain, Dumbbell, Plus, Calculator, Save, User as UserIcon, Target, Flame, X, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from 'recharts';
@@ -93,12 +93,27 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
   };
 
   const [isParsingFood, setIsParsingFood] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ meal: string, dataUrl: string } | null>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, meal: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage({ meal, dataUrl: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleAIFoodParse = async (meal: string, input: string) => {
-    if (!input.trim()) return;
+    const hasImage = selectedImage && selectedImage.meal === meal;
+    if (!input.trim() && !hasImage) return;
+    
     setIsParsingFood(true);
     try {
-      const result = await parseFoodInput(input);
+      const imageToPass = hasImage ? selectedImage.dataUrl : undefined;
+      const result = await parseFoodInput(input, imageToPass);
       if (result && result.name && result.kcal) {
         const updatedMeals = {
           ...meals,
@@ -107,6 +122,7 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
         setMeals(updatedMeals);
         saveMealsToFirebase(updatedMeals);
         setNewFood({ meal: '', name: '', kcal: '' });
+        setSelectedImage(null);
         toast.success(`Aggiunto: ${result.name} (${result.kcal} kcal)`);
       } else {
         toast.error("Non sono riuscito a stimare le calorie.");
@@ -480,13 +496,37 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
                         ))}
                         
                         <div className="flex flex-col gap-2 pt-2">
-                          <textarea 
-                            placeholder="Cosa hai mangiato? (es. 2 panini con crudo) oppure inserisci il nome e le kcal a destra..."
-                            value={newFood.meal === meal ? newFood.name : ''}
-                            onChange={(e) => setNewFood({ meal, name: e.target.value, kcal: newFood.meal === meal ? newFood.kcal : '' })}
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-3 text-sm text-white focus:ring-1 ring-lime-400 outline-none resize-none h-16"
-                            disabled={isParsingFood}
-                          />
+                          <div className="relative">
+                            <textarea 
+                              placeholder="Cosa hai mangiato? (es. 2 panini con crudo)..."
+                              value={newFood.meal === meal ? newFood.name : ''}
+                              onChange={(e) => setNewFood({ meal, name: e.target.value, kcal: newFood.meal === meal ? newFood.kcal : '' })}
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-3 pr-12 text-sm text-white focus:ring-1 ring-lime-400 outline-none resize-none h-16"
+                              disabled={isParsingFood}
+                            />
+                            <label className="absolute right-2 top-2 p-2 bg-zinc-800 rounded-lg cursor-pointer hover:bg-zinc-700 transition-colors">
+                              <Camera size={18} className="text-zinc-400" />
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                capture="environment"
+                                className="hidden" 
+                                onChange={(e) => handleImageUpload(e, meal)}
+                                disabled={isParsingFood}
+                              />
+                            </label>
+                          </div>
+                          {selectedImage && selectedImage.meal === meal && (
+                            <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-zinc-700">
+                              <img src={selectedImage.dataUrl} alt="Preview" className="w-full h-full object-cover" />
+                              <button 
+                                onClick={() => setSelectedImage(null)}
+                                className="absolute top-0 right-0 bg-black/50 p-1 text-white hover:bg-red-500"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          )}
                           <div className="flex items-center gap-2">
                             <input 
                               type="number" 
@@ -498,13 +538,13 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
                             />
                             <button 
                               onClick={() => {
-                                if (newFood.name && !newFood.kcal) {
+                                if ((newFood.name || (selectedImage && selectedImage.meal === meal)) && !newFood.kcal) {
                                   handleAIFoodParse(meal, newFood.name);
                                 } else if (newFood.name && newFood.kcal) {
                                   addFood(meal);
                                 }
                               }}
-                              disabled={isParsingFood || !newFood.name}
+                              disabled={isParsingFood || (!newFood.name && !(selectedImage && selectedImage.meal === meal))}
                               className={`px-4 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors ${
                                 !newFood.kcal 
                                   ? 'bg-purple-500 text-white hover:bg-purple-600' 
