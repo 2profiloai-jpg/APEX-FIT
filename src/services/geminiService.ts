@@ -120,7 +120,7 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: contents,
       tools: [{ googleSearch: {} }]
     });
