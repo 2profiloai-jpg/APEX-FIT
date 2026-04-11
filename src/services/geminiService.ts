@@ -79,64 +79,78 @@ export const getStrategistAdvice = async (
 export const parseFoodInput = async (input: string, imageBase64?: string) => {
   const aiClient = getAI();
   if (!aiClient) {
-    throw new Error("AI non configurata");
+    throw new Error("Configura la chiave API di Gemini nelle impostazioni.");
   }
 
   const prompt = `
-    Sei un nutrizionista esperto. L'utente ha inserito questo pasto: "${input}"
-    ${imageBase64 ? "L'utente ha fornito anche un'immagine del pasto." : ""}
+    Sei un nutrizionista esperto.
+    Pasto inserito dall'utente: "${input || 'Nessun testo, basati solo sull\'immagine'}"
     
     Calcola in modo PRECISO e REALISTICO le calorie e i macronutrienti. 
-    Se le quantità non sono specificate, usa porzioni medie da ristorante/casa italiana (es. 1 panino = 80-100g, 1 piatto di pasta = 100g).
+    Se le quantità non sono specificate, usa porzioni medie (es. 1 panino = 80-100g, 1 piatto di pasta = 100g).
     
-    DEVI RITORNARE ESCLUSIVAMENTE UN OGGETTO JSON VALIDO. Nessun altro testo, nessuna formattazione markdown.
+    DEVI RITORNARE ESCLUSIVAMENTE UN OGGETTO JSON VALIDO.
     Struttura esatta:
     {
-      "name": "Nome chiaro del pasto (es. 2 Panini con Crudo)",
-      "kcal": numero intero (es. 550),
-      "carbs": numero intero,
-      "protein": numero intero,
-      "fat": numero intero
+      "name": "Nome chiaro del pasto",
+      "kcal": 550,
+      "carbs": 50,
+      "protein": 30,
+      "fat": 20
     }
   `;
 
-  const contents: any[] = [prompt];
+  const contents: any[] = [];
 
   if (imageBase64) {
-    const mimeType = imageBase64.split(';')[0].split(':')[1];
-    const base64Data = imageBase64.split(',')[1];
-    contents.unshift({
-      inlineData: {
-        mimeType: mimeType,
-        data: base64Data
-      }
-    });
+    try {
+      // Estrazione robusta del mimeType e dei dati base64
+      const mimeType = imageBase64.substring(imageBase64.indexOf(':') + 1, imageBase64.indexOf(';'));
+      const base64Data = imageBase64.substring(imageBase64.indexOf(',') + 1);
+      
+      contents.push({
+        inlineData: {
+          mimeType: mimeType || "image/jpeg",
+          data: base64Data
+        }
+      });
+    } catch (e) {
+      console.error("Errore parsing immagine base64:", e);
+      // Continua senza immagine se c'è un errore di formattazione
+    }
   }
+
+  contents.push(prompt);
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3.1-flash-preview",
+      model: "gemini-2.5-flash", // Modello più stabile e collaudato
       contents: contents,
       config: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        temperature: 0.2 // Bassa temperatura per JSON più consistente
       }
     });
     
     let text = response.text || "{}";
     
-    // Pulisci il testo da eventuali blocchi markdown
+    // Pulizia estrema del testo
     text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-    
-    // Estrai solo la parte JSON nel caso ci sia testo extra
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       text = jsonMatch[0];
     }
     
-    return JSON.parse(text);
-  } catch (error) {
+    const parsed = JSON.parse(text);
+    
+    if (!parsed.name || typeof parsed.kcal !== 'number') {
+      throw new Error("L'IA ha restituito un formato non valido.");
+    }
+    
+    return parsed;
+  } catch (error: any) {
     console.error("Food Parsing Error:", error);
-    throw error;
+    throw new Error(error.message || "Errore di connessione con l'IA.");
   }
 };
 

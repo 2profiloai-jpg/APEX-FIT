@@ -102,32 +102,43 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
       reader.onloadend = () => {
         const img = new Image();
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800;
-          const MAX_HEIGHT = 800;
-          let width = img.width;
-          let height = img.height;
+          try {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800;
+            const MAX_HEIGHT = 800;
+            let width = img.width;
+            let height = img.height;
 
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
             }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            setSelectedImage({ meal, dataUrl });
+          } catch (err) {
+            console.error("Errore ridimensionamento immagine:", err);
+            toast.error("Errore nell'elaborazione dell'immagine.");
           }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          setSelectedImage({ meal, dataUrl });
+        };
+        img.onerror = () => {
+          toast.error("Impossibile leggere l'immagine.");
         };
         img.src = reader.result as string;
+      };
+      reader.onerror = () => {
+        toast.error("Errore di lettura del file.");
       };
       reader.readAsDataURL(file);
     }
@@ -152,11 +163,11 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
         setSelectedImage(null);
         toast.success(`Aggiunto: ${result.name} (${result.kcal} kcal)`);
       } else {
-        toast.error("Non sono riuscito a stimare le calorie.");
+        toast.error("Errore: Dati nutrizionali non trovati.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Errore parseFoodInput:", error);
-      toast.error("Errore durante l'analisi del pasto.");
+      toast.error(`Errore: ${error.message || "Analisi fallita. Riprova."}`);
     } finally {
       setParsingMeal(null);
     }
