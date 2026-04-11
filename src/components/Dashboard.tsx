@@ -92,7 +92,7 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
     saveMealsToFirebase(updatedMeals);
   };
 
-  const [isParsingFood, setIsParsingFood] = useState(false);
+  const [parsingMeal, setParsingMeal] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ meal: string, dataUrl: string } | null>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, meal: string) => {
@@ -110,7 +110,7 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
     const hasImage = selectedImage && selectedImage.meal === meal;
     if (!input.trim() && !hasImage) return;
     
-    setIsParsingFood(true);
+    setParsingMeal(meal);
     try {
       const imageToPass = hasImage ? selectedImage.dataUrl : undefined;
       const result = await parseFoodInput(input, imageToPass);
@@ -128,9 +128,10 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
         toast.error("Non sono riuscito a stimare le calorie.");
       }
     } catch (error) {
+      console.error("Errore parseFoodInput:", error);
       toast.error("Errore durante l'analisi del pasto.");
     } finally {
-      setIsParsingFood(false);
+      setParsingMeal(null);
     }
   };
 
@@ -498,43 +499,43 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
                         <div className="flex flex-col gap-2 pt-2">
                           <div className="relative">
                             <textarea 
-                              placeholder="Cosa hai mangiato? (es. 2 panini con crudo)..."
+                              placeholder="Cosa hai mangiato? (es. 2 panini)..."
                               value={newFood.meal === meal ? newFood.name : ''}
                               onChange={(e) => setNewFood({ meal, name: e.target.value, kcal: newFood.meal === meal ? newFood.kcal : '' })}
-                              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-3 pr-12 text-sm text-white focus:ring-1 ring-lime-400 outline-none resize-none h-16"
-                              disabled={isParsingFood}
+                              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 pr-10 text-xs text-white focus:ring-1 ring-lime-400 outline-none resize-none h-12"
+                              disabled={!!parsingMeal}
                             />
-                            <label className="absolute right-2 top-2 p-2 bg-zinc-800 rounded-lg cursor-pointer hover:bg-zinc-700 transition-colors">
-                              <Camera size={18} className="text-zinc-400" />
+                            <label className="absolute right-1.5 top-1.5 p-1.5 bg-zinc-800 rounded-md cursor-pointer hover:bg-zinc-700 transition-colors">
+                              <Camera size={16} className="text-zinc-400" />
                               <input 
                                 type="file" 
                                 accept="image/*" 
                                 capture="environment"
                                 className="hidden" 
                                 onChange={(e) => handleImageUpload(e, meal)}
-                                disabled={isParsingFood}
+                                disabled={!!parsingMeal}
                               />
                             </label>
                           </div>
                           {selectedImage && selectedImage.meal === meal && (
-                            <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-zinc-700">
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-zinc-700">
                               <img src={selectedImage.dataUrl} alt="Preview" className="w-full h-full object-cover" />
                               <button 
                                 onClick={() => setSelectedImage(null)}
                                 className="absolute top-0 right-0 bg-black/50 p-1 text-white hover:bg-red-500"
                               >
-                                <X size={12} />
+                                <X size={10} />
                               </button>
                             </div>
                           )}
                           <div className="flex items-center gap-2">
                             <input 
                               type="number" 
-                              placeholder="kcal (opzionale)"
+                              placeholder="kcal (opz.)"
                               value={newFood.meal === meal ? newFood.kcal : ''}
                               onChange={(e) => setNewFood({ meal, name: newFood.meal === meal ? newFood.name : '', kcal: e.target.value })}
-                              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-3 text-center font-mono text-sm text-white focus:ring-1 ring-lime-400 outline-none"
-                              disabled={isParsingFood}
+                              className="w-24 bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-2 text-center font-mono text-xs text-white focus:ring-1 ring-lime-400 outline-none"
+                              disabled={!!parsingMeal}
                             />
                             <button 
                               onClick={() => {
@@ -544,19 +545,19 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
                                   addFood(meal);
                                 }
                               }}
-                              disabled={isParsingFood || (!newFood.name && !(selectedImage && selectedImage.meal === meal))}
-                              className={`px-4 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors ${
+                              disabled={!!parsingMeal || (!newFood.name && !(selectedImage && selectedImage.meal === meal))}
+                              className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
                                 !newFood.kcal 
                                   ? 'bg-purple-500 text-white hover:bg-purple-600' 
                                   : 'bg-lime-400 text-black hover:bg-lime-500'
                               } disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
-                              {isParsingFood ? (
-                                <Clock size={18} className="animate-spin" />
+                              {parsingMeal === meal ? (
+                                <Clock size={14} className="animate-spin" />
                               ) : !newFood.kcal ? (
-                                <><Brain size={18} /> IA Stima</>
+                                <><Brain size={14} /> Stima IA</>
                               ) : (
-                                <><Plus size={18} /> Aggiungi</>
+                                <><Plus size={14} /> Aggiungi</>
                               )}
                             </button>
                           </div>

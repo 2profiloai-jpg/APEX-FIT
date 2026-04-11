@@ -83,17 +83,21 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
   }
 
   const prompt = `
-    L'utente ha inserito questo pasto in linguaggio naturale: "${input}"
-    ${imageBase64 ? "L'utente ha anche fornito un'immagine del pasto." : ""}
-    Stima i valori nutrizionali totali. Usa la ricerca web (Google Search) per ottenere dati precisi se necessario, specialmente per prodotti specifici o porzioni esatte.
+    Sei un nutrizionista esperto. L'utente ha inserito questo pasto: "${input}"
+    ${imageBase64 ? "L'utente ha fornito anche un'immagine del pasto." : ""}
     
-    Ritorna SOLO un oggetto JSON con questa struttura esatta:
+    Calcola in modo PRECISO e REALISTICO le calorie e i macronutrienti. 
+    Se le quantità non sono specificate, usa porzioni medie da ristorante/casa italiana (es. 1 panino = 80-100g, 1 piatto di pasta = 100g).
+    Se hai bisogno di dati precisi su prodotti confezionati, usa la ricerca web.
+    
+    DEVI RITORNARE ESCLUSIVAMENTE UN OGGETTO JSON VALIDO. Nessun altro testo, nessuna formattazione markdown.
+    Struttura esatta:
     {
-      "name": "Nome riassuntivo del pasto (es. Pasta al pomodoro e pollo)",
-      "kcal": numero totale di calorie stimate,
-      "carbs": grammi di carboidrati stimati,
-      "protein": grammi di proteine stimate,
-      "fat": grammi di grassi stimati
+      "name": "Nome chiaro del pasto (es. 2 Panini con Crudo)",
+      "kcal": numero intero (es. 550),
+      "carbs": numero intero,
+      "protein": numero intero,
+      "fat": numero intero
     }
   `;
 
@@ -118,12 +122,21 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
     const response = await aiClient.models.generateContent({
       model: "gemini-3.1-pro-preview",
       contents: contents,
-      tools: [{ googleSearch: {} }],
-      config: {
-        responseMimeType: "application/json"
-      }
+      tools: [{ googleSearch: {} }]
     });
-    return JSON.parse(response.text || "{}");
+    
+    let text = response.text || "{}";
+    
+    // Pulisci il testo da eventuali blocchi markdown
+    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    
+    // Estrai solo la parte JSON nel caso ci sia testo extra
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      text = jsonMatch[0];
+    }
+    
+    return JSON.parse(text);
   } catch (error) {
     console.error("Food Parsing Error:", error);
     throw error;
