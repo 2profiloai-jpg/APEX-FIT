@@ -479,43 +479,47 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
                           </div>
                         ))}
                         
-                        <div className="flex items-center gap-2 pt-1">
-                          <input 
-                            type="text" 
-                            placeholder="Alimento o descrivi (es. 100g pasta)..."
+                        <div className="flex flex-col gap-2 pt-2">
+                          <textarea 
+                            placeholder="Cosa hai mangiato? (es. 2 panini con crudo) oppure inserisci il nome e le kcal a destra..."
                             value={newFood.meal === meal ? newFood.name : ''}
                             onChange={(e) => setNewFood({ meal, name: e.target.value, kcal: newFood.meal === meal ? newFood.kcal : '' })}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && newFood.name && !newFood.kcal) {
-                                handleAIFoodParse(meal, newFood.name);
-                              } else if (e.key === 'Enter' && newFood.name && newFood.kcal) {
-                                addFood(meal);
-                              }
-                            }}
-                            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:ring-1 ring-lime-400 outline-none"
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-3 text-sm text-white focus:ring-1 ring-lime-400 outline-none resize-none h-16"
                             disabled={isParsingFood}
                           />
-                          <input 
-                            type="number" 
-                            placeholder="kcal"
-                            value={newFood.meal === meal ? newFood.kcal : ''}
-                            onChange={(e) => setNewFood({ meal, name: newFood.meal === meal ? newFood.name : '', kcal: e.target.value })}
-                            className="w-16 bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-2 text-center font-mono text-xs text-white focus:ring-1 ring-lime-400 outline-none"
-                            disabled={isParsingFood}
-                          />
-                          <button 
-                            onClick={() => {
-                              if (newFood.name && !newFood.kcal) {
-                                handleAIFoodParse(meal, newFood.name);
-                              } else {
-                                addFood(meal);
-                              }
-                            }}
-                            disabled={isParsingFood}
-                            className={`${isParsingFood ? 'bg-zinc-700' : newFood.name && !newFood.kcal ? 'bg-purple-500 hover:bg-purple-600' : 'bg-lime-400 hover:bg-lime-500'} text-black p-2 rounded-lg transition-colors`}
-                          >
-                            {isParsingFood ? <Clock size={16} className="animate-spin" /> : newFood.name && !newFood.kcal ? <Brain size={16} className="text-white" /> : <Plus size={16} />}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="number" 
+                              placeholder="kcal (opzionale)"
+                              value={newFood.meal === meal ? newFood.kcal : ''}
+                              onChange={(e) => setNewFood({ meal, name: newFood.meal === meal ? newFood.name : '', kcal: e.target.value })}
+                              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-3 text-center font-mono text-sm text-white focus:ring-1 ring-lime-400 outline-none"
+                              disabled={isParsingFood}
+                            />
+                            <button 
+                              onClick={() => {
+                                if (newFood.name && !newFood.kcal) {
+                                  handleAIFoodParse(meal, newFood.name);
+                                } else if (newFood.name && newFood.kcal) {
+                                  addFood(meal);
+                                }
+                              }}
+                              disabled={isParsingFood || !newFood.name}
+                              className={`px-4 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors ${
+                                !newFood.kcal 
+                                  ? 'bg-purple-500 text-white hover:bg-purple-600' 
+                                  : 'bg-lime-400 text-black hover:bg-lime-500'
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                              {isParsingFood ? (
+                                <Clock size={18} className="animate-spin" />
+                              ) : !newFood.kcal ? (
+                                <><Brain size={18} /> IA Stima</>
+                              ) : (
+                                <><Plus size={18} /> Aggiungi</>
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
