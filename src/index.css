@@ -8,8 +8,22 @@
 
 @layer base {
   body {
-    @apply bg-zinc-950 text-zinc-100 antialiased;
+    @apply bg-black text-zinc-100 antialiased;
   }
+}
+
+/* iOS Glassmorphism */
+.glass {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg;
+}
+
+.glass-dark {
+  @apply bg-black/40 backdrop-blur-2xl border border-white/5 shadow-2xl;
+}
+
+/* Dynamic Button */
+.ios-button {
+  @apply active:scale-95 transition-all duration-200 ease-out;
 }
 
 /* Custom Utilities */

@@ -178,34 +178,38 @@ export default function ExerciseLibrary() {
 
       <div className="flex overflow-x-auto pb-2 -mx-4 px-4 gap-2 no-scrollbar">
         {categories.map(cat => (
-          <button 
+          <motion.button 
             key={cat} 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
             className={cn(
               "border px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
               selectedCategory === cat 
-                ? "bg-lime-400 text-black border-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.3)]" 
-                : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-lime-400 hover:border-lime-400"
+                ? "bg-lime-400 text-black border-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.3)]" 
+                : "glass text-zinc-400 hover:text-lime-400 hover:border-lime-400"
             )}
           >
             {cat}
-          </button>
+          </motion.button>
         ))}
       </div>
 
       <div className="space-y-3">
         {filteredExercises.map(ex => (
-          <div 
+          <motion.div 
             key={ex.id} 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => handleSelectExercise(ex)}
-            className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between group cursor-pointer hover:border-zinc-700 transition-colors"
+            className="glass p-4 rounded-2xl flex items-center justify-between group cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center group-hover:bg-lime-400 transition-colors">
+              <div className="w-12 h-12 bg-black/40 rounded-xl flex items-center justify-center border border-white/5 group-hover:bg-lime-400 transition-colors">
                 <Play size={20} className="text-zinc-500 group-hover:text-black fill-current" />
               </div>
               <div>
-                <h4 className="font-black uppercase tracking-tighter text-sm">{ex.name}</h4>
+                <h4 className="font-black uppercase tracking-tighter text-sm italic">{ex.name}</h4>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{ex.category}</span>
                   <span className="text-[10px] text-zinc-600">•</span>
@@ -214,7 +218,7 @@ export default function ExerciseLibrary() {
               </div>
             </div>
             <ChevronRight size={16} className="text-zinc-700" />
-          </div>
+          </motion.div>
         ))}
       </div>
 

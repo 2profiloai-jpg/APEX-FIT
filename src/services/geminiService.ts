@@ -6,14 +6,32 @@ let aiReady = false;
 
 export const initAI = async () => {
   try {
-    // Fallback to build-time env var if available
-    let apiKey = process.env.GEMINI_API_KEY;
+    let apiKey = "";
+    
+    // Safely check for build-time env var
+    try {
+      if (process.env.GEMINI_API_KEY) {
+        apiKey = process.env.GEMINI_API_KEY;
+      }
+    } catch (e) {
+      // process is not defined, ignore
+    }
+    
+    // Fallback to VITE_GEMINI_API_KEY if the user named it that way
+    const meta = import.meta as any;
+    if (!apiKey && typeof meta !== 'undefined' && meta.env && meta.env.VITE_GEMINI_API_KEY) {
+      apiKey = meta.env.VITE_GEMINI_API_KEY;
+    }
     
     if (!apiKey || apiKey === "undefined" || apiKey === "null") {
-      const res = await fetch('/api/config');
-      if (res.ok) {
-        const data = await res.json();
-        apiKey = data.geminiApiKey;
+      try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+          const data = await res.json();
+          apiKey = data.geminiApiKey;
+        }
+      } catch (fetchErr) {
+        console.warn("Could not fetch API key from server:", fetchErr);
       }
     }
 

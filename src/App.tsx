@@ -24,12 +24,14 @@ import Dashboard from './components/Dashboard';
 import WorkoutHub from './components/WorkoutHub';
 import ExerciseLibrary from './components/ExerciseLibrary';
 import Profile from './components/Profile';
+import NutritionHub from './components/NutritionHub';
 import { initAI } from './services/geminiService';
+import { Apple } from 'lucide-react';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'workout' | 'library' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'workout' | 'library' | 'nutrition' | 'profile'>('dashboard');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [aiStatus, setAiStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   
@@ -205,10 +207,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-lime-400 selection:text-black">
+    <div className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-lime-400 selection:text-black">
       <Toaster position="top-center" expand={true} richColors theme="dark" />
       {/* Top Bar */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800 z-50 px-4 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 h-16 bg-black/40 backdrop-blur-2xl border-b border-white/5 z-50 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap className="text-lime-400 w-6 h-6 fill-current" />
           <span className="font-black tracking-tighter italic uppercase text-xl">Apex</span>
@@ -228,22 +230,57 @@ export default function App() {
       <main className="pt-20 pb-24 px-4 max-w-2xl mx-auto">
         <AnimatePresence mode="wait">
           {activeTab === 'dashboard' && (
-            <motion.div key="dashboard" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+            <motion.div 
+              key="dashboard" 
+              initial={{ opacity: 0, y: 20, scale: 0.98 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }} 
+              exit={{ opacity: 0, y: -20, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
               <Dashboard profile={profile} aiStatus={aiStatus} />
             </motion.div>
           )}
           {activeTab === 'workout' && (
-            <motion.div key="workout" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+            <motion.div 
+              key="workout" 
+              initial={{ opacity: 0, y: 20, scale: 0.98 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }} 
+              exit={{ opacity: 0, y: -20, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
               <WorkoutHub />
             </motion.div>
           )}
           {activeTab === 'library' && (
-            <motion.div key="library" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+            <motion.div 
+              key="library" 
+              initial={{ opacity: 0, y: 20, scale: 0.98 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }} 
+              exit={{ opacity: 0, y: -20, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
               <ExerciseLibrary />
             </motion.div>
           )}
+          {activeTab === 'nutrition' && (
+            <motion.div 
+              key="nutrition" 
+              initial={{ opacity: 0, y: 20, scale: 0.98 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }} 
+              exit={{ opacity: 0, y: -20, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
+              <NutritionHub profile={profile} />
+            </motion.div>
+          )}
           {activeTab === 'profile' && (
-            <motion.div key="profile" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+            <motion.div 
+              key="profile" 
+              initial={{ opacity: 0, y: 20, scale: 0.98 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }} 
+              exit={{ opacity: 0, y: -20, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
               <Profile profile={profile} user={user} aiStatus={aiStatus} />
             </motion.div>
           )}
@@ -251,9 +288,10 @@ export default function App() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-zinc-950 border-t border-zinc-800 z-50 px-6 flex items-center justify-around">
-        <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<Activity />} label="Dashboard" />
+      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-black/40 backdrop-blur-2xl border-t border-white/5 z-50 px-2 flex items-center justify-around">
+        <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<Activity />} label="Home" />
         <NavButton active={activeTab === 'workout'} onClick={() => setActiveTab('workout')} icon={<Dumbbell />} label="Allenati" />
+        <NavButton active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')} icon={<Apple />} label="Nutrizione" />
         <NavButton active={activeTab === 'library'} onClick={() => setActiveTab('library')} icon={<Book />} label="Atlante" />
         <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserIcon />} label="Profilo" />
       </nav>
@@ -263,15 +301,23 @@ export default function App() {
 
 function NavButton({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
   return (
-    <button 
+    <motion.button 
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-1 transition-colors",
+        "flex flex-col items-center gap-1 transition-colors relative",
         active ? "text-lime-400" : "text-zinc-500"
       )}
     >
+      {active && (
+        <motion.div 
+          layoutId="nav-glow"
+          className="absolute -inset-2 bg-lime-400/10 blur-xl rounded-full -z-10"
+        />
+      )}
       {icon}
       <span className="text-[10px] font-bold uppercase tracking-tighter">{label}</span>
-    </button>
+    </motion.button>
   );
 }

@@ -31,199 +31,33 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
   const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>(profile?.goal || 'maintain');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Meal Tracker State
-  type MealItem = { id: string, name: string, kcal: number };
-  const [meals, setMeals] = useState<{ [key: string]: MealItem[] }>({ Colazione: [], Pranzo: [], Cena: [], Spuntini: [] });
-  const [newFood, setNewFood] = useState({ meal: '', name: '', kcal: '' });
-  const todayDate = new Date().toISOString().split('T')[0];
+  const [totalConsumed, setTotalConsumed] = useState(0);
 
   useEffect(() => {
     if (!profile) return;
-    const q = query(collection(db, 'users', profile.uid, 'meals'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const todayMeals = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as any))
-        .filter(m => m.date === todayDate);
-      
-      const newMealsState: { [key: string]: MealItem[] } = { Colazione: [], Pranzo: [], Cena: [], Spuntini: [] };
-      todayMeals.forEach(m => {
-        if (newMealsState[m.type]) {
-          newMealsState[m.type] = m.foods;
-        }
-      });
-      setMeals(newMealsState);
-    });
-    return unsubscribe;
-  }, [profile, todayDate]);
-
-  const saveMealsToFirebase = async (updatedMeals: { [key: string]: MealItem[] }) => {
-    if (!profile) return;
-    try {
-      for (const mealType of Object.keys(updatedMeals)) {
-        const mealId = `${todayDate}_${mealType}`;
-        await updateDoc(doc(db, 'users', profile.uid, 'meals', mealId), {
-          date: todayDate,
-          type: mealType,
-          foods: updatedMeals[mealType]
-        }).catch(async (e) => {
-          // If document doesn't exist, create it
-          const { setDoc } = await import('firebase/firestore');
-          await setDoc(doc(db, 'users', profile.uid, 'meals', mealId), {
-            userId: profile.uid,
-            date: todayDate,
-            type: mealType,
-            foods: updatedMeals[mealType]
-          });
-        });
-      }
-    } catch (error) {
-      console.error("Error saving meals:", error);
-    }
-  };
-
-  const addFood = (meal: string) => {
-    if (!newFood.name || !newFood.kcal) return;
-    const updatedMeals = {
-      ...meals,
-      [meal]: [...meals[meal], { id: Date.now().toString(), name: newFood.name, kcal: parseInt(newFood.kcal) }]
-    };
-    setMeals(updatedMeals);
-    saveMealsToFirebase(updatedMeals);
-    setNewFood({ meal: '', name: '', kcal: '' });
-  };
-
-  const removeFood = (meal: string, id: string) => {
-    const updatedMeals = {
-      ...meals,
-      [meal]: meals[meal].filter(f => f.id !== id)
-    };
-    setMeals(updatedMeals);
-    saveMealsToFirebase(updatedMeals);
-  };
-
-  const [parsingMeal, setParsingMeal] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<{ meal: string, dataUrl: string } | null>(null);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, meal: string) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 800;
-            const MAX_HEIGHT = 800;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > height) {
-              if (width > MAX_WIDTH) {
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-              }
-            } else {
-              if (height > MAX_HEIGHT) {
-                width *= MAX_HEIGHT / height;
-                height = MAX_HEIGHT;
-              }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            setSelectedImage({ meal, dataUrl });
-          } catch (err) {
-            console.error("Errore ridimensionamento immagine:", err);
-            toast.error("Errore nell'elaborazione dell'immagine.");
+    
+    // We only need today's consumed calories for the Strategist
+    const todayStr = new Date().toISOString().split('T')[0];
+    const docRef = doc(db, `users/${profile.uid}/nutrition/${todayStr}`);
+    
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const meals = data.meals || {};
+        let todayConsumed = 0;
+        
+        Object.values(meals).forEach((mealArray: any) => {
+          if (Array.isArray(mealArray)) {
+            todayConsumed += mealArray.reduce((sum: number, item: any) => sum + (item.kcal || 0), 0);
           }
-        };
-        img.onerror = () => {
-          toast.error("Impossibile leggere l'immagine.");
-        };
-        img.src = reader.result as string;
-      };
-      reader.onerror = () => {
-        toast.error("Errore di lettura del file.");
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAIFoodParse = async (meal: string, input: string) => {
-    const hasImage = selectedImage && selectedImage.meal === meal;
-    if (!input.trim() && !hasImage) return;
-    
-    setParsingMeal(meal);
-    try {
-      const imageToPass = hasImage ? selectedImage.dataUrl : undefined;
-      const result = await parseFoodInput(input, imageToPass);
-      if (result && result.name && result.kcal) {
-        const updatedMeals = {
-          ...meals,
-          [meal]: [...meals[meal], { id: Date.now().toString(), name: result.name, kcal: result.kcal }]
-        };
-        setMeals(updatedMeals);
-        saveMealsToFirebase(updatedMeals);
-        setNewFood({ meal: '', name: '', kcal: '' });
-        setSelectedImage(null);
-        toast.success(`Aggiunto: ${result.name} (${result.kcal} kcal)`);
+        });
+        
+        setTotalConsumed(todayConsumed);
       } else {
-        toast.error("Errore: Dati nutrizionali non trovati.");
+        setTotalConsumed(0);
       }
-    } catch (error: any) {
-      console.error("Errore parseFoodInput:", error);
-      toast.error(`Errore: ${error.message || "Analisi fallita. Riprova."}`);
-    } finally {
-      setParsingMeal(null);
-    }
-  };
-
-  const totalConsumed = (Object.values(meals) as MealItem[][]).flat().reduce((sum, item) => sum + item.kcal, 0);
-
-  // Weekly History State
-  const [weeklyMeals, setWeeklyMeals] = useState<{ date: string, kcal: number }[]>([]);
-
-  useEffect(() => {
-    if (!profile) return;
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const startDateStr = sevenDaysAgo.toISOString().split('T')[0];
-
-    const q = query(
-      collection(db, 'users', profile.uid, 'meals')
-    );
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allMeals = snapshot.docs.map(doc => doc.data() as any);
-      
-      // Group by date
-      const dailyTotals: { [date: string]: number } = {};
-      
-      // Initialize last 7 days with 0
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        dailyTotals[d.toISOString().split('T')[0]] = 0;
-      }
-
-      allMeals.forEach(meal => {
-        if (dailyTotals[meal.date] !== undefined) {
-          const mealTotal = meal.foods.reduce((sum: number, food: any) => sum + food.kcal, 0);
-          dailyTotals[meal.date] += mealTotal;
-        }
-      });
-
-      const chartData = Object.keys(dailyTotals).sort().map(date => ({
-        date: date.substring(5).replace('-', '/'), // MM/DD
-        kcal: dailyTotals[date]
-      }));
-
-      setWeeklyMeals(chartData);
     });
+
     return unsubscribe;
   }, [profile]);
 
@@ -322,12 +156,13 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
     };
   };
 
-  const results = calculateCalories();
-
   return (
     <div className="space-y-8">
       {/* Biometric Entry Section */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-6">
+      <motion.section 
+        whileHover={{ scale: 1.01 }}
+        className="glass rounded-3xl p-6 space-y-6"
+      >
         <div className="flex items-center gap-2 mb-2">
           <UserIcon className="text-lime-400" size={20} />
           <h3 className="font-black uppercase tracking-tighter text-sm italic">Parametri Biometrici</h3>
@@ -340,7 +175,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
               type="number" 
               value={weight || ''} 
               onChange={(e) => setWeight(parseFloat(e.target.value))}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-1 ring-lime-400 outline-none"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-lime-400/50 outline-none transition-all"
               placeholder="0.0"
             />
           </div>
@@ -350,7 +185,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
               type="number" 
               value={height || ''} 
               onChange={(e) => setHeight(parseFloat(e.target.value))}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-1 ring-lime-400 outline-none"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-lime-400/50 outline-none transition-all"
               placeholder="0"
             />
           </div>
@@ -360,25 +195,27 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
               type="number" 
               value={age || ''} 
               onChange={(e) => setAge(parseInt(e.target.value))}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-1 ring-lime-400 outline-none"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-lime-400/50 outline-none transition-all"
               placeholder="0"
             />
           </div>
           <div className="space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Genere</label>
-            <div className="flex bg-zinc-800 border border-zinc-700 rounded-xl p-1">
-              <button 
+            <div className="flex bg-black/20 border border-white/10 rounded-xl p-1">
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setGender('male')}
-                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'male' ? 'bg-lime-400 text-black' : 'text-zinc-500'}`}
+                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'male' ? 'bg-lime-400 text-black shadow-lg' : 'text-zinc-500'}`}
               >
                 M
-              </button>
-              <button 
+              </motion.button>
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setGender('female')}
-                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'female' ? 'bg-lime-400 text-black' : 'text-zinc-500'}`}
+                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'female' ? 'bg-lime-400 text-black shadow-lg' : 'text-zinc-500'}`}
               >
                 F
-              </button>
+              </motion.button>
             </div>
           </div>
         </div>
@@ -388,7 +225,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           <select 
             value={activityLevel}
             onChange={(e) => setActivityLevel(parseFloat(e.target.value))}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 font-bold text-white focus:ring-1 ring-lime-400 outline-none appearance-none"
+            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-lime-400/50 outline-none appearance-none transition-all"
           >
             <option value={1.2}>Sedentario (Ufficio)</option>
             <option value={1.375}>Leggero (1-3 allenamenti)</option>
@@ -406,222 +243,37 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
               { id: 'maintain', label: 'Mantenere' },
               { id: 'gain', label: 'Crescere' }
             ].map(g => (
-              <button 
+              <motion.button 
                 key={g.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setGoal(g.id as any)}
-                className={`py-2.5 rounded-xl text-[10px] font-black uppercase border transition-all ${goal === g.id ? 'bg-lime-400 text-black border-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.2)]' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}
+                className={`py-2.5 rounded-xl text-[10px] font-black uppercase border transition-all ${goal === g.id ? 'bg-lime-400 text-black border-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.3)]' : 'bg-black/20 border-white/5 text-zinc-500'}`}
               >
                 {g.label}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
 
-        <GripButton 
-          variant="secondary" 
-          className="w-full" 
+        <motion.button 
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={handleSaveBiometrics}
           disabled={isSaving}
+          className="w-full py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-lime-400 transition-all disabled:opacity-50"
         >
-          <Save size={18} /> {isSaving ? 'SALVATAGGIO...' : 'SALVA PARAMETRI'}
-        </GripButton>
-      </section>
-
-      {/* Calorie Results Section */}
-      <AnimatePresence>
-        {results && (
-          <motion.section 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 gap-4"
-          >
-            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex items-center justify-between shadow-xl">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <Target size={16} className="text-lime-400" />
-                  <h3 className="font-black uppercase tracking-tighter text-xs text-zinc-400">Progresso Calorico</h3>
-                </div>
-                <div className="text-4xl font-black tracking-tighter italic uppercase text-white mt-2">
-                  {totalConsumed} <span className="text-sm font-bold text-zinc-500">/ {results.target} kcal</span>
-                </div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mt-2 text-zinc-500">
-                  {goal === 'lose' ? 'Deficit' : goal === 'gain' ? 'Surplus' : 'Mantenimento'}
-                </p>
-              </div>
-              <div className="w-24 h-24 relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Consumed', value: Math.min(totalConsumed, results.target) },
-                        { name: 'Remaining', value: Math.max(results.target - totalConsumed, 0) }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={35}
-                      outerRadius={45}
-                      startAngle={90}
-                      endAngle={-270}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      <Cell fill={totalConsumed > results.target ? '#f87171' : '#a3e635'} />
-                      <Cell fill="#27272a" />
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex items-center justify-center flex-col">
-                  <Flame size={20} className={totalConsumed > results.target ? 'text-red-400' : 'text-lime-400'} />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-                <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Metabolismo Base</div>
-                <div className="text-xl font-black italic uppercase tracking-tighter">{results.bmr} <span className="text-[10px] text-zinc-500">kcal</span></div>
-              </div>
-              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-                <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Fabbisogno TDEE</div>
-                <div className="text-xl font-black italic uppercase tracking-tighter">{results.tdee} <span className="text-[10px] text-zinc-500">kcal</span></div>
-              </div>
-            </div>
-
-            {/* Weekly History Chart */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 mt-4">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp size={16} className="text-lime-400" />
-                <h3 className="font-black uppercase tracking-tighter text-sm italic text-zinc-400">Andamento Settimanale</h3>
-              </div>
-              <div className="h-48 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weeklyMeals}>
-                    <XAxis dataKey="date" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
-                    <Tooltip 
-                      cursor={{ fill: '#27272a' }}
-                      contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px' }}
-                      itemStyle={{ color: '#a3e635', fontWeight: 'bold' }}
-                    />
-                    <Bar dataKey="kcal" fill="#a3e635" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Meal Tracker */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 mt-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-black uppercase tracking-tighter text-sm italic">Diario Alimentare</h3>
-                <div className="text-right">
-                  <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Rimanenti</div>
-                  <div className={`text-xl font-black italic ${results.target - totalConsumed < 0 ? 'text-red-400' : 'text-lime-400'}`}>
-                    {results.target - totalConsumed} <span className="text-[10px]">kcal</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                {['Colazione', 'Pranzo', 'Cena', 'Spuntini'].map(meal => {
-                  const mealTotal = meals[meal].reduce((sum, item) => sum + item.kcal, 0);
-                  return (
-                    <div key={meal} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-zinc-300 uppercase tracking-widest">{meal}</span>
-                        <span className="text-xs font-bold text-zinc-500">{mealTotal} kcal</span>
-                      </div>
-                      
-                      <div className="bg-zinc-950 rounded-xl border border-zinc-800 p-2 space-y-2">
-                        {meals[meal].map(item => (
-                          <div key={item.id} className="flex items-center justify-between bg-zinc-900 p-2 rounded-lg">
-                            <span className="text-xs font-medium text-zinc-300 truncate pr-2">{item.name}</span>
-                            <div className="flex items-center gap-3 flex-shrink-0">
-                              <span className="text-xs font-mono text-zinc-400">{item.kcal} kcal</span>
-                              <button onClick={() => removeFood(meal, item.id)} className="text-zinc-600 hover:text-red-400">
-                                <X size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                        
-                        <div className="flex flex-col gap-2 pt-2">
-                          <div className="relative">
-                            <textarea 
-                              placeholder="Cosa hai mangiato? (es. 2 panini)..."
-                              value={newFood.meal === meal ? newFood.name : ''}
-                              onChange={(e) => setNewFood({ meal, name: e.target.value, kcal: newFood.meal === meal ? newFood.kcal : '' })}
-                              className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 pr-10 text-xs text-white focus:ring-1 ring-lime-400 outline-none resize-none h-12"
-                              disabled={!!parsingMeal}
-                            />
-                            <label className="absolute right-1.5 top-1.5 p-1.5 bg-zinc-800 rounded-md cursor-pointer hover:bg-zinc-700 transition-colors">
-                              <Camera size={16} className="text-zinc-400" />
-                              <input 
-                                type="file" 
-                                accept="image/*" 
-                                capture="environment"
-                                className="hidden" 
-                                onChange={(e) => handleImageUpload(e, meal)}
-                                disabled={!!parsingMeal}
-                              />
-                            </label>
-                          </div>
-                          {selectedImage && selectedImage.meal === meal && (
-                            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-zinc-700">
-                              <img src={selectedImage.dataUrl} alt="Preview" className="w-full h-full object-cover" />
-                              <button 
-                                onClick={() => setSelectedImage(null)}
-                                className="absolute top-0 right-0 bg-black/50 p-1 text-white hover:bg-red-500"
-                              >
-                                <X size={10} />
-                              </button>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <input 
-                              type="number" 
-                              placeholder="kcal (opz.)"
-                              value={newFood.meal === meal ? newFood.kcal : ''}
-                              onChange={(e) => setNewFood({ meal, name: newFood.meal === meal ? newFood.name : '', kcal: e.target.value })}
-                              className="w-24 bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-2 text-center font-mono text-xs text-white focus:ring-1 ring-lime-400 outline-none"
-                              disabled={!!parsingMeal}
-                            />
-                            <button 
-                              onClick={() => {
-                                if ((newFood.name || (selectedImage && selectedImage.meal === meal)) && !newFood.kcal) {
-                                  handleAIFoodParse(meal, newFood.name);
-                                } else if (newFood.name && newFood.kcal) {
-                                  addFood(meal);
-                                }
-                              }}
-                              disabled={!!parsingMeal || (!newFood.name && !(selectedImage && selectedImage.meal === meal))}
-                              className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
-                                !newFood.kcal 
-                                  ? 'bg-purple-500 text-white hover:bg-purple-600' 
-                                  : 'bg-lime-400 text-black hover:bg-lime-500'
-                              } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                              {parsingMeal === meal ? (
-                                <Clock size={14} className="animate-spin" />
-                              ) : !newFood.kcal ? (
-                                <><Brain size={14} /> Stima IA</>
-                              ) : (
-                                <><Plus size={14} /> Aggiungi</>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.section>
-        )}
-      </AnimatePresence>
+          {isSaving ? <Clock className="animate-spin" size={16} /> : <Save size={16} />}
+          {isSaving ? 'SALVATAGGIO...' : 'SALVA PARAMETRI'}
+        </motion.button>
+      </motion.section>
 
       {/* Strategist Advice */}
-      <section className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+      <motion.section 
+        whileHover={{ scale: 1.01 }}
+        className="glass rounded-3xl p-6 relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
         <div className="flex items-center gap-2 mb-3 relative z-10">
           <Brain size={20} className="text-purple-400" />
           <h3 className="font-black uppercase tracking-tighter text-sm italic text-zinc-400">Consiglio dello Strategista</h3>
@@ -629,12 +281,13 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         <p className="font-bold text-lg leading-tight text-zinc-100 italic relative z-10">
           "{advice?.tip || 'Analizzando le tue performance recenti per ottimizzare la sessione di oggi...'}"
         </p>
-      </section>
+      </motion.section>
 
       {/* Quick Action */}
-      <GripButton 
-        variant="accent" 
-        className="w-full py-8 text-2xl"
+      <motion.button 
+        whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(163,230,53,0.3)" }}
+        whileTap={{ scale: 0.95 }}
+        className="w-full py-8 text-2xl bg-lime-400 text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4"
         onClick={() => {
           const event = new CustomEvent('start-workout');
           window.dispatchEvent(event);
@@ -642,7 +295,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
       >
         <Plus size={32} strokeWidth={3} />
         INIZIA ALLENAMENTO
-      </GripButton>
+      </motion.button>
     </div>
   );
 }
