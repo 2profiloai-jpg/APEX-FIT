@@ -6,12 +6,22 @@ import { Zap, TrendingUp, Clock, ChevronRight, Brain, Dumbbell, Plus, Calculator
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip } from 'recharts';
-import { getStrategistAdvice, parseFoodInput } from '../services/geminiService';
+import { getStrategistAdvice, parseFoodInput, isAIReady } from '../services/geminiService';
 import GripButton from './ui/GripButton';
 
 export default function Dashboard({ profile }: { profile: UserProfile | null }) {
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
   const [advice, setAdvice] = useState<{ readinessScore: number; intensity: string; tip: string } | null>(null);
+  const aiAvailable = isAIReady();
+
+  useEffect(() => {
+    if (!aiAvailable) {
+      toast.error("Chiave API Gemini non trovata. Alcune funzioni (stima cibo, consigli Strategista) saranno disabilitate.", {
+        description: "Configura GEMINI_API_KEY nei segreti di AI Studio.",
+        duration: 5000
+      });
+    }
+  }, [aiAvailable]);
   
   // Biometric State
   const [weight, setWeight] = useState(profile?.weight || 0);

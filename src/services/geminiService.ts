@@ -6,13 +6,18 @@ let ai: GoogleGenAI | null = null;
 const getAI = () => {
   if (!ai) {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn("GEMINI_API_KEY is not set. AI features will be disabled.");
+    if (!apiKey || apiKey === "undefined" || apiKey === "null") {
+      console.warn("GEMINI_API_KEY is not set or invalid. AI features will be disabled.");
       return null;
     }
     ai = new GoogleGenAI({ apiKey });
   }
   return ai;
+};
+
+export const isAIReady = () => {
+  const aiClient = getAI();
+  return !!aiClient;
 };
 
 export const getStrategistAdvice = async (
@@ -25,7 +30,7 @@ export const getStrategistAdvice = async (
     return { 
       readinessScore: 75, 
       intensity: "Technical", 
-      tip: "Per attivare l'IA de 'Lo Strategista', aggiungi la variabile d'ambiente GEMINI_API_KEY su Vercel." 
+      tip: "Configura la tua GEMINI_API_KEY nelle impostazioni di AI Studio per ricevere consigli personalizzati." 
     };
   }
 
@@ -62,7 +67,7 @@ export const getStrategistAdvice = async (
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3.1-flash-preview",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -100,7 +105,7 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
     }
   `;
 
-  const contents: any[] = [];
+  const parts: any[] = [];
 
   if (imageBase64) {
     try {
@@ -116,7 +121,7 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
         }
       }
       
-      contents.push({
+      parts.push({
         inlineData: {
           mimeType: mimeType || "image/jpeg",
           data: base64Data
@@ -124,19 +129,18 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
       });
     } catch (e) {
       console.error("Errore parsing immagine base64:", e);
-      // Continua senza immagine se c'è un errore di formattazione
     }
   }
 
-  contents.push(prompt);
+  parts.push({ text: prompt });
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview", // Modello più stabile e collaudato
-      contents: contents,
+      model: "gemini-2.5-flash", // Modello stabile e collaudato
+      contents: [{ role: 'user', parts }],
       config: {
         responseMimeType: "application/json",
-        temperature: 0.2 // Bassa temperatura per JSON più consistente
+        temperature: 0.1
       }
     });
     
@@ -183,7 +187,7 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-2.5-flash",
       contents: prompt,
     });
     return response.text || "Ottimo allenamento completato.";
