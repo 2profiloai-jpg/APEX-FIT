@@ -23,7 +23,7 @@ export interface Exercise {
   videoUrl?: string;
   instructions?: string;
   equipment?: string;
-  type?: 'Composto' | 'Isolamento' | 'Massa' | 'Tensione' | 'Allungamento' | 'Catena Post.';
+  type?: 'Composto' | 'Isolamento' | 'Massa' | 'Tensione' | 'Allungamento' | 'Catena Post.' | 'Isometria';
   proNote?: string;
 }
 
@@ -34,6 +34,7 @@ export interface WorkoutSet {
   reps: number;
   rpe?: number;
   tag: SetTag;
+  completed?: boolean;
 }
 
 export interface SessionExercise {

@@ -105,8 +105,16 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
   if (imageBase64) {
     try {
       // Estrazione robusta del mimeType e dei dati base64
-      const mimeType = imageBase64.substring(imageBase64.indexOf(':') + 1, imageBase64.indexOf(';'));
-      const base64Data = imageBase64.substring(imageBase64.indexOf(',') + 1);
+      let mimeType = "image/jpeg";
+      let base64Data = imageBase64;
+      
+      if (imageBase64.startsWith('data:')) {
+        const commaIndex = imageBase64.indexOf(',');
+        if (commaIndex !== -1) {
+          mimeType = imageBase64.substring(5, imageBase64.indexOf(';'));
+          base64Data = imageBase64.substring(commaIndex + 1);
+        }
+      }
       
       contents.push({
         inlineData: {
@@ -124,7 +132,7 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-2.5-flash", // Modello più stabile e collaudato
+      model: "gemini-3-flash-preview", // Modello più stabile e collaudato
       contents: contents,
       config: {
         responseMimeType: "application/json",
@@ -175,7 +183,7 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3.1-flash-preview",
+      model: "gemini-3.1-pro-preview",
       contents: prompt,
     });
     return response.text || "Ottimo allenamento completato.";

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { WorkoutSession, SessionExercise, WorkoutSet, Exercise, ExerciseCategory, WorkoutPlan } from '../types';
-import { X, Plus, Save, Timer, ChevronDown, ChevronUp, Trash2, Play, Pause, RotateCcw, Brain } from 'lucide-react';
+import { X, Plus, Save, Timer, ChevronDown, ChevronUp, Trash2, Play, Pause, RotateCcw, Brain, Check } from 'lucide-react';
 import GripButton from './ui/GripButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -10,15 +10,23 @@ import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import { cn } from '../lib/utils';
 import { getPostWorkoutAdvice } from '../services/geminiService';
 
-const Stepper = ({ value, onChange, step = 1, min = 0, label }: { value: number, onChange: (v: number) => void, step?: number, min?: number, label?: string }) => {
+const Stepper = ({ value, onChange, step = 1, min = 0, label, disabled }: { value: number, onChange: (v: number) => void, step?: number, min?: number, label?: string, disabled?: boolean }) => {
   return (
-    <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg p-1 h-12">
-      <button onClick={() => onChange(Math.max(min, value - step))} className="w-8 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">-</button>
-      <div className="flex flex-col items-center justify-center flex-1">
-        <span className="font-mono font-bold text-base leading-none">{value}</span>
+    <div className={cn("flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg p-1 h-12 transition-all", !disabled && "focus-within:border-lime-400 focus-within:ring-1 focus-within:ring-lime-400", disabled && "opacity-50 pointer-events-none")}>
+      <button disabled={disabled} onClick={() => onChange(Math.max(min, value - step))} className="w-8 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">-</button>
+      <div className="flex flex-col items-center justify-center flex-1 h-full">
+        <input 
+          type="number" 
+          value={value === 0 ? '' : value} 
+          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          placeholder="0"
+          disabled={disabled}
+          className="w-full bg-transparent text-center font-mono font-bold text-base leading-none outline-none text-white appearance-none m-0 p-0"
+          style={{ WebkitAppearance: 'none', margin: 0 }}
+        />
         {label && <span className="text-[8px] text-zinc-500 uppercase leading-none mt-0.5">{label}</span>}
       </div>
-      <button onClick={() => onChange(value + step)} className="w-8 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">+</button>
+      <button disabled={disabled} onClick={() => onChange(value + step)} className="w-8 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">+</button>
     </div>
   );
 };
@@ -162,6 +170,23 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
     setExercises(newExercises);
   };
 
+  const toggleSetComplete = (exerciseIndex: number, setIndex: number) => {
+    const newExercises = [...exercises];
+    const currentSet = newExercises[exerciseIndex].sets[setIndex];
+    const isNowComplete = !currentSet.completed;
+    
+    newExercises[exerciseIndex].sets[setIndex] = {
+      ...currentSet,
+      completed: isNowComplete
+    };
+    
+    setExercises(newExercises);
+    
+    if (isNowComplete) {
+      startRest(90); // Default 90s rest
+    }
+  };
+
   const removeExercise = (index: number) => {
     setExercises(exercises.filter((_, i) => i !== index));
   };
@@ -297,22 +322,24 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
               </div>
               
               <div className="p-4 space-y-4">
-                <div className="grid grid-cols-12 gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 px-2">
-                  <div className="col-span-1 text-center">Set</div>
+                <div className="grid grid-cols-12 gap-1 text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1">
+                  <div className="col-span-1 text-center">#</div>
                   <div className="col-span-2">Tipo</div>
                   <div className="col-span-3 text-center">KG</div>
                   <div className="col-span-3 text-center">Reps</div>
-                  <div className="col-span-3 text-center">RPE</div>
+                  <div className="col-span-2 text-center">RPE</div>
+                  <div className="col-span-1 text-center"></div>
                 </div>
 
                 {ex.sets.map((set, setIdx) => (
-                  <div key={setIdx} className="grid grid-cols-12 gap-2 items-center">
+                  <div key={setIdx} className={cn("grid grid-cols-12 gap-1 items-center transition-opacity", set.completed ? "opacity-50" : "opacity-100")}>
                     <div className="col-span-1 font-mono text-sm font-bold text-zinc-600 text-center">{setIdx + 1}</div>
                     <div className="col-span-2">
                       <select 
                         value={set.tag}
                         onChange={(e) => updateSet(exIdx, setIdx, 'tag', e.target.value as any)}
-                        className="bg-transparent text-[10px] font-bold uppercase text-zinc-400 focus:outline-none appearance-none"
+                        className="bg-transparent text-[10px] font-bold uppercase text-zinc-400 focus:outline-none appearance-none w-full"
+                        disabled={set.completed}
                       >
                         <option value="Warm-up">Risc.</option>
                         <option value="Working">Allen.</option>
@@ -326,6 +353,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                         onChange={(v) => updateSet(exIdx, setIdx, 'weight', v)} 
                         step={1.25} 
                         min={0} 
+                        disabled={set.completed}
                       />
                     </div>
                     <div className="col-span-3">
@@ -334,17 +362,30 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                         onChange={(v) => updateSet(exIdx, setIdx, 'reps', v)} 
                         step={1} 
                         min={0} 
+                        disabled={set.completed}
                       />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-2">
                       <select 
                         value={set.rpe || 0} 
                         onChange={(e) => updateSet(exIdx, setIdx, 'rpe', parseInt(e.target.value))}
                         className="w-full h-12 bg-zinc-950 border border-zinc-800 rounded-lg px-1 text-center font-mono text-sm appearance-none text-lime-400"
+                        disabled={set.completed}
                       >
                         <option value={0}>-</option>
                         {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>{r}</option>)}
                       </select>
+                    </div>
+                    <div className="col-span-1 flex justify-center">
+                      <button 
+                        onClick={() => toggleSetComplete(exIdx, setIdx)}
+                        className={cn(
+                          "w-8 h-12 rounded-lg flex items-center justify-center transition-colors",
+                          set.completed ? "bg-lime-400 text-black" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
+                        )}
+                      >
+                        <Check size={16} strokeWidth={3} />
+                      </button>
                     </div>
                   </div>
                 ))}

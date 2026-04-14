@@ -8,9 +8,12 @@ import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import WorkoutSessionView from './WorkoutSessionView';
 import GripButton from './ui/GripButton';
 import { toast } from 'sonner';
+import { cn } from '../lib/utils';
 
 export default function WorkoutHub() {
-  const [selectedDay, setSelectedDay] = useState<string>('Lunedì');
+  const weekDays = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+  const today = weekDays[new Date().getDay()];
+  const [selectedDay, setSelectedDay] = useState<string>(today);
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [activeSessionPlan, setActiveSessionPlan] = useState<WorkoutPlan | 'free' | null>(null);
   
@@ -127,8 +130,6 @@ export default function WorkoutHub() {
   const removePlannedExercise = (index: number) => {
     setPlannedExercises(plannedExercises.filter((_, i) => i !== index));
   };
-
-  const weekDays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
 
   if (activeSessionPlan) {
     return (
@@ -279,19 +280,42 @@ export default function WorkoutHub() {
       <div>
         <h2 className="text-3xl font-black tracking-tighter italic uppercase mb-6">Programmazione</h2>
         
+        {selectedDay === today && plans.length > 0 && (
+          <div className="mb-8">
+            <button 
+              onClick={() => setActiveSessionPlan(plans[0])}
+              className="w-full bg-lime-400 text-black p-6 rounded-3xl shadow-[0_0_40px_rgba(163,230,53,0.3)] hover:scale-[1.02] active:scale-95 transition-all flex flex-col items-center justify-center gap-2 relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+              <Play size={32} className="fill-current relative z-10" />
+              <span className="text-2xl font-black tracking-tighter italic uppercase relative z-10">Inizia Sessione</span>
+              <span className="text-xs font-bold uppercase tracking-widest opacity-80 relative z-10">{plans[0].name}</span>
+            </button>
+          </div>
+        )}
+
         {/* Date Selector */}
         <div className="flex gap-3 overflow-x-auto pb-4 hide-scrollbar snap-x">
           {weekDays.map(day => {
             const isSelected = day === selectedDay;
+            const isToday = day === today;
             return (
               <button
                 key={day}
                 onClick={() => setSelectedDay(day)}
-                className={`flex-shrink-0 snap-center flex flex-col items-center justify-center min-w-[90px] h-[60px] rounded-2xl transition-colors ${isSelected ? 'bg-lime-400 text-black' : 'bg-zinc-900 text-zinc-400 border border-zinc-800'}`}
+                className={cn(
+                  "flex-shrink-0 snap-center flex flex-col items-center justify-center min-w-[90px] h-[60px] rounded-2xl transition-colors border",
+                  isSelected ? "bg-lime-400 text-black border-lime-400" : "bg-zinc-900 text-zinc-400 border-zinc-800"
+                )}
               >
                 <span className="text-xs font-bold uppercase tracking-widest">
-                  {day}
+                  {day.substring(0, 3)}
                 </span>
+                {isToday && (
+                  <span className={cn("text-[9px] font-black uppercase tracking-widest mt-1", isSelected ? "text-black/70" : "text-lime-400")}>
+                    Oggi
+                  </span>
+                )}
               </button>
             );
           })}
@@ -301,20 +325,36 @@ export default function WorkoutHub() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-black italic uppercase">Schede per {selectedDay}</h3>
+          {plans.length > 0 && (
+            <button onClick={openPlanBuilder} className="text-lime-400 hover:text-lime-300 flex items-center gap-1 text-xs font-bold uppercase tracking-widest">
+              <Plus size={16} /> Nuova
+            </button>
+          )}
         </div>
 
         {plans.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Calendar className="text-zinc-500 w-8 h-8" />
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center space-y-6">
+            <div className="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center mx-auto">
+              <Dumbbell className="text-zinc-500 w-10 h-10" />
             </div>
-            <p className="text-zinc-400 font-medium">Nessuna scheda programmata per questo giorno.</p>
-            <button 
-              onClick={openPlanBuilder}
-              className="bg-lime-400 text-black font-bold px-6 py-3 rounded-full uppercase tracking-widest text-sm w-full"
-            >
-              Crea Scheda
-            </button>
+            <div>
+              <h4 className="text-xl font-black italic uppercase mb-2">Giorno di Riposo?</h4>
+              <p className="text-zinc-400 text-sm">Nessuna scheda programmata per {selectedDay}. Puoi creare una nuova scheda o iniziare una sessione libera.</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={openPlanBuilder}
+                className="bg-lime-400 text-black font-bold px-6 py-4 rounded-2xl uppercase tracking-widest text-sm w-full flex items-center justify-center gap-2 transition-transform active:scale-95"
+              >
+                <Plus size={18} /> Crea Scheda
+              </button>
+              <button 
+                onClick={() => setActiveSessionPlan('free')}
+                className="bg-zinc-800 text-white font-bold px-6 py-4 rounded-2xl uppercase tracking-widest text-sm w-full flex items-center justify-center gap-2 transition-transform active:scale-95"
+              >
+                <Play size={18} /> Sessione Libera
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -357,13 +397,16 @@ export default function WorkoutHub() {
         )}
       </div>
 
-      <div className="pt-8 border-t border-zinc-800">
-        <h3 className="text-xl font-black italic uppercase mb-4">Sessione Rapida</h3>
-        <p className="text-zinc-500 text-sm mb-4">Inizia un allenamento senza una scheda preimpostata.</p>
-        <GripButton onClick={() => setActiveSessionPlan('free')} icon={<Dumbbell size={20} />} variant="secondary">
-          Sessione Libera
-        </GripButton>
-      </div>
+      {plans.length > 0 && (
+        <div className="pt-8">
+          <button 
+            onClick={() => setActiveSessionPlan('free')}
+            className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-bold uppercase tracking-widest hover:border-lime-400 hover:text-lime-400 transition-colors flex items-center justify-center gap-2"
+          >
+            <Dumbbell size={20} /> Inizia Sessione Libera
+          </button>
+        </div>
+      )}
     </div>
   );
 }
