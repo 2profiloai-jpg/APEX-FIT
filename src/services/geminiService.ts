@@ -84,7 +84,7 @@ export const getStrategistAdvice = async (
 export const parseFoodInput = async (input: string, imageBase64?: string) => {
   const aiClient = getAI();
   if (!aiClient) {
-    throw new Error("Configura la chiave API di Gemini nelle impostazioni.");
+    throw new Error("Chiave API mancante. Se l'hai appena aggiunta, ricarica la pagina. Se usi il link condiviso, devi ricondividere l'app per aggiornarla.");
   }
 
   const prompt = `

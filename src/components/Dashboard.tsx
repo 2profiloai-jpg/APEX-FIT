@@ -16,9 +16,9 @@ export default function Dashboard({ profile }: { profile: UserProfile | null }) 
 
   useEffect(() => {
     if (!aiAvailable) {
-      toast.error("Chiave API Gemini non trovata. Alcune funzioni (stima cibo, consigli Strategista) saranno disabilitate.", {
-        description: "Configura GEMINI_API_KEY nei segreti di AI Studio.",
-        duration: 5000
+      toast.error("Chiave API Gemini non trovata.", {
+        description: "Se l'hai appena aggiunta, ricarica. Se usi il link condiviso, devi ricondividere l'app per aggiornarla.",
+        duration: 8000
       });
     }
   }, [aiAvailable]);

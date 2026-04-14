@@ -2,11 +2,14 @@ import React from 'react';
 import { UserProfile } from '../types';
 import { User } from 'firebase/auth';
 import { auth } from '../firebase';
-import { LogOut, Settings, Award, Shield, Bell, ChevronRight } from 'lucide-react';
+import { LogOut, Settings, Award, Shield, Bell, ChevronRight, Brain } from 'lucide-react';
 import { toast } from 'sonner';
 import GripButton from './ui/GripButton';
+import { isAIReady } from '../services/geminiService';
 
 export default function Profile({ profile, user }: { profile: UserProfile | null, user: User }) {
+  const aiAvailable = isAIReady();
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-center text-center">
@@ -14,6 +17,11 @@ export default function Profile({ profile, user }: { profile: UserProfile | null
           <img src={user.photoURL || ''} className="w-full h-full rounded-2xl object-cover" alt="Profile" referrerPolicy="no-referrer" />
         </div>
         <h2 className="text-3xl font-black tracking-tighter italic uppercase">{profile?.displayName}</h2>
+        
+        <div className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${aiAvailable ? 'bg-lime-400/10 text-lime-400 border-lime-400/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+          <Brain size={14} />
+          {aiAvailable ? 'IA ATTIVA' : 'CHIAVE IA MANCANTE'}
+        </div>
       </div>
 
       <div className="space-y-2">
