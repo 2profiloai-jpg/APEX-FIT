@@ -24,16 +24,24 @@ import Dashboard from './components/Dashboard';
 import WorkoutHub from './components/WorkoutHub';
 import ExerciseLibrary from './components/ExerciseLibrary';
 import Profile from './components/Profile';
+import { initAI } from './services/geminiService';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'workout' | 'library' | 'profile'>('dashboard');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [aiStatus, setAiStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    initAI().then((ready) => {
+      setAiStatus(ready ? 'ready' : 'error');
+    });
+  }, []);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -221,7 +229,7 @@ export default function App() {
         <AnimatePresence mode="wait">
           {activeTab === 'dashboard' && (
             <motion.div key="dashboard" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
-              <Dashboard profile={profile} />
+              <Dashboard profile={profile} aiStatus={aiStatus} />
             </motion.div>
           )}
           {activeTab === 'workout' && (
@@ -236,7 +244,7 @@ export default function App() {
           )}
           {activeTab === 'profile' && (
             <motion.div key="profile" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
-              <Profile profile={profile} user={user} />
+              <Profile profile={profile} user={user} aiStatus={aiStatus} />
             </motion.div>
           )}
         </AnimatePresence>

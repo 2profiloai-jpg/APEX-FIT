@@ -7,9 +7,7 @@ import { toast } from 'sonner';
 import GripButton from './ui/GripButton';
 import { isAIReady } from '../services/geminiService';
 
-export default function Profile({ profile, user }: { profile: UserProfile | null, user: User }) {
-  const aiAvailable = isAIReady();
-
+export default function Profile({ profile, user, aiStatus }: { profile: UserProfile | null, user: User, aiStatus: 'loading' | 'ready' | 'error' }) {
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-center text-center">
@@ -18,9 +16,9 @@ export default function Profile({ profile, user }: { profile: UserProfile | null
         </div>
         <h2 className="text-3xl font-black tracking-tighter italic uppercase">{profile?.displayName}</h2>
         
-        <div className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${aiAvailable ? 'bg-lime-400/10 text-lime-400 border-lime-400/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+        <div className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${aiStatus === 'ready' ? 'bg-lime-400/10 text-lime-400 border-lime-400/20' : aiStatus === 'loading' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
           <Brain size={14} />
-          {aiAvailable ? 'IA ATTIVA' : 'CHIAVE IA MANCANTE'}
+          {aiStatus === 'ready' ? 'IA ATTIVA' : aiStatus === 'loading' ? 'CARICAMENTO IA...' : 'CHIAVE IA MANCANTE'}
         </div>
       </div>
 

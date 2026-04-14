@@ -2,23 +2,35 @@ import { GoogleGenAI } from "@google/genai";
 import { WorkoutSession, BiometricLog } from "../types";
 
 let ai: GoogleGenAI | null = null;
+let aiReady = false;
 
-const getAI = () => {
-  if (!ai) {
-    const apiKey = process.env.GEMINI_API_KEY;
+export const initAI = async () => {
+  try {
+    // Fallback to build-time env var if available
+    let apiKey = process.env.GEMINI_API_KEY;
+    
     if (!apiKey || apiKey === "undefined" || apiKey === "null") {
-      console.warn("GEMINI_API_KEY is not set or invalid. AI features will be disabled.");
-      return null;
+      const res = await fetch('/api/config');
+      if (res.ok) {
+        const data = await res.json();
+        apiKey = data.geminiApiKey;
+      }
     }
-    ai = new GoogleGenAI({ apiKey });
+
+    if (apiKey && apiKey !== "undefined" && apiKey !== "null") {
+      ai = new GoogleGenAI({ apiKey });
+      aiReady = true;
+    } else {
+      console.warn("GEMINI_API_KEY is not set or invalid. AI features will be disabled.");
+    }
+  } catch (e) {
+    console.error("Failed to init AI:", e);
   }
-  return ai;
+  return aiReady;
 };
 
-export const isAIReady = () => {
-  const aiClient = getAI();
-  return !!aiClient;
-};
+export const getAI = () => ai;
+export const isAIReady = () => aiReady;
 
 export const getStrategistAdvice = async (
   history: WorkoutSession[],

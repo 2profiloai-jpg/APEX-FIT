@@ -9,19 +9,18 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip
 import { getStrategistAdvice, parseFoodInput, isAIReady } from '../services/geminiService';
 import GripButton from './ui/GripButton';
 
-export default function Dashboard({ profile }: { profile: UserProfile | null }) {
+export default function Dashboard({ profile, aiStatus }: { profile: UserProfile | null, aiStatus: 'loading' | 'ready' | 'error' }) {
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
   const [advice, setAdvice] = useState<{ readinessScore: number; intensity: string; tip: string } | null>(null);
-  const aiAvailable = isAIReady();
 
   useEffect(() => {
-    if (!aiAvailable) {
+    if (aiStatus === 'error') {
       toast.error("Chiave API Gemini non trovata.", {
         description: "Se l'hai appena aggiunta, ricarica. Se usi il link condiviso, devi ricondividere l'app per aggiornarla.",
         duration: 8000
       });
     }
-  }, [aiAvailable]);
+  }, [aiStatus]);
   
   // Biometric State
   const [weight, setWeight] = useState(profile?.weight || 0);
