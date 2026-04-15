@@ -62,7 +62,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
       >
         <motion.div 
           whileHover={{ scale: 1.05, rotate: 5 }}
-          className="w-24 h-24 rounded-3xl glass border-2 border-cyan-400 p-1 mb-4 shadow-[0_0_30px_rgba(34,211,238,0.2)]"
+          className="w-24 h-24 rounded-3xl glass border-2 border-blue-500 p-1 mb-4 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
         >
           <img src={user.photoURL || ''} className="w-full h-full rounded-2xl object-cover" alt="Profile" referrerPolicy="no-referrer" />
         </motion.div>
@@ -70,7 +70,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         
         <motion.div 
           whileHover={{ scale: 1.05 }}
-          className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${aiStatus === 'ready' ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20' : aiStatus === 'loading' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+          className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${aiStatus === 'ready' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : aiStatus === 'loading' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
           <Brain size={14} />
           {aiStatus === 'ready' ? 'IA ATTIVA' : aiStatus === 'loading' ? 'CARICAMENTO IA...' : 'CHIAVE IA MANCANTE'}
         </motion.div>
@@ -82,7 +82,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         className="glass rounded-3xl p-6 space-y-6"
       >
         <div className="flex items-center gap-2 mb-2">
-          <UserIcon className="text-cyan-400" size={20} />
+          <UserIcon className="text-blue-500" size={20} />
           <h3 className="font-black uppercase tracking-tighter text-sm italic">Parametri Biometrici</h3>
         </div>
 
@@ -93,7 +93,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={weight || ''} 
               onChange={(e) => setWeight(parseFloat(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-blue-500/50 outline-none transition-all"
               placeholder="0.0"
             />
           </div>
@@ -103,7 +103,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={height || ''} 
               onChange={(e) => setHeight(parseFloat(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-blue-500/50 outline-none transition-all"
               placeholder="0"
             />
           </div>
@@ -113,7 +113,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={age || ''} 
               onChange={(e) => setAge(parseInt(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-blue-500/50 outline-none transition-all"
               placeholder="0"
             />
           </div>
@@ -123,7 +123,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={bodyFat || ''} 
               onChange={(e) => setBodyFat(parseFloat(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-blue-500/50 outline-none transition-all"
               placeholder="Opzionale"
             />
           </div>
@@ -133,14 +133,14 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               <motion.button 
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setGender('male')}
-                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'male' ? 'bg-cyan-400 text-black shadow-lg' : 'text-zinc-500'}`}
+                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'male' ? 'bg-blue-500 text-black shadow-lg' : 'text-zinc-500'}`}
               >
                 M
               </motion.button>
               <motion.button 
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setGender('female')}
-                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'female' ? 'bg-cyan-400 text-black shadow-lg' : 'text-zinc-500'}`}
+                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'female' ? 'bg-blue-500 text-black shadow-lg' : 'text-zinc-500'}`}
               >
                 F
               </motion.button>
@@ -153,7 +153,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
           <select 
             value={activityLevel}
             onChange={(e) => setActivityLevel(parseFloat(e.target.value))}
-            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none appearance-none transition-all"
+            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-blue-500/50 outline-none appearance-none transition-all"
           >
             <option value={1.2}>Sedentario (Ufficio)</option>
             <option value={1.375}>Leggero (1-3 allenamenti)</option>
@@ -176,7 +176,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setGoal(g.id as any)}
-                className={`py-2.5 rounded-xl text-[10px] font-black uppercase border transition-all ${goal === g.id ? 'bg-cyan-400 text-black border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.3)]' : 'bg-black/20 border-white/5 text-zinc-500'}`}
+                className={`py-2.5 rounded-xl text-[10px] font-black uppercase border transition-all ${goal === g.id ? 'bg-blue-500 text-black border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]' : 'bg-black/20 border-white/5 text-zinc-500'}`}
               >
                 {g.label}
               </motion.button>
@@ -189,7 +189,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
           whileTap={{ scale: 0.98 }}
           onClick={handleSaveBiometrics}
           disabled={isSaving}
-          className="w-full py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-cyan-400 transition-all disabled:opacity-50"
+          className="w-full py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-blue-500 transition-all disabled:opacity-50"
         >
           {isSaving ? <Clock className="animate-spin" size={16} /> : <Save size={16} />}
           {isSaving ? 'SALVATAGGIO...' : 'SALVA PARAMETRI'}

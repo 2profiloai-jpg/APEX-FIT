@@ -206,21 +206,21 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
         className="glass rounded-3xl p-6 space-y-6"
       >
         <div className="flex items-center gap-2 mb-2">
-          <Target className="text-cyan-400" size={20} />
+          <Target className="text-blue-500" size={20} />
           <h3 className="font-black uppercase tracking-tighter text-sm italic">Bilancio Giornaliero</h3>
         </div>
         
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center">
             <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Assunte</span>
-            <span className="text-4xl font-black text-white font-mono" style={{ textShadow: '0 0 20px rgba(34,211,238,0.3)' }}>{Math.round(totalKcal)}</span>
+            <span className="text-4xl font-black text-white font-mono" style={{ textShadow: '0 0 20px rgba(59,130,246,0.3)' }}>{Math.round(totalKcal)}</span>
           </div>
           <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center relative overflow-hidden">
             <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Rimanenti</span>
-            <span className="text-4xl font-black text-cyan-400 font-mono" style={{ textShadow: '0 0 20px rgba(34,211,238,0.5)' }}>{remainingKcal}</span>
+            <span className="text-4xl font-black text-blue-500 font-mono" style={{ textShadow: '0 0 20px rgba(59,130,246,0.5)' }}>{remainingKcal}</span>
             <div className="absolute bottom-0 left-0 h-1.5 bg-white/5 w-full">
               <motion.div 
-                className="h-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]"
+                className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(100, (totalKcal / targetKcal) * 100)}%` }}
                 transition={{ duration: 1, ease: "easeOut" }}
@@ -252,7 +252,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
         className="glass rounded-3xl p-6 space-y-4"
       >
         <div className="flex items-center gap-2 mb-4">
-          <Activity className="text-cyan-400" size={20} />
+          <Activity className="text-blue-500" size={20} />
           <h3 className="font-black uppercase tracking-tighter text-sm italic">Dati Metabolici</h3>
         </div>
         
@@ -273,28 +273,28 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                   type="number" 
                   value={tempTarget} 
                   onChange={(e) => setTempTarget(e.target.value)}
-                  className="bg-black/40 border border-cyan-400/50 rounded px-2 py-1 text-cyan-400 w-20 text-right outline-none font-bold focus:ring-1 ring-cyan-400"
+                  className="bg-black/40 border border-blue-500/50 rounded px-2 py-1 text-blue-500 w-20 text-right outline-none font-bold focus:ring-1 ring-blue-500"
                   autoFocus
                 />
-                <button onClick={handleSaveCustomTarget} className="text-cyan-400 hover:text-cyan-300 p-1 bg-cyan-400/10 rounded"><Zap size={14} /></button>
+                <button onClick={handleSaveCustomTarget} className="text-blue-500 hover:text-blue-400 p-1 bg-blue-500/10 rounded"><Zap size={14} /></button>
                 <button onClick={handleResetTarget} className="text-red-500 hover:text-red-400 p-1 bg-red-500/10 rounded"><X size={14} /></button>
               </div>
             ) : (
               <div className="flex flex-col items-end">
                 <span 
-                  className="font-bold cursor-pointer text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+                  className="font-bold cursor-pointer text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1"
                   onClick={() => {
                     setTempTarget(targetKcal.toString());
                     setIsEditingTarget(true);
                   }}
                 >
                   {Math.round(targetKcal)} kcal
-                  {profile?.customTargets?.kcal && <span className="text-[8px] text-cyan-400/50 uppercase">(Custom)</span>}
+                  {profile?.customTargets?.kcal && <span className="text-[8px] text-blue-500/50 uppercase">(Custom)</span>}
                 </span>
                 {profile?.customTargets?.kcal && Math.abs(calculatedTargetKcal - profile.customTargets.kcal) > 50 && (
                   <button 
                     onClick={handleResetTarget}
-                    className="text-[8px] text-black font-black uppercase tracking-widest bg-cyan-400 px-2 py-1 rounded mt-1 hover:bg-cyan-300 transition-colors"
+                    className="text-[8px] text-black font-black uppercase tracking-widest bg-blue-500 px-2 py-1 rounded mt-1 hover:bg-blue-400 transition-colors"
                   >
                     Sincronizza a {Math.round(calculatedTargetKcal)}
                   </button>
@@ -322,7 +322,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
             >
               <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
                 <span className="font-black uppercase tracking-widest text-sm text-white">{meal}</span>
-                <span className="text-xs font-black text-cyan-400 font-mono">{mealKcal} kcal</span>
+                <span className="text-xs font-black text-blue-500 font-mono">{mealKcal} kcal</span>
               </div>
               
               <div className="p-4 space-y-3">
@@ -340,7 +340,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                         <div className="text-[10px] text-zinc-500 font-mono font-bold uppercase tracking-widest mt-0.5">Pro: {item.protein}g | Carbo: {item.carbs}g | Fat: {item.fat}g</div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="font-black text-cyan-400 font-mono">{item.kcal}</span>
+                        <span className="font-black text-blue-500 font-mono">{item.kcal}</span>
                         <button onClick={() => removeFood(meal, item.id)} className="text-zinc-600 hover:text-red-500 transition-colors p-1 bg-white/5 rounded-full">
                           <X size={14} />
                         </button>
@@ -357,16 +357,16 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                         placeholder="Descrivi o scansiona..."
                         value={newFood.name}
                         onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
-                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 outline-none text-sm font-bold focus:ring-2 ring-cyan-400/50 transition-all"
+                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 outline-none text-sm font-bold focus:ring-2 ring-blue-500/50 transition-all"
                       />
                       <label className="cursor-pointer p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center">
-                        <Camera size={20} className="text-cyan-400" />
+                        <Camera size={20} className="text-blue-500" />
                         <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, meal)} disabled={parsingMeal === meal} />
                       </label>
                       <button 
                         onClick={() => handleAIFoodParse(meal)}
                         disabled={parsingMeal === meal}
-                        className="p-3 bg-cyan-400 text-black rounded-xl font-black disabled:opacity-50 flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.3)]"
+                        className="p-3 bg-blue-500 text-black rounded-xl font-black disabled:opacity-50 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)]"
                       >
                         {parsingMeal === meal ? <Activity size={20} className="animate-spin" /> : <Brain size={20} />}
                       </button>
@@ -388,31 +388,31 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                     <div className="grid grid-cols-4 gap-2">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Kcal</label>
-                        <input type="number" placeholder="0" value={newFood.kcal} onChange={(e) => setNewFood({ ...newFood, kcal: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-cyan-400/50" />
+                        <input type="number" placeholder="0" value={newFood.kcal} onChange={(e) => setNewFood({ ...newFood, kcal: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-blue-500/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Pro</label>
-                        <input type="number" placeholder="0" value={newFood.protein} onChange={(e) => setNewFood({ ...newFood, protein: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-cyan-400/50" />
+                        <input type="number" placeholder="0" value={newFood.protein} onChange={(e) => setNewFood({ ...newFood, protein: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-blue-500/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Carb</label>
-                        <input type="number" placeholder="0" value={newFood.carbs} onChange={(e) => setNewFood({ ...newFood, carbs: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-cyan-400/50" />
+                        <input type="number" placeholder="0" value={newFood.carbs} onChange={(e) => setNewFood({ ...newFood, carbs: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-blue-500/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Fat</label>
-                        <input type="number" placeholder="0" value={newFood.fat} onChange={(e) => setNewFood({ ...newFood, fat: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-cyan-400/50" />
+                        <input type="number" placeholder="0" value={newFood.fat} onChange={(e) => setNewFood({ ...newFood, fat: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-blue-500/50" />
                       </div>
                     </div>
 
                     <div className="flex gap-3 pt-2">
                       <button onClick={() => { setIsAdding(null); setSelectedImage(null); }} className="flex-1 py-3 text-xs font-black uppercase tracking-widest bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 text-white transition-colors">Annulla</button>
-                      <button onClick={() => addFood(meal)} disabled={!newFood.name || !newFood.kcal} className="flex-1 py-3 text-xs font-black uppercase tracking-widest bg-cyan-400 text-black rounded-xl disabled:opacity-50 transition-colors shadow-[0_0_15px_rgba(34,211,238,0.2)]">Salva</button>
+                      <button onClick={() => addFood(meal)} disabled={!newFood.name || !newFood.kcal} className="flex-1 py-3 text-xs font-black uppercase tracking-widest bg-blue-500 text-black rounded-xl disabled:opacity-50 transition-colors shadow-[0_0_15px_rgba(59,130,246,0.2)]">Salva</button>
                     </div>
                   </motion.div>
                 ) : (
                   <button 
                     onClick={() => { setIsAdding(meal); setNewFood({ meal, name: '', kcal: '', carbs: '', protein: '', fat: '' }); }}
-                    className="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-cyan-400 hover:border-cyan-400/50 transition-colors flex items-center justify-center gap-2 bg-white/5"
+                    className="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-blue-500 hover:border-blue-500/50 transition-colors flex items-center justify-center gap-2 bg-white/5"
                   >
                     <Plus size={16} /> Aggiungi Alimento
                   </button>

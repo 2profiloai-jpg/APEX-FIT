@@ -108,21 +108,21 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         className="glass rounded-3xl p-6 space-y-6"
       >
         <div className="flex items-center gap-2 mb-2">
-          <Target className="text-cyan-400" size={20} />
+          <Target className="text-blue-500" size={20} />
           <h3 className="font-black uppercase tracking-tighter text-sm italic">Bilancio Giornaliero</h3>
         </div>
         
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center">
             <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Assunte</span>
-            <span className="text-4xl font-black text-white font-mono" style={{ textShadow: '0 0 20px rgba(34,211,238,0.3)' }}>{Math.round(totalConsumed)}</span>
+            <span className="text-4xl font-black text-white font-mono" style={{ textShadow: '0 0 20px rgba(59,130,246,0.3)' }}>{Math.round(totalConsumed)}</span>
           </div>
           <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center relative overflow-hidden">
             <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Rimanenti</span>
-            <span className="text-4xl font-black text-cyan-400 font-mono" style={{ textShadow: '0 0 20px rgba(34,211,238,0.5)' }}>{remainingKcal}</span>
+            <span className="text-4xl font-black text-blue-500 font-mono" style={{ textShadow: '0 0 20px rgba(59,130,246,0.5)' }}>{remainingKcal}</span>
             <div className="absolute bottom-0 left-0 h-1.5 bg-white/5 w-full">
               <motion.div 
-                className="h-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]"
+                className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(100, (totalConsumed / targetKcal) * 100)}%` }}
                 transition={{ duration: 1, ease: "easeOut" }}
@@ -150,9 +150,9 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
 
       {/* Quick Action */}
       <motion.button 
-        whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(34,211,238,0.3)" }}
+        whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(59,130,246,0.3)" }}
         whileTap={{ scale: 0.95 }}
-        className="w-full py-8 text-2xl bg-cyan-400 text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4"
+        className="w-full py-8 text-2xl bg-blue-500 text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4"
         onClick={() => {
           const event = new CustomEvent('start-workout');
           window.dispatchEvent(event);
