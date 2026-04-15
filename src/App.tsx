@@ -41,6 +41,7 @@ export default function App() {
 
   useEffect(() => {
     initAI().then((ready) => {
+      console.log("AI Status check:", ready ? 'ready' : 'error');
       setAiStatus(ready ? 'ready' : 'error');
     });
   }, []);

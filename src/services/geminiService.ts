@@ -202,7 +202,7 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
   } catch (error: any) {
     console.error("Food Parsing Error:", error);
     if (error.message?.includes("429") || error.message?.includes("quota")) {
-      throw new Error("Limite di richieste IA raggiunto (Quota 429). Riprova tra un minuto.");
+      throw new Error("Limite di richieste IA raggiunto (Quota 429). Google permette 15 richieste al minuto nella versione gratuita. Attendi 60 secondi e riprova.");
     }
     throw new Error(error.message || "Errore di connessione con l'IA.");
   }
