@@ -5,7 +5,12 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
-  const apiKey = env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY || env.GEMINI_API_KEY_ || process.env.GEMINI_API_KEY || "";
+  // Capture the key from Vercel (process.env) or local .env (env)
+  const apiKey = process.env.VITE_GEMINI_API_KEY || 
+                 process.env.GEMINI_API_KEY || 
+                 env.VITE_GEMINI_API_KEY || 
+                 env.GEMINI_API_KEY || 
+                 "";
   
   return {
     plugins: [

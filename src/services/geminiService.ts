@@ -8,41 +8,42 @@ export const initAI = async () => {
   try {
     let apiKey = "";
     
-    // Check process.env (defined by Vite)
+    // 1. Primary source: process.env.GEMINI_API_KEY (defined in vite.config.ts)
     try {
       // @ts-ignore
       const envKey = process.env.GEMINI_API_KEY;
-      if (envKey && envKey !== "undefined" && envKey !== "null") {
+      if (envKey && envKey !== "undefined" && envKey !== "null" && envKey !== "") {
         apiKey = envKey;
       }
     } catch (e) {}
     
-    // Fallback to import.meta.env
-    const meta = import.meta as any;
-    if (!apiKey && meta?.env) {
-      apiKey = meta.env.VITE_GEMINI_API_KEY || 
-               meta.env.GEMINI_API_KEY || 
-               meta.env.GEMINI_API_KEY_;
+    // 2. Fallback: import.meta.env
+    if (!apiKey) {
+      const meta = import.meta as any;
+      if (meta?.env) {
+        apiKey = meta.env.VITE_GEMINI_API_KEY || 
+                 meta.env.GEMINI_API_KEY || 
+                 meta.env.GEMINI_API_KEY_;
+      }
     }
     
-    // Last resort: fetch from server (only works if running full-stack)
-    if (!apiKey || apiKey === "undefined" || apiKey === "null") {
+    // 3. Last resort: fetch from server
+    if (!apiKey || apiKey === "undefined" || apiKey === "null" || apiKey === "") {
       try {
         const res = await fetch('/api/config');
         if (res.ok) {
           const data = await res.json();
           apiKey = data.geminiApiKey;
         }
-      } catch (fetchErr) {
-        console.warn("Could not fetch API key from server:", fetchErr);
-      }
+      } catch (fetchErr) {}
     }
 
-    if (apiKey && apiKey !== "undefined" && apiKey !== "null") {
+    if (apiKey && apiKey !== "undefined" && apiKey !== "null" && apiKey !== "") {
       ai = new GoogleGenAI({ apiKey });
       aiReady = true;
+      console.log("AI initialized successfully.");
     } else {
-      console.warn("GEMINI_API_KEY is not set or invalid. AI features will be disabled.");
+      console.warn("GEMINI_API_KEY not found. AI features disabled.");
     }
   } catch (e) {
     console.error("Failed to init AI:", e);
