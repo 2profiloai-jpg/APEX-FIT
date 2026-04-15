@@ -12,7 +12,7 @@ import { getPostWorkoutAdvice } from '../services/geminiService';
 
 const Stepper = ({ value, onChange, step = 1, min = 0, label, disabled }: { value: number, onChange: (v: number) => void, step?: number, min?: number, label?: string, disabled?: boolean }) => {
   return (
-    <div className={cn("flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg p-1 h-12 transition-all", !disabled && "focus-within:border-lime-400 focus-within:ring-1 focus-within:ring-lime-400", disabled && "opacity-50 pointer-events-none")}>
+    <div className={cn("flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg p-1 h-12 transition-all", !disabled && "focus-within:border-cyan-400 focus-within:ring-1 focus-within:ring-cyan-400", disabled && "opacity-50 pointer-events-none")}>
       <button disabled={disabled} onClick={() => onChange(Math.max(min, value - step))} className="w-8 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">-</button>
       <div className="flex flex-col items-center justify-center flex-1 h-full">
         <input 
@@ -225,7 +225,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
         animate={{ opacity: 1, scale: 1 }}
         className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 text-center"
       >
-        <div className="w-20 h-20 bg-lime-400 rounded-full flex items-center justify-center mb-6">
+        <div className="w-20 h-20 bg-cyan-400 rounded-full flex items-center justify-center mb-6">
           <Brain className="text-black w-10 h-10" />
         </div>
         <h2 className="text-4xl font-black tracking-tighter italic uppercase mb-2">Analisi<br/>Completata</h2>
@@ -258,7 +258,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
             {plan ? plan.name : 'Sessione Attiva'}
           </h2>
           <div className="flex items-center gap-4 mt-2">
-            <div className="flex items-center gap-2 text-lime-400 text-xl font-mono font-bold">
+            <div className="flex items-center gap-2 text-cyan-400 text-xl font-mono font-bold">
               <Timer size={20} /> {formatTime(timerSeconds)}
             </div>
             <div className="flex items-center gap-2">
@@ -281,7 +281,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
         {/* Rest Timer UI */}
         <div className="flex flex-col items-end">
           {restTimer !== null ? (
-            <div className="bg-lime-400 text-black px-4 py-2 rounded-2xl font-black text-xl animate-pulse">
+            <div className="bg-cyan-400 text-black px-4 py-2 rounded-2xl font-black text-xl animate-pulse">
               REST: {formatTime(restTimer)}
             </div>
           ) : (
@@ -315,7 +315,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
               className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden"
             >
               <div className="p-4 bg-zinc-800/50 flex items-center justify-between">
-                <h3 className="font-black uppercase tracking-tighter text-lime-400">{exerciseInfo?.name}</h3>
+                <h3 className="font-black uppercase tracking-tighter text-cyan-400">{exerciseInfo?.name}</h3>
                 <button onClick={() => removeExercise(exIdx)} className="text-zinc-500 hover:text-red-500">
                   <Trash2 size={16} />
                 </button>
@@ -369,7 +369,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                       <select 
                         value={set.rpe || 0} 
                         onChange={(e) => updateSet(exIdx, setIdx, 'rpe', parseInt(e.target.value))}
-                        className="w-full h-12 bg-zinc-950 border border-zinc-800 rounded-lg px-1 text-center font-mono text-sm appearance-none text-lime-400"
+                        className="w-full h-12 bg-zinc-950 border border-zinc-800 rounded-lg px-1 text-center font-mono text-sm appearance-none text-cyan-400"
                         disabled={set.completed}
                       >
                         <option value={0}>-</option>
@@ -381,7 +381,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                         onClick={() => toggleSetComplete(exIdx, setIdx)}
                         className={cn(
                           "w-8 h-12 rounded-lg flex items-center justify-center transition-colors",
-                          set.completed ? "bg-lime-400 text-black" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
+                          set.completed ? "bg-cyan-400 text-black" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
                         )}
                       >
                         <Check size={16} strokeWidth={3} />
@@ -433,7 +433,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                 placeholder="CERCA ESERCIZIO..."
                 value={pickerSearch}
                 onChange={(e) => setPickerSearch(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 font-black uppercase tracking-tighter text-sm focus:ring-1 ring-lime-400 outline-none"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 font-black uppercase tracking-tighter text-sm focus:ring-1 ring-cyan-400 outline-none"
               />
               
               <div className="flex overflow-x-auto pb-2 -mx-2 px-2 gap-2 no-scrollbar">
@@ -444,8 +444,8 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                     className={cn(
                       "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
                       pickerCategory === cat 
-                        ? "bg-lime-400 text-black border-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.2)]" 
-                        : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-lime-400 hover:border-lime-400"
+                        ? "bg-cyan-400 text-black border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]" 
+                        : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-cyan-400 hover:border-cyan-400"
                     )}
                   >
                     {cat}
@@ -463,7 +463,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                 <button 
                   key={ex.id}
                   onClick={() => addExercise(ex)}
-                  className="w-full bg-zinc-900 border border-zinc-800 p-5 rounded-2xl text-left flex items-center justify-between hover:border-lime-400 transition-colors"
+                  className="w-full bg-zinc-900 border border-zinc-800 p-5 rounded-2xl text-left flex items-center justify-between hover:border-cyan-400 transition-colors"
                 >
                   <div>
                     <div className="font-black uppercase tracking-tighter">{ex.name}</div>
@@ -473,7 +473,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                       <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{ex.equipment}</span>
                     </div>
                   </div>
-                  <Plus size={20} className="text-lime-400" />
+                  <Plus size={20} className="text-cyan-400" />
                 </button>
               ))}
             </div>

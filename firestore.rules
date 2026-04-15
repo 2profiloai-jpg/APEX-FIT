@@ -74,6 +74,13 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    match /users/{userId}/nutrition/{dayId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
     match /users/{userId}/favoriteMeals/{favId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId);

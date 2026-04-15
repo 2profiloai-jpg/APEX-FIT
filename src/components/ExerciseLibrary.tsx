@@ -111,13 +111,6 @@ export const EXERCISE_LIBRARY: Exercise[] = [
   { id: 'c8', name: 'Ab-Wheel (Ruota)', category: 'Core', targetMuscles: ['Core', 'Addominali'], equipment: 'Ab-Wheel', type: 'Composto', proNote: 'Tensione estrema in allungamento (anti-estensione).', instructions: '1. In ginocchio, afferra la ruota con entrambe le mani.\n2. Rotola in avanti mantenendo l\'addome contratto e la schiena leggermente curva (non inarcare la lombare!).\n3. Estenditi il più possibile senza perdere la tensione.\n4. Usa gli addominali per tirare indietro la ruota e tornare in posizione.', videoUrl: 'https://www.youtube.com/embed/rqiTMGFLGQk' },
 
   // ULTERIORI AGGIUNTE
-  // PETTO
-  { id: 'p11', name: 'Wide Push-up (Presa Larga)', category: 'Petto', targetMuscles: ['Pettorali (Esterno)'], equipment: 'Corpo Libero', type: 'Composto', proNote: 'Enfasi massima sul grande pettorale esterno.', instructions: '1. Posizionati in plank con le mani molto più larghe delle spalle.\n2. Scendi controllando il movimento.\n3. Spingi per tornare su.', videoUrl: 'https://www.youtube.com/embed/rr6eFNNDQdU' },
-  { id: 'p12', name: 'Incline Push-up (Inclinati)', category: 'Petto', targetMuscles: ['Pettorali (Basso)'], equipment: 'Corpo Libero', type: 'Composto', proNote: 'Lavora la parte inferiore del petto, più facile dello standard.', instructions: '1. Appoggia le mani su un rialzo (panca, step).\n2. Mantieni il corpo in linea e scendi col petto verso il rialzo.\n3. Spingi per tornare su.', videoUrl: 'https://www.youtube.com/embed/Z0bOiZN6ZQs' },
-  { id: 'p13', name: 'Decline Push-up (Declinati)', category: 'Petto', targetMuscles: ['Pettorali (Alto)'], equipment: 'Corpo Libero', type: 'Composto', proNote: 'Focus sul fascio clavicolare (petto alto).', instructions: '1. Appoggia i piedi su un rialzo e le mani a terra.\n2. Scendi col petto verso il pavimento.\n3. Spingi per tornare su.', videoUrl: 'https://www.youtube.com/embed/SKPab2YC8BE' },
-  { id: 'p14', name: 'Pseudo Planche Push-up', category: 'Petto', targetMuscles: ['Spalle', 'Petto', 'Core'], equipment: 'Corpo Libero', type: 'Composto', proNote: 'Mani ad altezza vita, focus estremo su spalle e core.', instructions: '1. Posizionati in plank ma sposta il peso molto in avanti.\n2. Le mani devono trovarsi all\'altezza della vita/fianchi.\n3. Scendi e sali mantenendo questa sbilanciatura.', videoUrl: 'https://www.youtube.com/embed/K81Pz-0Fz7Q' },
-  { id: 'p15', name: 'Spiderman Push-up', category: 'Petto', targetMuscles: ['Petto', 'Core', 'Obliqui'], equipment: 'Corpo Libero', type: 'Composto', proNote: 'Coinvolge pesantemente il core e la coordinazione.', instructions: '1. Inizia a scendere per un normale push-up.\n2. Contemporaneamente, porta un ginocchio verso il gomito dello stesso lato.\n3. Torna in posizione mentre risali e alterna.', videoUrl: 'https://www.youtube.com/embed/hjbGeuFwMjc' },
-
   // SCHIENA
   { id: 's11', name: 'Neutral/Hammer Grip Pull-up', category: 'Schiena', targetMuscles: ['Dorsali', 'Bicipiti', 'Brachioradiale'], equipment: 'Corpo Libero', type: 'Composto', proNote: 'Presa neutra, più sicura per le articolazioni delle spalle.', instructions: '1. Afferra le maniglie parallele con i palmi che si guardano.\n2. Tira il petto verso l\'alto.\n3. Scendi in modo controllato.', videoUrl: 'https://www.youtube.com/embed/XQJheE1ZgOU' },
   { id: 's12', name: 'Wide Grip Pull-up', category: 'Schiena', targetMuscles: ['Dorsali (Ampiezza)'], equipment: 'Corpo Libero', type: 'Composto', proNote: 'Presa molto larga per isolare i dorsali e creare il V-shape.', instructions: '1. Afferra la sbarra con una presa molto più larga delle spalle.\n2. Tira cercando di portare il petto alla sbarra.\n3. Scendi controllando.', videoUrl: 'https://www.youtube.com/embed/GRgQ_hI8H68' },
@@ -172,7 +165,7 @@ export default function ExerciseLibrary() {
           placeholder="CERCA NELL'ATLANTE..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 font-black uppercase tracking-tighter text-sm focus:ring-1 ring-lime-400 outline-none"
+          className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 font-black uppercase tracking-tighter text-sm focus:ring-1 ring-cyan-400 outline-none"
         />
       </div>
 
@@ -186,8 +179,8 @@ export default function ExerciseLibrary() {
             className={cn(
               "border px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
               selectedCategory === cat 
-                ? "bg-lime-400 text-black border-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.3)]" 
-                : "glass text-zinc-400 hover:text-lime-400 hover:border-lime-400"
+                ? "bg-cyan-400 text-black border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.3)]" 
+                : "glass text-zinc-400 hover:text-cyan-400 hover:border-cyan-400"
             )}
           >
             {cat}
@@ -205,7 +198,7 @@ export default function ExerciseLibrary() {
             className="glass p-4 rounded-2xl flex items-center justify-between group cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-black/40 rounded-xl flex items-center justify-center border border-white/5 group-hover:bg-lime-400 transition-colors">
+              <div className="w-12 h-12 bg-black/40 rounded-xl flex items-center justify-center border border-white/5 group-hover:bg-cyan-400 transition-colors">
                 <Play size={20} className="text-zinc-500 group-hover:text-black fill-current" />
               </div>
               <div>
@@ -234,7 +227,7 @@ export default function ExerciseLibrary() {
             <div className="p-6 max-w-2xl mx-auto min-h-screen flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <Dumbbell className="text-lime-400" />
+                  <Dumbbell className="text-cyan-400" />
                   <h3 className="text-2xl font-black uppercase tracking-tighter italic">Voce Atlante</h3>
                 </div>
                 <button onClick={() => setSelectedExercise(null)} className="p-2 bg-zinc-900 rounded-full">
@@ -266,7 +259,7 @@ export default function ExerciseLibrary() {
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 bg-lime-400 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(163,230,53,0.5)] group-hover:scale-110 transition-transform">
+                        <div className="w-16 h-16 bg-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.5)] group-hover:scale-110 transition-transform">
                           <Play size={32} className="text-black fill-current ml-1" />
                         </div>
                         <span className="mt-4 text-[10px] font-black uppercase tracking-widest text-white bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
@@ -289,7 +282,7 @@ export default function ExerciseLibrary() {
                     href={selectedExercise.videoUrl.replace('/embed/', '/watch?v=')} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-lime-400 transition-colors flex items-center gap-1"
+                    className="text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-cyan-400 transition-colors flex items-center gap-1"
                   >
                     Problemi con il video? Apri su YouTube <ChevronRight size={10} />
                   </a>
@@ -300,25 +293,25 @@ export default function ExerciseLibrary() {
                 <div>
                   <h1 className="text-4xl font-black uppercase tracking-tighter italic mb-2">{selectedExercise.name}</h1>
                   <div className="flex flex-wrap gap-2">
-                    <span className="bg-lime-400 text-black text-[10px] font-black uppercase px-3 py-1 rounded-full">
+                    <span className="bg-cyan-400 text-black text-[10px] font-black uppercase px-3 py-1 rounded-full">
                       {selectedExercise.category}
                     </span>
                     <span className="bg-zinc-800 text-zinc-300 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-zinc-700">
                       {selectedExercise.equipment}
                     </span>
-                    <span className="bg-zinc-800 text-lime-400 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-lime-400/20">
+                    <span className="bg-zinc-800 text-cyan-400 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-cyan-400/20">
                       {selectedExercise.type}
                     </span>
                   </div>
                 </div>
 
                 {selectedExercise.proNote && (
-                  <div className="bg-lime-400/10 border border-lime-400/20 rounded-2xl p-6">
-                    <div className="flex items-center gap-2 mb-2 text-lime-400">
+                  <div className="bg-cyan-400/10 border border-cyan-400/20 rounded-2xl p-6">
+                    <div className="flex items-center gap-2 mb-2 text-cyan-400">
                       <Brain size={18} />
                       <h4 className="font-black uppercase tracking-tighter text-sm">Nota Pro</h4>
                     </div>
-                    <p className="text-lime-100 text-sm font-bold italic">
+                    <p className="text-cyan-100 text-sm font-bold italic">
                       "{selectedExercise.proNote}"
                     </p>
                   </div>

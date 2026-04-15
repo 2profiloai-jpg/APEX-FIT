@@ -29,6 +29,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
   const [gender, setGender] = useState<'male' | 'female'>(profile?.gender || 'male');
   const [activityLevel, setActivityLevel] = useState(profile?.activityLevel || 1.2);
   const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>(profile?.goal || 'maintain');
+  const [bodyFat, setBodyFat] = useState(profile?.bodyFat || 0);
   const [isSaving, setIsSaving] = useState(false);
 
   const [totalConsumed, setTotalConsumed] = useState(0);
@@ -56,6 +57,8 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
       } else {
         setTotalConsumed(0);
       }
+    }, (error) => {
+      console.error('Firestore Error in Dashboard Nutrition:', error);
     });
 
     return unsubscribe;
@@ -69,11 +72,12 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
       if (profile.gender) setGender(profile.gender);
       if (profile.activityLevel) setActivityLevel(profile.activityLevel);
       if (profile.goal) setGoal(profile.goal);
+      if (profile.bodyFat) setBodyFat(profile.bodyFat);
     }
   }, [profile]);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile?.uid) return;
     const q = query(
       collection(db, 'users', profile.uid, 'sessions'),
       orderBy('startTime', 'desc'),
@@ -81,34 +85,40 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setRecentSessions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkoutSession)));
+    }, (error) => {
+      console.error('Firestore Error in Dashboard Sessions:', error);
     });
     return unsubscribe;
   }, [profile]);
 
   useEffect(() => {
     if (profile && recentSessions.length >= 0) {
-      const mockBiometrics: BiometricLog = {
-        userId: profile.uid,
-        date: new Date().toISOString().split('T')[0],
-        hrv: 65,
-        sleepHours: 7.5,
-        stressLevel: 4
-      };
-      
-      let bmr = 0;
-      if (gender === 'male') {
-        bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
-      } else {
-        bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
-      }
-      const tdee = Math.round(bmr * activityLevel);
-      const target = goal === 'lose' ? tdee - 500 : goal === 'gain' ? tdee + 300 : tdee;
+      const timer = setTimeout(() => {
+        const mockBiometrics: BiometricLog = {
+          userId: profile.uid,
+          date: new Date().toISOString().split('T')[0],
+          hrv: 65,
+          sleepHours: 7.5,
+          stressLevel: 4
+        };
+        
+        let bmr = 0;
+        if (gender === 'male') {
+          bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+        } else {
+          bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+        }
+        const tdee = Math.round(bmr * activityLevel);
+        const target = goal === 'lose' ? tdee - 500 : goal === 'gain' ? tdee + 300 : tdee;
 
-      getStrategistAdvice(recentSessions, mockBiometrics, {
-        consumed: totalConsumed,
-        target: target,
-        goal: goal
-      }).then(setAdvice);
+        getStrategistAdvice(recentSessions, mockBiometrics, {
+          consumed: totalConsumed,
+          target: target,
+          goal: goal
+        }).then(setAdvice);
+      }, 2000); // Debounce di 2 secondi
+
+      return () => clearTimeout(timer);
     }
   }, [profile, recentSessions, totalConsumed, weight, height, age, gender, activityLevel, goal]);
 
@@ -122,7 +132,8 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         age,
         gender,
         activityLevel,
-        goal
+        goal,
+        bodyFat
       });
       toast.success('Parametri salvati correttamente!');
     } catch (error) {
@@ -164,7 +175,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         className="glass rounded-3xl p-6 space-y-6"
       >
         <div className="flex items-center gap-2 mb-2">
-          <UserIcon className="text-lime-400" size={20} />
+          <UserIcon className="text-cyan-400" size={20} />
           <h3 className="font-black uppercase tracking-tighter text-sm italic">Parametri Biometrici</h3>
         </div>
 
@@ -175,7 +186,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
               type="number" 
               value={weight || ''} 
               onChange={(e) => setWeight(parseFloat(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-lime-400/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
               placeholder="0.0"
             />
           </div>
@@ -185,7 +196,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
               type="number" 
               value={height || ''} 
               onChange={(e) => setHeight(parseFloat(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-lime-400/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
               placeholder="0"
             />
           </div>
@@ -195,24 +206,34 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
               type="number" 
               value={age || ''} 
               onChange={(e) => setAge(parseInt(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-lime-400/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
               placeholder="0"
             />
           </div>
           <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Body Fat (%)</label>
+            <input 
+              type="number" 
+              value={bodyFat || ''} 
+              onChange={(e) => setBodyFat(parseFloat(e.target.value))}
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
+              placeholder="Opzionale"
+            />
+          </div>
+          <div className="space-y-1.5 col-span-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Genere</label>
             <div className="flex bg-black/20 border border-white/10 rounded-xl p-1">
               <motion.button 
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setGender('male')}
-                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'male' ? 'bg-lime-400 text-black shadow-lg' : 'text-zinc-500'}`}
+                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'male' ? 'bg-cyan-400 text-black shadow-lg' : 'text-zinc-500'}`}
               >
                 M
               </motion.button>
               <motion.button 
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setGender('female')}
-                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'female' ? 'bg-lime-400 text-black shadow-lg' : 'text-zinc-500'}`}
+                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'female' ? 'bg-cyan-400 text-black shadow-lg' : 'text-zinc-500'}`}
               >
                 F
               </motion.button>
@@ -225,7 +246,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           <select 
             value={activityLevel}
             onChange={(e) => setActivityLevel(parseFloat(e.target.value))}
-            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-lime-400/50 outline-none appearance-none transition-all"
+            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none appearance-none transition-all"
           >
             <option value={1.2}>Sedentario (Ufficio)</option>
             <option value={1.375}>Leggero (1-3 allenamenti)</option>
@@ -248,7 +269,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setGoal(g.id as any)}
-                className={`py-2.5 rounded-xl text-[10px] font-black uppercase border transition-all ${goal === g.id ? 'bg-lime-400 text-black border-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.3)]' : 'bg-black/20 border-white/5 text-zinc-500'}`}
+                className={`py-2.5 rounded-xl text-[10px] font-black uppercase border transition-all ${goal === g.id ? 'bg-cyan-400 text-black border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.3)]' : 'bg-black/20 border-white/5 text-zinc-500'}`}
               >
                 {g.label}
               </motion.button>
@@ -261,7 +282,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           whileTap={{ scale: 0.98 }}
           onClick={handleSaveBiometrics}
           disabled={isSaving}
-          className="w-full py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-lime-400 transition-all disabled:opacity-50"
+          className="w-full py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-cyan-400 transition-all disabled:opacity-50"
         >
           {isSaving ? <Clock className="animate-spin" size={16} /> : <Save size={16} />}
           {isSaving ? 'SALVATAGGIO...' : 'SALVA PARAMETRI'}
@@ -285,9 +306,9 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
 
       {/* Quick Action */}
       <motion.button 
-        whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(163,230,53,0.3)" }}
+        whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(34,211,238,0.3)" }}
         whileTap={{ scale: 0.95 }}
-        className="w-full py-8 text-2xl bg-lime-400 text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4"
+        className="w-full py-8 text-2xl bg-cyan-400 text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4"
         onClick={() => {
           const event = new CustomEvent('start-workout');
           window.dispatchEvent(event);

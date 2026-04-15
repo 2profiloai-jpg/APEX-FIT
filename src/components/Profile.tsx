@@ -17,7 +17,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
       >
         <motion.div 
           whileHover={{ scale: 1.05, rotate: 5 }}
-          className="w-24 h-24 rounded-3xl glass border-2 border-lime-400 p-1 mb-4 shadow-[0_0_30px_rgba(163,230,53,0.2)]"
+          className="w-24 h-24 rounded-3xl glass border-2 border-cyan-400 p-1 mb-4 shadow-[0_0_30px_rgba(34,211,238,0.2)]"
         >
           <img src={user.photoURL || ''} className="w-full h-full rounded-2xl object-cover" alt="Profile" referrerPolicy="no-referrer" />
         </motion.div>
@@ -25,7 +25,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         
         <motion.div 
           whileHover={{ scale: 1.05 }}
-          className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${aiStatus === 'ready' ? 'bg-lime-400/10 text-lime-400 border-lime-400/20' : aiStatus === 'loading' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+          className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${aiStatus === 'ready' ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20' : aiStatus === 'loading' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
           <Brain size={14} />
           {aiStatus === 'ready' ? 'IA ATTIVA' : aiStatus === 'loading' ? 'CARICAMENTO IA...' : 'CHIAVE IA MANCANTE'}
         </motion.div>

@@ -32,6 +32,8 @@ export default function WorkoutHub() {
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkoutPlan)));
+    }, (error) => {
+      console.error('Firestore Error in WorkoutHub Plans:', error);
     });
     return unsubscribe;
   }, [selectedDay]);
@@ -158,12 +160,12 @@ export default function WorkoutHub() {
               value={planName}
               onChange={(e) => setPlanName(e.target.value)}
               placeholder="es. Push Day, Total Body..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-lime-400"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-400"
             />
           </div>
           <div>
             <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Giorno</label>
-            <div className="text-lime-400 font-mono font-bold text-lg">{selectedDay}</div>
+            <div className="text-cyan-400 font-mono font-bold text-lg">{selectedDay}</div>
           </div>
         </div>
 
@@ -217,7 +219,7 @@ export default function WorkoutHub() {
 
           <button 
             onClick={openExercisePicker}
-            className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-bold uppercase tracking-widest hover:border-lime-400 hover:text-lime-400 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-bold uppercase tracking-widest hover:border-cyan-400 hover:text-cyan-400 transition-colors flex items-center justify-center gap-2"
           >
             <Plus size={20} /> Aggiungi Esercizio
           </button>
@@ -248,7 +250,7 @@ export default function WorkoutHub() {
                   <button
                     key={cat}
                     onClick={() => setPickerCategory(pickerCategory === cat ? null : cat)}
-                    className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition-colors ${pickerCategory === cat ? 'bg-lime-400 text-black' : 'bg-zinc-900 text-zinc-400'}`}
+                    className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition-colors ${pickerCategory === cat ? 'bg-cyan-400 text-black' : 'bg-zinc-900 text-zinc-400'}`}
                   >
                     {cat}
                   </button>
@@ -264,7 +266,7 @@ export default function WorkoutHub() {
                       <div className="font-bold">{ex.name}</div>
                       <div className="text-xs text-zinc-500">{ex.targetMuscles.join(', ')}</div>
                     </div>
-                    <Plus className="text-lime-400" size={20} />
+                    <Plus className="text-cyan-400" size={20} />
                   </div>
                 ))}
               </div>
@@ -284,7 +286,7 @@ export default function WorkoutHub() {
           <div className="mb-8">
             <button 
               onClick={() => setActiveSessionPlan(plans[0])}
-              className="w-full bg-lime-400 text-black p-6 rounded-3xl shadow-[0_0_40px_rgba(163,230,53,0.3)] hover:scale-[1.02] active:scale-95 transition-all flex flex-col items-center justify-center gap-2 relative overflow-hidden"
+              className="w-full bg-cyan-400 text-black p-6 rounded-3xl shadow-[0_0_40px_rgba(34,211,238,0.3)] hover:scale-[1.02] active:scale-95 transition-all flex flex-col items-center justify-center gap-2 relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
               <Play size={32} className="fill-current relative z-10" />
@@ -305,14 +307,14 @@ export default function WorkoutHub() {
                 onClick={() => setSelectedDay(day)}
                 className={cn(
                   "flex-shrink-0 snap-center flex flex-col items-center justify-center min-w-[90px] h-[60px] rounded-2xl transition-colors border",
-                  isSelected ? "bg-lime-400 text-black border-lime-400" : "bg-zinc-900 text-zinc-400 border-zinc-800"
+                  isSelected ? "bg-cyan-400 text-black border-cyan-400" : "bg-zinc-900 text-zinc-400 border-zinc-800"
                 )}
               >
                 <span className="text-xs font-bold uppercase tracking-widest">
                   {day.substring(0, 3)}
                 </span>
                 {isToday && (
-                  <span className={cn("text-[9px] font-black uppercase tracking-widest mt-1", isSelected ? "text-black/70" : "text-lime-400")}>
+                  <span className={cn("text-[9px] font-black uppercase tracking-widest mt-1", isSelected ? "text-black/70" : "text-cyan-400")}>
                     Oggi
                   </span>
                 )}
@@ -326,7 +328,7 @@ export default function WorkoutHub() {
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-black italic uppercase">Schede per {selectedDay}</h3>
           {plans.length > 0 && (
-            <button onClick={openPlanBuilder} className="text-lime-400 hover:text-lime-300 flex items-center gap-1 text-xs font-bold uppercase tracking-widest">
+            <button onClick={openPlanBuilder} className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 text-xs font-bold uppercase tracking-widest">
               <Plus size={16} /> Nuova
             </button>
           )}
@@ -344,7 +346,7 @@ export default function WorkoutHub() {
             <div className="flex flex-col gap-3">
               <button 
                 onClick={openPlanBuilder}
-                className="bg-lime-400 text-black font-bold px-6 py-4 rounded-2xl uppercase tracking-widest text-sm w-full flex items-center justify-center gap-2 transition-transform active:scale-95"
+                className="bg-cyan-400 text-black font-bold px-6 py-4 rounded-2xl uppercase tracking-widest text-sm w-full flex items-center justify-center gap-2 transition-transform active:scale-95"
               >
                 <Plus size={18} /> Crea Scheda
               </button>
@@ -360,7 +362,7 @@ export default function WorkoutHub() {
           <div className="space-y-4">
             {plans.map(plan => (
               <div key={plan.id} className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-lime-400/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-400/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h4 className="text-2xl font-black italic uppercase">{plan.name}</h4>
@@ -401,7 +403,7 @@ export default function WorkoutHub() {
         <div className="pt-8">
           <button 
             onClick={() => setActiveSessionPlan('free')}
-            className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-bold uppercase tracking-widest hover:border-lime-400 hover:text-lime-400 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-bold uppercase tracking-widest hover:border-cyan-400 hover:text-cyan-400 transition-colors flex items-center justify-center gap-2"
           >
             <Dumbbell size={20} /> Inizia Sessione Libera
           </button>

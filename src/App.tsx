@@ -113,6 +113,8 @@ export default function App() {
           if (doc.exists()) {
             setProfile(doc.data() as UserProfile);
           }
+        }, (error) => {
+          console.error('Firestore Error in App Profile:', error);
         });
       } else {
         setProfile(null);
@@ -173,7 +175,7 @@ export default function App() {
           className="max-w-md w-full"
         >
           <div className="mb-8 flex justify-center">
-            <div className="w-20 h-20 bg-lime-400 rounded-full flex items-center justify-center">
+            <div className="w-20 h-20 bg-cyan-400 rounded-full flex items-center justify-center">
               <Zap className="text-black w-10 h-10 fill-current" />
             </div>
           </div>
@@ -185,7 +187,7 @@ export default function App() {
           <div className="space-y-4">
             <button 
               onClick={handleLogin}
-              className="w-full bg-white text-black font-bold py-4 px-8 rounded-full flex items-center justify-center gap-3 hover:bg-lime-400 transition-colors"
+              className="w-full bg-white text-black font-bold py-4 px-8 rounded-full flex items-center justify-center gap-3 hover:bg-cyan-400 transition-colors"
             >
               <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
               INIZIA LA TUA ASCESA
@@ -194,9 +196,9 @@ export default function App() {
             {isInstallable && (
               <button 
                 onClick={handleInstallClick}
-                className="w-full bg-zinc-900 border border-zinc-800 text-white font-bold py-4 px-8 rounded-full flex items-center justify-center gap-3 hover:border-lime-400 transition-colors"
+                className="w-full bg-zinc-900 border border-zinc-800 text-white font-bold py-4 px-8 rounded-full flex items-center justify-center gap-3 hover:border-cyan-400 transition-colors"
               >
-                <Download className="w-5 h-5 text-lime-400" />
+                <Download className="w-5 h-5 text-cyan-400" />
                 INSTALLA L'APP
               </button>
             )}
@@ -207,18 +209,18 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-lime-400 selection:text-black">
+    <div className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-cyan-400 selection:text-black">
       <Toaster position="top-center" expand={true} richColors theme="dark" />
       {/* Top Bar */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-black/40 backdrop-blur-2xl border-b border-white/5 z-50 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Zap className="text-lime-400 w-6 h-6 fill-current" />
+          <Zap className="text-cyan-400 w-6 h-6 fill-current" />
           <span className="font-black tracking-tighter italic uppercase text-xl">Apex</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-end">
             <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Prontezza</span>
-            <span className="text-lime-400 font-mono font-bold">{profile?.readinessScore}%</span>
+            <span className="text-cyan-400 font-mono font-bold">{profile?.readinessScore}%</span>
           </div>
           <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
             <img src={user.photoURL || ''} alt="Profile" referrerPolicy="no-referrer" />
@@ -307,13 +309,13 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
       onClick={onClick}
       className={cn(
         "flex flex-col items-center gap-1 transition-colors relative",
-        active ? "text-lime-400" : "text-zinc-500"
+        active ? "text-cyan-400" : "text-zinc-500"
       )}
     >
       {active && (
         <motion.div 
           layoutId="nav-glow"
-          className="absolute -inset-2 bg-lime-400/10 blur-xl rounded-full -z-10"
+          className="absolute -inset-2 bg-cyan-400/10 blur-xl rounded-full -z-10"
         />
       )}
       {icon}

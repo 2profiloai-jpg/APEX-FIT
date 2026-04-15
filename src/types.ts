@@ -11,6 +11,13 @@ export interface UserProfile {
   gender?: 'male' | 'female';
   activityLevel?: number;
   goal?: 'lose' | 'maintain' | 'gain';
+  bodyFat?: number;
+  customTargets?: {
+    kcal: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
 }
 
 export type ExerciseCategory = 'Petto' | 'Schiena' | 'Gambe' | 'Spalle' | 'Bicipiti' | 'Tricipiti' | 'Core' | 'Cardio';

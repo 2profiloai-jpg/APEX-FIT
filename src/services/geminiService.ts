@@ -97,7 +97,7 @@ export const getStrategistAdvice = async (
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -105,8 +105,15 @@ export const getStrategistAdvice = async (
     });
     
     return JSON.parse(response.text || "{}");
-  } catch (error) {
+  } catch (error: any) {
     console.error("Strategist Error:", error);
+    if (error.message?.includes("429") || error.message?.includes("quota")) {
+      return { 
+        readinessScore: 70, 
+        intensity: "Technical", 
+        tip: "L'IA è temporaneamente sovraccarica (Quota 429). Mantieni la routine abituale e riprova tra poco." 
+      };
+    }
     return { readinessScore: 70, intensity: "Technical", tip: "Errore di connessione con l'IA. Concentrati sulla tecnica oggi." };
   }
 };
@@ -114,7 +121,7 @@ export const getStrategistAdvice = async (
 export const parseFoodInput = async (input: string, imageBase64?: string) => {
   const aiClient = getAI();
   if (!aiClient) {
-    throw new Error("Chiave API mancante. Se l'hai appena aggiunta, ricarica la pagina. Se usi il link condiviso, devi ricondividere l'app per aggiornarla.");
+    throw new Error("Chiave API mancante. Se l'hai appena aggiunta, ricarica la pagina.");
   }
 
   const prompt = `
@@ -139,7 +146,6 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
 
   if (imageBase64) {
     try {
-      // Estrazione robusta del mimeType e dei dati base64
       let mimeType = "image/jpeg";
       let base64Data = imageBase64;
       
@@ -166,7 +172,7 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-2.5-flash", // Modello stabile e collaudato
+      model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts }],
       config: {
         responseMimeType: "application/json",
@@ -176,7 +182,6 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
     
     let text = response.text || "{}";
     
-    // Pulizia estrema del testo
     text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
@@ -192,6 +197,9 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
     return parsed;
   } catch (error: any) {
     console.error("Food Parsing Error:", error);
+    if (error.message?.includes("429") || error.message?.includes("quota")) {
+      throw new Error("Limite di richieste IA raggiunto (Quota 429). Riprova tra un minuto.");
+    }
     throw new Error(error.message || "Errore di connessione con l'IA.");
   }
 };
@@ -199,7 +207,7 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
 export const getPostWorkoutAdvice = async (sessionData: any) => {
   const aiClient = getAI();
   if (!aiClient) {
-    return "Ottimo lavoro! Per ricevere consigli personalizzati dall'IA su cosa cambiare nel prossimo allenamento, configura la tua API Key.";
+    return "Ottimo lavoro! Configura la tua API Key per consigli personalizzati.";
   }
 
   const prompt = `
@@ -217,12 +225,15 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
     });
     return response.text || "Ottimo allenamento completato.";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Post-Workout AI Error:", error);
+    if (error.message?.includes("429") || error.message?.includes("quota")) {
+      return "Analisi IA non disponibile (Limite raggiunto). Ottimo lavoro comunque!";
+    }
     return "Allenamento salvato. Analisi IA non disponibile al momento.";
   }
 };
