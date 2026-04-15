@@ -190,94 +190,88 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         </motion.div>
       </div>
 
-      {/* Metabolic Hub */}
+      {/* Metabolic Hub - Compact & Schematic */}
       <motion.section 
         whileHover={{ scale: 1.01 }}
-        className="glass rounded-3xl p-6 space-y-6"
+        className="glass rounded-3xl p-5 space-y-4"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Target className="text-neon" size={20} />
-            <h3 className="font-black uppercase tracking-tighter text-sm italic">Hub Metabolico</h3>
+            <Target className="text-neon" size={18} />
+            <h3 className="font-black uppercase tracking-tighter text-xs italic">Hub Metabolico</h3>
           </div>
           
-          <div className="flex items-center gap-2">
-            <div className="bg-neon/5 border border-neon/20 px-3 py-1.5 rounded-xl flex flex-col items-end">
-              <span className="text-[8px] font-black uppercase tracking-widest text-neon mb-0.5">Target</span>
-              {isEditingTarget ? (
-                <div className="flex items-center gap-1">
-                  <input 
-                    type="number" 
-                    value={tempTarget} 
-                    onChange={(e) => setTempTarget(e.target.value)}
-                    className="bg-black/40 border border-neon/50 rounded px-1 py-0.5 text-neon w-14 text-xs outline-none font-bold focus:ring-1 ring-neon"
-                    autoFocus
-                  />
-                  <button onClick={handleSaveCustomTarget} className="text-neon p-0.5"><Zap size={10} /></button>
-                </div>
-              ) : (
-                <div 
-                  className="text-sm font-bold text-neon font-mono cursor-pointer flex items-center gap-1"
-                  onClick={() => {
-                    setTempTarget(targetKcal.toString());
-                    setIsEditingTarget(true);
-                  }}
-                >
-                  {Math.round(targetKcal)} <span className="text-[10px] text-neon/50">kcal</span>
-                </div>
-              )}
-            </div>
+          <div 
+            className="bg-neon/5 border border-neon/20 px-3 py-1 rounded-xl flex items-center gap-2 cursor-pointer"
+            onClick={() => {
+              setTempTarget(targetKcal.toString());
+              setIsEditingTarget(true);
+            }}
+          >
+            <span className="text-[8px] font-black uppercase tracking-widest text-neon">Target</span>
+            {isEditingTarget ? (
+              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                <input 
+                  type="number" 
+                  value={tempTarget} 
+                  onChange={(e) => setTempTarget(e.target.value)}
+                  className="bg-black/40 border border-neon/50 rounded px-1 py-0.5 text-neon w-12 text-[10px] outline-none font-bold"
+                  autoFocus
+                />
+                <button onClick={handleSaveCustomTarget} className="text-neon"><Zap size={10} /></button>
+              </div>
+            ) : (
+              <span className="text-xs font-bold text-neon font-mono">{Math.round(targetKcal)}</span>
+            )}
           </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Assunte</span>
-            <span className="text-4xl font-black text-white font-mono" style={{ textShadow: `0 0 20px rgba(var(--neon-accent-rgb),0.3)` }}>{Math.round(totalConsumed)}</span>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex flex-col items-center">
+            <span className="text-[8px] uppercase tracking-widest text-zinc-600 mb-0.5 font-black">Assunte</span>
+            <span className="text-2xl font-black text-white font-mono">{Math.round(totalConsumed)}</span>
           </div>
-          <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center relative overflow-hidden">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Rimanenti</span>
-            <span className="text-4xl font-black text-neon font-mono" style={{ textShadow: `0 0 20px rgba(var(--neon-accent-rgb),0.5)` }}>{remainingKcal}</span>
-            <div className="absolute bottom-0 left-0 h-1.5 bg-white/5 w-full">
+          <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex flex-col items-center relative overflow-hidden">
+            <span className="text-[8px] uppercase tracking-widest text-zinc-600 mb-0.5 font-black">Rimanenti</span>
+            <span className="text-2xl font-black text-neon font-mono">{remainingKcal}</span>
+            <div className="absolute bottom-0 left-0 h-1 bg-white/5 w-full">
               <motion.div 
-                className="h-full bg-neon shadow-[0_0_10px_rgba(var(--neon-accent-rgb),0.8)]"
+                className="h-full bg-neon"
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(100, (totalConsumed / targetKcal) * 100)}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
+                transition={{ duration: 1 }}
               />
             </div>
           </div>
         </div>
 
-        {/* Macros */}
-        <div className="bg-black/20 border border-white/10 rounded-2xl p-4 grid grid-cols-3 gap-4 divide-x divide-white/10">
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Proteine</span>
-            <span className="text-xl font-black text-white font-mono">{Math.round(totalProtein)}<span className="text-xs text-zinc-500">/{macros.protein}g</span></span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Carbo</span>
-            <span className="text-xl font-black text-white font-mono">{Math.round(totalCarbs)}<span className="text-xs text-zinc-500">/{macros.carbs}g</span></span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Grassi</span>
-            <span className="text-xl font-black text-white font-mono">{Math.round(totalFat)}<span className="text-xs text-zinc-500">/{macros.fat}g</span></span>
-          </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'Pro', current: totalProtein, target: macros.protein, color: 'text-white' },
+            { label: 'Carb', current: totalCarbs, target: macros.carbs, color: 'text-white' },
+            { label: 'Fat', current: totalFat, target: macros.fat, color: 'text-white' }
+          ].map(m => (
+            <div key={m.label} className="bg-black/20 border border-white/5 rounded-xl p-2 flex flex-col items-center">
+              <span className="text-[7px] font-black uppercase tracking-widest text-zinc-600">{m.label}</span>
+              <span className="text-xs font-black font-mono">
+                {Math.round(m.current)}<span className="text-[8px] text-zinc-600">/{m.target}g</span>
+              </span>
+            </div>
+          ))}
         </div>
 
-        {/* Scientific Stats Row */}
-        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
+        <div className="flex justify-around pt-2 border-t border-white/5">
           <div className="flex flex-col items-center">
-            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-600">BMR</span>
-            <span className="text-xs font-bold text-zinc-400 font-mono">{Math.round(bmr)}</span>
+            <span className="text-[7px] font-black uppercase tracking-widest text-zinc-700">BMR</span>
+            <span className="text-[10px] font-bold text-zinc-500 font-mono">{Math.round(bmr)}</span>
           </div>
           <div className="flex flex-col items-center">
-            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-600">TDEE</span>
-            <span className="text-xs font-bold text-zinc-400 font-mono">{Math.round(tdee)}</span>
+            <span className="text-[7px] font-black uppercase tracking-widest text-zinc-700">TDEE</span>
+            <span className="text-[10px] font-bold text-zinc-500 font-mono">{Math.round(tdee)}</span>
           </div>
           <div className="flex flex-col items-center">
-            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-600">BMI</span>
-            <span className="text-xs font-bold text-zinc-400 font-mono">{bmi.toFixed(1)}</span>
+            <span className="text-[7px] font-black uppercase tracking-widest text-zinc-700">BMI</span>
+            <span className="text-[10px] font-bold text-zinc-500 font-mono">{bmi.toFixed(1)}</span>
           </div>
         </div>
 

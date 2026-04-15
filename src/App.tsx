@@ -149,6 +149,12 @@ export default function App() {
   const currentTheme = themeColors[profile?.themeColor || 'blue'] || themeColors.blue;
 
   useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--neon-accent', currentTheme.hex);
+    root.style.setProperty('--neon-accent-rgb', currentTheme.rgb);
+  }, [currentTheme]);
+
+  useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       // If there's a hash, it means a modal is open and it will handle its own popstate
       if (window.location.hash || window.history.state?.modal) {

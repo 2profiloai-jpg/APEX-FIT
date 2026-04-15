@@ -3,9 +3,9 @@ import { UserProfile } from '../types';
 import { User } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { LogOut, Settings, Award, Shield, Bell, ChevronRight, Brain, User as UserIcon, Clock, Save } from 'lucide-react';
+import { LogOut, Settings, Award, Shield, Bell, ChevronRight, Brain, User as UserIcon, Clock, Save, X, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { isAIReady } from '../services/geminiService';
 import { cn } from '../lib/utils';
 
@@ -20,6 +20,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
   const [bodyFat, setBodyFat] = useState(profile?.bodyFat || 0);
   const [themeColor, setThemeColor] = useState(profile?.themeColor || 'blue');
   const [isSaving, setIsSaving] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -90,42 +91,6 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
           {aiStatus === 'ready' ? 'IA ATTIVA' : aiStatus === 'loading' ? 'CARICAMENTO IA...' : 'CHIAVE IA MANCANTE'}
         </motion.div>
       </motion.div>
-
-      {/* Theme Selection Section */}
-      <motion.section 
-        whileHover={{ scale: 1.01 }}
-        className="glass rounded-3xl p-6 space-y-4"
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <Settings className="text-neon" size={20} />
-          <h3 className="font-black uppercase tracking-tighter text-sm italic">Personalizzazione Tema</h3>
-        </div>
-
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { id: 'blue', hex: '#3b82f6' },
-            { id: 'red', hex: '#ef4444' },
-            { id: 'green', hex: '#22c55e' },
-            { id: 'yellow', hex: '#eab308' },
-            { id: 'purple', hex: '#a855f7' },
-            { id: 'pink', hex: '#ec4899' },
-            { id: 'orange', hex: '#f97316' },
-            { id: 'cyan', hex: '#06b6d4' }
-          ].map(c => (
-            <motion.button
-              key={c.id}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => handleSaveTheme(c.id)}
-              className={cn(
-                "w-full aspect-square rounded-2xl border-2 transition-all shadow-lg",
-                themeColor === c.id ? "border-white scale-110" : "border-transparent opacity-60"
-              )}
-              style={{ backgroundColor: c.hex, boxShadow: themeColor === c.id ? `0 0 20px ${c.hex}` : 'none' }}
-            />
-          ))}
-        </div>
-      </motion.section>
 
       {/* Biometric Entry Section */}
       <motion.section 
@@ -251,8 +216,97 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         <ProfileLink icon={<Award size={18} />} label="Traguardi" onClick={() => toast.info('Traguardi in arrivo presto!')} />
         <ProfileLink icon={<Bell size={18} />} label="Notifiche" onClick={() => toast.info('Impostazioni notifiche in arrivo!')} />
         <ProfileLink icon={<Shield size={18} />} label="Privacy e Sicurezza" onClick={() => toast.info('Privacy in arrivo!')} />
-        <ProfileLink icon={<Settings size={18} />} label="Preferenze" onClick={() => toast.info('Preferenze in arrivo!')} />
+        <ProfileLink icon={<Settings size={18} />} label="Preferenze" onClick={() => setShowPreferences(true)} />
       </div>
+
+      {/* Preferences Modal */}
+      <AnimatePresence>
+        {showPreferences && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md p-6 flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <Settings className="text-neon" size={24} />
+                <h3 className="text-2xl font-black uppercase tracking-tighter italic">Preferenze</h3>
+              </div>
+              <button 
+                onClick={() => setShowPreferences(false)}
+                className="p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-8 flex-1 overflow-y-auto pb-20">
+              {/* Theme Selection Section */}
+              <section className="space-y-4">
+                <div className="flex flex-col">
+                  <h4 className="font-black uppercase tracking-widest text-xs text-zinc-500 mb-1">Colore Accento</h4>
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Personalizza l'atmosfera neon del tuo ecosistema</p>
+                </div>
+
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    { id: 'blue', hex: '#3b82f6' },
+                    { id: 'red', hex: '#ef4444' },
+                    { id: 'green', hex: '#22c55e' },
+                    { id: 'yellow', hex: '#eab308' },
+                    { id: 'purple', hex: '#a855f7' },
+                    { id: 'pink', hex: '#ec4899' },
+                    { id: 'orange', hex: '#f97316' },
+                    { id: 'cyan', hex: '#06b6d4' }
+                  ].map(c => (
+                    <motion.button
+                      key={c.id}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => handleSaveTheme(c.id)}
+                      className={cn(
+                        "w-full aspect-square rounded-2xl border-2 transition-all shadow-lg relative overflow-hidden",
+                        themeColor === c.id ? "border-white scale-110" : "border-transparent opacity-60"
+                      )}
+                      style={{ 
+                        backgroundColor: c.hex, 
+                        boxShadow: themeColor === c.id ? `0 0 20px ${c.hex}` : 'none' 
+                      }}
+                    >
+                      {themeColor === c.id && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <Check size={20} className="text-white" />
+                        </div>
+                      )}
+                    </motion.button>
+                  ))}
+                </div>
+              </section>
+
+              <section className="space-y-4 opacity-50 pointer-events-none">
+                <div className="flex flex-col">
+                  <h4 className="font-black uppercase tracking-widest text-xs text-zinc-500 mb-1">Notifiche Push</h4>
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Promemoria allenamenti e pasti</p>
+                </div>
+                <div className="h-12 bg-zinc-900 rounded-2xl border border-zinc-800 flex items-center justify-between px-4">
+                  <span className="text-sm font-bold text-zinc-400">Attiva Notifiche</span>
+                  <div className="w-10 h-6 bg-zinc-800 rounded-full"></div>
+                </div>
+              </section>
+            </div>
+
+            <div className="pt-6">
+              <button 
+                onClick={() => setShowPreferences(false)}
+                className="w-full py-4 bg-neon text-black font-black uppercase tracking-widest text-xs rounded-2xl shadow-[0_0_20px_rgba(var(--neon-accent-rgb),0.3)]"
+              >
+                CONFERMA
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <motion.button 
         whileHover={{ scale: 1.02 }}

@@ -165,7 +165,7 @@ export default function ExerciseLibrary() {
           placeholder="CERCA NELL'ATLANTE..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 font-black uppercase tracking-tighter text-sm focus:ring-1 ring-blue-500 outline-none"
+          className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 font-black uppercase tracking-tighter text-sm focus:ring-1 ring-neon outline-none"
         />
       </div>
 
@@ -179,8 +179,8 @@ export default function ExerciseLibrary() {
             className={cn(
               "border px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
               selectedCategory === cat 
-                ? "bg-blue-500 text-black border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]" 
-                : "glass text-zinc-400 hover:text-blue-500 hover:border-blue-500"
+                ? "bg-neon text-black border-neon shadow-[0_0_20px_rgba(var(--neon-accent-rgb),0.3)]" 
+                : "glass text-zinc-400 hover:text-neon hover:border-neon"
             )}
           >
             {cat}
@@ -198,7 +198,7 @@ export default function ExerciseLibrary() {
             className="glass p-4 rounded-2xl flex items-center justify-between group cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-black/40 rounded-xl flex items-center justify-center border border-white/5 group-hover:bg-blue-500 transition-colors">
+              <div className="w-12 h-12 bg-black/40 rounded-xl flex items-center justify-center border border-white/5 group-hover:bg-neon transition-colors">
                 <Play size={20} className="text-zinc-500 group-hover:text-black fill-current" />
               </div>
               <div>
@@ -227,7 +227,7 @@ export default function ExerciseLibrary() {
             <div className="p-6 max-w-2xl mx-auto min-h-screen flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <Dumbbell className="text-blue-500" />
+                  <Dumbbell className="text-neon" />
                   <h3 className="text-2xl font-black uppercase tracking-tighter italic">Voce Atlante</h3>
                 </div>
                 <button onClick={() => setSelectedExercise(null)} className="p-2 bg-zinc-900 rounded-full">
@@ -259,7 +259,7 @@ export default function ExerciseLibrary() {
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.5)] group-hover:scale-110 transition-transform">
+                        <div className="w-16 h-16 bg-neon rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(var(--neon-accent-rgb),0.5)] group-hover:scale-110 transition-transform">
                           <Play size={32} className="text-black fill-current ml-1" />
                         </div>
                         <span className="mt-4 text-[10px] font-black uppercase tracking-widest text-white bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
@@ -282,7 +282,7 @@ export default function ExerciseLibrary() {
                     href={selectedExercise.videoUrl.replace('/embed/', '/watch?v=')} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-blue-500 transition-colors flex items-center gap-1"
+                    className="text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-neon transition-colors flex items-center gap-1"
                   >
                     Problemi con il video? Apri su YouTube <ChevronRight size={10} />
                   </a>
@@ -293,25 +293,25 @@ export default function ExerciseLibrary() {
                 <div>
                   <h1 className="text-4xl font-black uppercase tracking-tighter italic mb-2">{selectedExercise.name}</h1>
                   <div className="flex flex-wrap gap-2">
-                    <span className="bg-blue-500 text-black text-[10px] font-black uppercase px-3 py-1 rounded-full">
+                    <span className="bg-neon text-black text-[10px] font-black uppercase px-3 py-1 rounded-full">
                       {selectedExercise.category}
                     </span>
                     <span className="bg-zinc-800 text-zinc-300 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-zinc-700">
                       {selectedExercise.equipment}
                     </span>
-                    <span className="bg-zinc-800 text-blue-500 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-blue-500/20">
+                    <span className="bg-zinc-800 text-neon text-[10px] font-black uppercase px-3 py-1 rounded-full border border-neon/20">
                       {selectedExercise.type}
                     </span>
                   </div>
                 </div>
 
                 {selectedExercise.proNote && (
-                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6">
-                    <div className="flex items-center gap-2 mb-2 text-blue-500">
+                  <div className="bg-neon/10 border border-neon/20 rounded-2xl p-6">
+                    <div className="flex items-center gap-2 mb-2 text-neon">
                       <Brain size={18} />
                       <h4 className="font-black uppercase tracking-tighter text-sm">Nota Pro</h4>
                     </div>
-                    <p className="text-blue-100 text-sm font-bold italic">
+                    <p className="text-neon/80 text-sm font-bold italic">
                       "{selectedExercise.proNote}"
                     </p>
                   </div>
