@@ -140,6 +140,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
   };
 
   const handleAIFoodParse = async (meal: string) => {
+    console.log("handleAIFoodParse called for meal:", meal);
     const hasImage = selectedImage && selectedImage.meal === meal;
     if (!newFood.name.trim() && !hasImage) return;
     

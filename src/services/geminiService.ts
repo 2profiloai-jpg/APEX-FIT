@@ -100,8 +100,9 @@ export const getStrategistAdvice = async (
   `;
 
   try {
+    console.log("AI Request (getStrategistAdvice)");
     const response = await aiClient.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -175,8 +176,9 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
   parts.push({ text: prompt });
 
   try {
+    console.log("AI Request (parseFoodInput):", { input, hasImage: !!imageBase64 });
     const response = await aiClient.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       contents: [{ role: 'user', parts }],
       config: {
         responseMimeType: "application/json",
@@ -228,8 +230,9 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
   `;
 
   try {
+    console.log("AI Request (getPostWorkoutAdvice)");
     const response = await aiClient.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       contents: prompt,
     });
     return response.text || "Ottimo allenamento completato.";
