@@ -42,3 +42,16 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Safe Area Utilities */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+.min-h-screen-safe {
+  min-height: -webkit-fill-available;
+}

@@ -54,7 +54,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
   };
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-8">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

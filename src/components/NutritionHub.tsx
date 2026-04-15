@@ -198,7 +198,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
   const remainingKcal = Math.round(targetKcal - totalKcal);
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-8">
       
       {/* Header Stats */}
       <motion.section 

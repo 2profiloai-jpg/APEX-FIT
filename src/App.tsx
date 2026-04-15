@@ -230,7 +230,7 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="pt-20 pb-24 px-4 max-w-2xl mx-auto">
+      <main className="pt-20 pb-32 px-4 max-w-2xl mx-auto">
         <AnimatePresence mode="wait">
           {activeTab === 'dashboard' && (
             <motion.div 
@@ -291,7 +291,7 @@ export default function App() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-black/40 backdrop-blur-2xl border-t border-white/5 z-50 px-2 flex items-center justify-around">
+      <nav className="fixed bottom-0 left-0 right-0 h-[calc(5rem+env(safe-area-inset-bottom))] bg-black/40 backdrop-blur-2xl border-t border-white/5 z-50 px-2 flex items-start justify-around pt-4 pb-safe">
         <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<Activity />} label="Home" />
         <NavButton active={activeTab === 'workout'} onClick={() => setActiveTab('workout')} icon={<Dumbbell />} label="Allenati" />
         <NavButton active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')} icon={<Apple />} label="Nutrizione" />
