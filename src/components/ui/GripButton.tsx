@@ -16,7 +16,7 @@ const GripButton: React.FC<GripButtonProps> = ({
   const variants = {
     primary: "bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700",
     secondary: "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200",
-    accent: "bg-blue-500 text-black border-blue-600 hover:bg-blue-400",
+    accent: "bg-neon text-black border-neon/50 hover:bg-neon/80",
     danger: "bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20"
   };
 

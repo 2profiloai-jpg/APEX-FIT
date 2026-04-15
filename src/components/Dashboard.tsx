@@ -1,17 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, WorkoutSession } from '../types';
 import { db } from '../firebase';
-import { collection, query, orderBy, limit, onSnapshot, doc, where } from 'firebase/firestore';
-import { Plus, Target, Calendar, Droplets } from 'lucide-react';
+import { collection, query, orderBy, limit, onSnapshot, doc, where, setDoc } from 'firebase/firestore';
+import { Plus, Target, Calendar, Droplets, Activity, Zap, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
-import { calculateBMR, calculateTDEE, calculateTargetKcal, calculateMacros } from '../lib/calculations';
+import { calculateBMR, calculateTDEE, calculateTargetKcal, calculateMacros, calculateBMI } from '../lib/calculations';
 import { WorkoutPlan } from '../types';
 
 export default function Dashboard({ profile, aiStatus }: { profile: UserProfile | null, aiStatus: 'loading' | 'ready' | 'error' }) {
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
   const [todayPlans, setTodayPlans] = useState<WorkoutPlan[]>([]);
   const [tomorrowPlans, setTomorrowPlans] = useState<WorkoutPlan[]>([]);
+
+  const [isEditingTarget, setIsEditingTarget] = useState(false);
+  const [tempTarget, setTempTarget] = useState('');
+
+  const handleSaveCustomTarget = async () => {
+    if (!profile?.uid) return;
+    const newTarget = parseInt(tempTarget);
+    if (isNaN(newTarget) || newTarget < 500) return;
+    
+    await setDoc(doc(db, 'users', profile.uid), {
+      customTargets: {
+        ...profile.customTargets,
+        kcal: newTarget
+      }
+    }, { merge: true });
+    setIsEditingTarget(false);
+  };
+
+  const handleResetTarget = async () => {
+    if (!profile?.uid) return;
+    await setDoc(doc(db, 'users', profile.uid), {
+      customTargets: null
+    }, { merge: true });
+    setIsEditingTarget(false);
+  };
 
   useEffect(() => {
     if (!profile?.uid) return;
@@ -125,70 +150,11 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
   const targetKcal = profile?.customTargets?.kcal || calculatedTargetKcal;
   const macros = calculateMacros(weight, targetKcal);
   const remainingKcal = Math.round(targetKcal - totalConsumed);
+  const bmi = calculateBMI(weight, height);
 
   return (
     <div className="space-y-8">
       
-      {/* Nutrition Balance Section */}
-      <motion.section 
-        whileHover={{ scale: 1.01 }}
-        className="glass rounded-3xl p-6 space-y-6"
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <Target className="text-blue-500" size={20} />
-          <h3 className="font-black uppercase tracking-tighter text-sm italic">Bilancio Giornaliero</h3>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Assunte</span>
-            <span className="text-4xl font-black text-white font-mono" style={{ textShadow: '0 0 20px rgba(59,130,246,0.3)' }}>{Math.round(totalConsumed)}</span>
-          </div>
-          <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center relative overflow-hidden">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Rimanenti</span>
-            <span className="text-4xl font-black text-blue-500 font-mono" style={{ textShadow: '0 0 20px rgba(59,130,246,0.5)' }}>{remainingKcal}</span>
-            <div className="absolute bottom-0 left-0 h-1.5 bg-white/5 w-full">
-              <motion.div 
-                className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, (totalConsumed / targetKcal) * 100)}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Macros */}
-        <div className="bg-black/20 border border-white/10 rounded-2xl p-4 grid grid-cols-3 gap-4 divide-x divide-white/10">
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Proteine</span>
-            <span className="text-xl font-black text-white font-mono">{Math.round(totalProtein)}<span className="text-xs text-zinc-500">/{macros.protein}g</span></span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Carbo</span>
-            <span className="text-xl font-black text-white font-mono">{Math.round(totalCarbs)}<span className="text-xs text-zinc-500">/{macros.carbs}g</span></span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Grassi</span>
-            <span className="text-xl font-black text-white font-mono">{Math.round(totalFat)}<span className="text-xs text-zinc-500">/{macros.fat}g</span></span>
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Quick Action */}
-      <motion.button 
-        whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(59,130,246,0.3)" }}
-        whileTap={{ scale: 0.95 }}
-        className="w-full py-8 text-2xl bg-blue-500 text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4"
-        onClick={() => {
-          const event = new CustomEvent('start-workout');
-          window.dispatchEvent(event);
-        }}
-      >
-        <Plus size={32} strokeWidth={3} />
-        INIZIA ALLENAMENTO
-      </motion.button>
-
       {/* Workout Preview */}
       <div className="grid grid-cols-2 gap-4">
         <motion.div 
@@ -196,7 +162,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           className="glass rounded-3xl p-5 border border-white/5"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Calendar size={16} className="text-blue-500" />
+            <Calendar size={16} className="text-neon" />
             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Oggi</span>
           </div>
           <div className="font-black uppercase italic tracking-tighter text-lg leading-tight">
@@ -224,17 +190,132 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         </motion.div>
       </div>
 
+      {/* Metabolic Hub */}
+      <motion.section 
+        whileHover={{ scale: 1.01 }}
+        className="glass rounded-3xl p-6 space-y-6"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Target className="text-neon" size={20} />
+            <h3 className="font-black uppercase tracking-tighter text-sm italic">Hub Metabolico</h3>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="bg-neon/5 border border-neon/20 px-3 py-1.5 rounded-xl flex flex-col items-end">
+              <span className="text-[8px] font-black uppercase tracking-widest text-neon mb-0.5">Target</span>
+              {isEditingTarget ? (
+                <div className="flex items-center gap-1">
+                  <input 
+                    type="number" 
+                    value={tempTarget} 
+                    onChange={(e) => setTempTarget(e.target.value)}
+                    className="bg-black/40 border border-neon/50 rounded px-1 py-0.5 text-neon w-14 text-xs outline-none font-bold focus:ring-1 ring-neon"
+                    autoFocus
+                  />
+                  <button onClick={handleSaveCustomTarget} className="text-neon p-0.5"><Zap size={10} /></button>
+                </div>
+              ) : (
+                <div 
+                  className="text-sm font-bold text-neon font-mono cursor-pointer flex items-center gap-1"
+                  onClick={() => {
+                    setTempTarget(targetKcal.toString());
+                    setIsEditingTarget(true);
+                  }}
+                >
+                  {Math.round(targetKcal)} <span className="text-[10px] text-neon/50">kcal</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center">
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Assunte</span>
+            <span className="text-4xl font-black text-white font-mono" style={{ textShadow: `0 0 20px rgba(var(--neon-accent-rgb),0.3)` }}>{Math.round(totalConsumed)}</span>
+          </div>
+          <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center relative overflow-hidden">
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Rimanenti</span>
+            <span className="text-4xl font-black text-neon font-mono" style={{ textShadow: `0 0 20px rgba(var(--neon-accent-rgb),0.5)` }}>{remainingKcal}</span>
+            <div className="absolute bottom-0 left-0 h-1.5 bg-white/5 w-full">
+              <motion.div 
+                className="h-full bg-neon shadow-[0_0_10px_rgba(var(--neon-accent-rgb),0.8)]"
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, (totalConsumed / targetKcal) * 100)}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Macros */}
+        <div className="bg-black/20 border border-white/10 rounded-2xl p-4 grid grid-cols-3 gap-4 divide-x divide-white/10">
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Proteine</span>
+            <span className="text-xl font-black text-white font-mono">{Math.round(totalProtein)}<span className="text-xs text-zinc-500">/{macros.protein}g</span></span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Carbo</span>
+            <span className="text-xl font-black text-white font-mono">{Math.round(totalCarbs)}<span className="text-xs text-zinc-500">/{macros.carbs}g</span></span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Grassi</span>
+            <span className="text-xl font-black text-white font-mono">{Math.round(totalFat)}<span className="text-xs text-zinc-500">/{macros.fat}g</span></span>
+          </div>
+        </div>
+
+        {/* Scientific Stats Row */}
+        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
+          <div className="flex flex-col items-center">
+            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-600">BMR</span>
+            <span className="text-xs font-bold text-zinc-400 font-mono">{Math.round(bmr)}</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-600">TDEE</span>
+            <span className="text-xs font-bold text-zinc-400 font-mono">{Math.round(tdee)}</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-600">BMI</span>
+            <span className="text-xs font-bold text-zinc-400 font-mono">{bmi.toFixed(1)}</span>
+          </div>
+        </div>
+
+        {profile?.customTargets?.kcal && Math.abs(calculatedTargetKcal - profile.customTargets.kcal) > 50 && !isEditingTarget && (
+          <button 
+            onClick={handleResetTarget}
+            className="w-full text-[8px] text-black font-black uppercase tracking-widest bg-neon py-1.5 rounded-xl mt-1 hover:bg-neon/80 transition-colors"
+          >
+            Sincronizza a {Math.round(calculatedTargetKcal)} kcal
+          </button>
+        )}
+      </motion.section>
+
+      {/* Quick Action */}
+      <motion.button 
+        whileHover={{ scale: 1.02, boxShadow: `0 0 30px rgba(var(--neon-accent-rgb),0.3)` }}
+        whileTap={{ scale: 0.95 }}
+        className="w-full py-8 text-2xl bg-neon text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4"
+        onClick={() => {
+          const event = new CustomEvent('start-workout');
+          window.dispatchEvent(event);
+        }}
+      >
+        <Plus size={32} strokeWidth={3} />
+        INIZIA ALLENAMENTO
+      </motion.button>
+
       {/* Water Reminder */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-3xl p-6 border border-blue-500/20 bg-blue-500/5 flex items-center gap-4"
+        className="glass rounded-3xl p-6 border border-neon/20 bg-neon/5 flex items-center gap-4"
       >
-        <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-500">
+        <div className="w-12 h-12 bg-neon/20 rounded-2xl flex items-center justify-center text-neon">
           <Droplets size={24} />
         </div>
         <div>
-          <h4 className="font-black uppercase italic tracking-tighter text-blue-500">Idratazione</h4>
+          <h4 className="font-black uppercase italic tracking-tighter text-neon">Idratazione</h4>
           <p className="text-xs text-zinc-400 leading-relaxed">
             "Ehi campione, hai bevuto abbastanza oggi? Un sorso d'acqua ora vale un record domani!" 💧
           </p>

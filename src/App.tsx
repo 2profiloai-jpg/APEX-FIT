@@ -135,6 +135,19 @@ export default function App() {
 
   const [exitWarning, setExitWarning] = useState(false);
 
+  const themeColors: Record<string, { hex: string, rgb: string }> = {
+    blue: { hex: '#3b82f6', rgb: '59, 130, 246' },
+    red: { hex: '#ef4444', rgb: '239, 68, 68' },
+    green: { hex: '#22c55e', rgb: '34, 197, 94' },
+    yellow: { hex: '#eab308', rgb: '234, 179, 8' },
+    purple: { hex: '#a855f7', rgb: '168, 85, 247' },
+    pink: { hex: '#ec4899', rgb: '236, 72, 153' },
+    orange: { hex: '#f97316', rgb: '249, 115, 22' },
+    cyan: { hex: '#06b6d4', rgb: '6, 182, 212' },
+  };
+
+  const currentTheme = themeColors[profile?.themeColor || 'blue'] || themeColors.blue;
+
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       // If there's a hash, it means a modal is open and it will handle its own popstate
@@ -176,7 +189,7 @@ export default function App() {
           className="max-w-md w-full"
         >
           <div className="mb-8 flex justify-center">
-            <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(59,130,246,0.5)]">
+            <div className="w-20 h-20 bg-neon rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(var(--neon-accent-rgb),0.5)]">
               <Zap className="text-black w-10 h-10 fill-current" />
             </div>
           </div>
@@ -188,7 +201,7 @@ export default function App() {
           <div className="space-y-4">
             <button 
               onClick={handleLogin}
-              className="w-full bg-white text-black font-bold py-4 px-8 rounded-full flex items-center justify-center gap-3 hover:bg-blue-500 transition-colors shadow-lg"
+              className="w-full bg-white text-black font-bold py-4 px-8 rounded-full flex items-center justify-center gap-3 hover:bg-neon transition-colors shadow-lg"
             >
               <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
               INIZIA LA TUA ASCESA
@@ -197,9 +210,9 @@ export default function App() {
             {isInstallable && (
               <button 
                 onClick={handleInstallClick}
-                className="w-full bg-zinc-900 border border-zinc-800 text-white font-bold py-4 px-8 rounded-full flex items-center justify-center gap-3 hover:border-blue-500 transition-colors"
+                className="w-full bg-zinc-900 border border-zinc-800 text-white font-bold py-4 px-8 rounded-full flex items-center justify-center gap-3 hover:border-neon transition-colors"
               >
-                <Download className="w-5 h-5 text-blue-500" />
+                <Download className="w-5 h-5 text-neon" />
                 INSTALLA L'APP
               </button>
             )}
@@ -210,18 +223,24 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-blue-500 selection:text-black">
+    <div 
+      className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-neon selection:text-black"
+      style={{ 
+        '--neon-accent': currentTheme.hex,
+        '--neon-accent-rgb': currentTheme.rgb
+      } as React.CSSProperties}
+    >
       <Toaster position="top-center" expand={true} richColors theme="dark" />
       {/* Top Bar */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-black/40 backdrop-blur-2xl border-b border-white/5 z-50 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Zap className="text-blue-500 w-6 h-6 fill-current drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+          <Zap className="text-neon w-6 h-6 fill-current drop-shadow-[0_0_8px_rgba(var(--neon-accent-rgb),0.6)]" />
           <span className="font-black tracking-tighter italic uppercase text-xl">Apex</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-end">
             <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Prontezza</span>
-            <span className="text-blue-500 font-mono font-bold">{profile?.readinessScore}%</span>
+            <span className="text-neon font-mono font-bold">{profile?.readinessScore}%</span>
           </div>
           <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
             <img src={user.photoURL || ''} alt="Profile" referrerPolicy="no-referrer" />
@@ -310,13 +329,13 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
       onClick={onClick}
       className={cn(
         "flex flex-col items-center gap-1 transition-colors relative",
-        active ? "text-blue-500" : "text-zinc-500"
+        active ? "text-neon" : "text-zinc-500"
       )}
     >
       {active && (
         <motion.div 
           layoutId="nav-glow"
-          className="absolute -inset-2 bg-blue-500/10 blur-xl rounded-full -z-10"
+          className="absolute -inset-2 bg-neon/10 blur-xl rounded-full -z-10"
         />
       )}
       {icon}

@@ -7,6 +7,7 @@ import { LogOut, Settings, Award, Shield, Bell, ChevronRight, Brain, User as Use
 import { toast } from 'sonner';
 import { motion } from 'motion/react';
 import { isAIReady } from '../services/geminiService';
+import { cn } from '../lib/utils';
 
 export default function Profile({ profile, user, aiStatus }: { profile: UserProfile | null, user: User, aiStatus: 'loading' | 'ready' | 'error' }) {
   // Biometric State
@@ -17,6 +18,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
   const [activityLevel, setActivityLevel] = useState(profile?.activityLevel || 1.2);
   const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>(profile?.goal || 'maintain');
   const [bodyFat, setBodyFat] = useState(profile?.bodyFat || 0);
+  const [themeColor, setThemeColor] = useState(profile?.themeColor || 'blue');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -28,8 +30,21 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
       if (profile.activityLevel) setActivityLevel(profile.activityLevel);
       if (profile.goal) setGoal(profile.goal);
       if (profile.bodyFat) setBodyFat(profile.bodyFat);
+      if (profile.themeColor) setThemeColor(profile.themeColor);
     }
   }, [profile]);
+
+  const handleSaveTheme = async (color: string) => {
+    if (!profile) return;
+    setThemeColor(color);
+    try {
+      await updateDoc(doc(db, 'users', profile.uid), {
+        themeColor: color
+      });
+    } catch (error) {
+      toast.error('Errore durante il cambio tema.');
+    }
+  };
 
   const handleSaveBiometrics = async () => {
     if (!profile) return;
@@ -62,7 +77,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
       >
         <motion.div 
           whileHover={{ scale: 1.05, rotate: 5 }}
-          className="w-24 h-24 rounded-3xl glass border-2 border-blue-500 p-1 mb-4 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
+          className="w-24 h-24 rounded-3xl glass border-2 border-neon p-1 mb-4 shadow-[0_0_30px_rgba(var(--neon-accent-rgb),0.2)]"
         >
           <img src={user.photoURL || ''} className="w-full h-full rounded-2xl object-cover" alt="Profile" referrerPolicy="no-referrer" />
         </motion.div>
@@ -70,11 +85,47 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         
         <motion.div 
           whileHover={{ scale: 1.05 }}
-          className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${aiStatus === 'ready' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : aiStatus === 'loading' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+          className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${aiStatus === 'ready' ? 'bg-neon/10 text-neon border-neon/20' : aiStatus === 'loading' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
           <Brain size={14} />
           {aiStatus === 'ready' ? 'IA ATTIVA' : aiStatus === 'loading' ? 'CARICAMENTO IA...' : 'CHIAVE IA MANCANTE'}
         </motion.div>
       </motion.div>
+
+      {/* Theme Selection Section */}
+      <motion.section 
+        whileHover={{ scale: 1.01 }}
+        className="glass rounded-3xl p-6 space-y-4"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <Settings className="text-neon" size={20} />
+          <h3 className="font-black uppercase tracking-tighter text-sm italic">Personalizzazione Tema</h3>
+        </div>
+
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { id: 'blue', hex: '#3b82f6' },
+            { id: 'red', hex: '#ef4444' },
+            { id: 'green', hex: '#22c55e' },
+            { id: 'yellow', hex: '#eab308' },
+            { id: 'purple', hex: '#a855f7' },
+            { id: 'pink', hex: '#ec4899' },
+            { id: 'orange', hex: '#f97316' },
+            { id: 'cyan', hex: '#06b6d4' }
+          ].map(c => (
+            <motion.button
+              key={c.id}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => handleSaveTheme(c.id)}
+              className={cn(
+                "w-full aspect-square rounded-2xl border-2 transition-all shadow-lg",
+                themeColor === c.id ? "border-white scale-110" : "border-transparent opacity-60"
+              )}
+              style={{ backgroundColor: c.hex, boxShadow: themeColor === c.id ? `0 0 20px ${c.hex}` : 'none' }}
+            />
+          ))}
+        </div>
+      </motion.section>
 
       {/* Biometric Entry Section */}
       <motion.section 
@@ -82,7 +133,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         className="glass rounded-3xl p-6 space-y-6"
       >
         <div className="flex items-center gap-2 mb-2">
-          <UserIcon className="text-blue-500" size={20} />
+          <UserIcon className="text-neon" size={20} />
           <h3 className="font-black uppercase tracking-tighter text-sm italic">Parametri Biometrici</h3>
         </div>
 
@@ -93,7 +144,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={weight || ''} 
               onChange={(e) => setWeight(parseFloat(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-blue-500/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
               placeholder="0.0"
             />
           </div>
@@ -103,7 +154,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={height || ''} 
               onChange={(e) => setHeight(parseFloat(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-blue-500/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
               placeholder="0"
             />
           </div>
@@ -113,7 +164,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={age || ''} 
               onChange={(e) => setAge(parseInt(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-blue-500/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
               placeholder="0"
             />
           </div>
@@ -123,7 +174,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={bodyFat || ''} 
               onChange={(e) => setBodyFat(parseFloat(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-blue-500/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
               placeholder="Opzionale"
             />
           </div>
@@ -133,14 +184,14 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               <motion.button 
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setGender('male')}
-                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'male' ? 'bg-blue-500 text-black shadow-lg' : 'text-zinc-500'}`}
+                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'male' ? 'bg-neon text-black shadow-lg' : 'text-zinc-500'}`}
               >
                 M
               </motion.button>
               <motion.button 
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setGender('female')}
-                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'female' ? 'bg-blue-500 text-black shadow-lg' : 'text-zinc-500'}`}
+                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'female' ? 'bg-neon text-black shadow-lg' : 'text-zinc-500'}`}
               >
                 F
               </motion.button>
@@ -153,7 +204,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
           <select 
             value={activityLevel}
             onChange={(e) => setActivityLevel(parseFloat(e.target.value))}
-            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-blue-500/50 outline-none appearance-none transition-all"
+            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-neon/50 outline-none appearance-none transition-all"
           >
             <option value={1.2}>Sedentario (Ufficio)</option>
             <option value={1.375}>Leggero (1-3 allenamenti)</option>
@@ -176,7 +227,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setGoal(g.id as any)}
-                className={`py-2.5 rounded-xl text-[10px] font-black uppercase border transition-all ${goal === g.id ? 'bg-blue-500 text-black border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]' : 'bg-black/20 border-white/5 text-zinc-500'}`}
+                className={`py-2.5 rounded-xl text-[10px] font-black uppercase border transition-all ${goal === g.id ? 'bg-neon text-black border-neon shadow-[0_0_20px_rgba(var(--neon-accent-rgb),0.3)]' : 'bg-black/20 border-white/5 text-zinc-500'}`}
               >
                 {g.label}
               </motion.button>
@@ -189,7 +240,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
           whileTap={{ scale: 0.98 }}
           onClick={handleSaveBiometrics}
           disabled={isSaving}
-          className="w-full py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-blue-500 transition-all disabled:opacity-50"
+          className="w-full py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-neon transition-all disabled:opacity-50"
         >
           {isSaving ? <Clock className="animate-spin" size={16} /> : <Save size={16} />}
           {isSaving ? 'SALVATAGGIO...' : 'SALVA PARAMETRI'}

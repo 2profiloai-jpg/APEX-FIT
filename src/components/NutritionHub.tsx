@@ -2,65 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
-import { Plus, X, Camera, Brain, Activity, Target, Zap } from 'lucide-react';
+import { Plus, X, Camera, Brain, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { parseFoodInput } from '../services/geminiService';
-import { calculateBMR, calculateTDEE, calculateTargetKcal, calculateMacros, calculateBMI } from '../lib/calculations';
 
 export default function NutritionHub({ profile }: { profile: UserProfile | null }) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [meals, setMeals] = useState<{ [key: string]: { id: string, name: string, kcal: number, carbs?: number, protein?: number, fat?: number }[] }>({
     Colazione: [],
     Pranzo: [],
-    Cena: [],
-    Spuntini: []
+    Spuntino: [],
+    Cena: []
   });
   const [newFood, setNewFood] = useState({ meal: '', name: '', kcal: '', carbs: '', protein: '', fat: '' });
   const [isAdding, setIsAdding] = useState<string | null>(null);
   const [parsingMeal, setParsingMeal] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ meal: string, dataUrl: string } | null>(null);
-
-  // Calculations
-  const weight = profile?.weight || 0;
-  const height = profile?.height || 0;
-  const age = profile?.age || 0;
-  const gender = profile?.gender || 'male';
-  const activityLevel = profile?.activityLevel || 1.2;
-  const goal = profile?.goal || 'maintain';
-  const bodyFat = profile?.bodyFat;
-
-  const bmr = weight && height && age ? calculateBMR(weight, height, age, gender, bodyFat) : 0;
-  const tdee = calculateTDEE(bmr, activityLevel);
-  const calculatedTargetKcal = calculateTargetKcal(tdee, goal);
-  const targetKcal = profile?.customTargets?.kcal || calculatedTargetKcal;
-  const macros = calculateMacros(weight, targetKcal);
-  const bmi = calculateBMI(weight, height);
-
-  const [isEditingTarget, setIsEditingTarget] = useState(false);
-  const [tempTarget, setTempTarget] = useState(targetKcal.toString());
-
-  const handleSaveCustomTarget = async () => {
-    if (!profile?.uid) return;
-    const newTarget = parseInt(tempTarget);
-    if (isNaN(newTarget) || newTarget < 500) return;
-    
-    await setDoc(doc(db, 'users', profile.uid), {
-      customTargets: {
-        ...profile.customTargets,
-        kcal: newTarget
-      }
-    }, { merge: true });
-    setIsEditingTarget(false);
-  };
-
-  const handleResetTarget = async () => {
-    if (!profile?.uid) return;
-    await setDoc(doc(db, 'users', profile.uid), {
-      customTargets: null
-    }, { merge: true });
-    setIsEditingTarget(false);
-  };
 
   // Totals
   let totalKcal = 0;
@@ -83,9 +41,9 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
     
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        setMeals(docSnap.data().meals || { Colazione: [], Pranzo: [], Cena: [], Spuntini: [] });
+        setMeals(docSnap.data().meals || { Colazione: [], Pranzo: [], Spuntino: [], Cena: [] });
       } else {
-        setMeals({ Colazione: [], Pranzo: [], Cena: [], Spuntini: [] });
+        setMeals({ Colazione: [], Pranzo: [], Spuntino: [], Cena: [] });
       }
     }, (error) => {
       console.error('Firestore Error in NutritionHub:', error);
@@ -196,8 +154,6 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
     await saveMeals(updatedMeals);
   };
 
-  const remainingKcal = Math.round(targetKcal - totalKcal);
-
   const changeDate = (days: number) => {
     const date = new Date(selectedDate);
     date.setDate(date.getDate() + days);
@@ -215,10 +171,10 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
           onClick={() => changeDate(-1)}
           className="p-3 hover:bg-white/5 rounded-xl text-zinc-400 transition-colors"
         >
-          <Plus size={20} className="rotate-45" />
+          <ChevronLeft size={20} />
         </button>
         <div className="flex flex-col items-center">
-          <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">
+          <span className="text-[10px] font-black uppercase tracking-widest text-neon">
             {isToday ? 'Oggi' : new Date(selectedDate).toLocaleDateString('it-IT', { weekday: 'long' })}
           </span>
           <span className="text-sm font-bold text-white">
@@ -229,123 +185,15 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
           onClick={() => changeDate(1)}
           className="p-3 hover:bg-white/5 rounded-xl text-zinc-400 transition-colors"
         >
-          <Plus size={20} />
+          <ChevronRight size={20} />
         </button>
       </div>
       
-      {/* Header Stats */}
-      <motion.section 
-        whileHover={{ scale: 1.01 }}
-        className="glass rounded-3xl p-6 space-y-6"
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <Target className="text-blue-500" size={20} />
-          <h3 className="font-black uppercase tracking-tighter text-sm italic">Bilancio Giornaliero</h3>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Assunte</span>
-            <span className="text-4xl font-black text-white font-mono" style={{ textShadow: '0 0 20px rgba(59,130,246,0.3)' }}>{Math.round(totalKcal)}</span>
-          </div>
-          <div className="bg-black/20 border border-white/10 p-4 rounded-2xl flex flex-col justify-center items-center relative overflow-hidden">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1 font-black">Rimanenti</span>
-            <span className="text-4xl font-black text-blue-500 font-mono" style={{ textShadow: '0 0 20px rgba(59,130,246,0.5)' }}>{remainingKcal}</span>
-            <div className="absolute bottom-0 left-0 h-1.5 bg-white/5 w-full">
-              <motion.div 
-                className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, (totalKcal / targetKcal) * 100)}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Macros */}
-        <div className="bg-black/20 border border-white/10 rounded-2xl p-4 grid grid-cols-3 gap-4 divide-x divide-white/10">
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Proteine</span>
-            <span className="text-xl font-black text-white font-mono">{Math.round(totalProtein)}<span className="text-xs text-zinc-500">/{macros.protein}g</span></span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Carbo</span>
-            <span className="text-xl font-black text-white font-mono">{Math.round(totalCarbs)}<span className="text-xs text-zinc-500">/{macros.carbs}g</span></span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1">Grassi</span>
-            <span className="text-xl font-black text-white font-mono">{Math.round(totalFat)}<span className="text-xs text-zinc-500">/{macros.fat}g</span></span>
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Scientific Data */}
-      <motion.section 
-        whileHover={{ scale: 1.01 }}
-        className="glass rounded-3xl p-6 space-y-4"
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <Activity className="text-blue-500" size={20} />
-          <h3 className="font-black uppercase tracking-tighter text-sm italic">Dati Metabolici</h3>
-        </div>
-        
-        <div className="space-y-3 font-mono text-sm">
-          <div className="flex justify-between items-center border-b border-white/5 pb-3">
-            <span className="text-xs font-black uppercase tracking-widest text-zinc-500">BMR (Mifflin-St Jeor{bodyFat ? ' / Katch-McArdle' : ''})</span>
-            <span className="font-bold text-white">{Math.round(bmr)} kcal</span>
-          </div>
-          <div className="flex justify-between items-center border-b border-white/5 pb-3">
-            <span className="text-xs font-black uppercase tracking-widest text-zinc-500">TDEE (PAL: {activityLevel})</span>
-            <span className="font-bold text-white">{Math.round(tdee)} kcal</span>
-          </div>
-          <div className="flex justify-between items-center border-b border-white/5 pb-3">
-            <span className="text-xs font-black uppercase tracking-widest text-zinc-500">Target ({goal})</span>
-            {isEditingTarget ? (
-              <div className="flex items-center gap-2">
-                <input 
-                  type="number" 
-                  value={tempTarget} 
-                  onChange={(e) => setTempTarget(e.target.value)}
-                  className="bg-black/40 border border-blue-500/50 rounded px-2 py-1 text-blue-500 w-20 text-right outline-none font-bold focus:ring-1 ring-blue-500"
-                  autoFocus
-                />
-                <button onClick={handleSaveCustomTarget} className="text-blue-500 hover:text-blue-400 p-1 bg-blue-500/10 rounded"><Zap size={14} /></button>
-                <button onClick={handleResetTarget} className="text-red-500 hover:text-red-400 p-1 bg-red-500/10 rounded"><X size={14} /></button>
-              </div>
-            ) : (
-              <div className="flex flex-col items-end">
-                <span 
-                  className="font-bold cursor-pointer text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1"
-                  onClick={() => {
-                    setTempTarget(targetKcal.toString());
-                    setIsEditingTarget(true);
-                  }}
-                >
-                  {Math.round(targetKcal)} kcal
-                  {profile?.customTargets?.kcal && <span className="text-[8px] text-blue-500/50 uppercase">(Custom)</span>}
-                </span>
-                {profile?.customTargets?.kcal && Math.abs(calculatedTargetKcal - profile.customTargets.kcal) > 50 && (
-                  <button 
-                    onClick={handleResetTarget}
-                    className="text-[8px] text-black font-black uppercase tracking-widest bg-blue-500 px-2 py-1 rounded mt-1 hover:bg-blue-400 transition-colors"
-                  >
-                    Sincronizza a {Math.round(calculatedTargetKcal)}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-black uppercase tracking-widest text-zinc-500">BMI</span>
-            <span className="font-bold text-white">{bmi.toFixed(1)}</span>
-          </div>
-        </div>
-      </motion.section>
-
       {/* Meals List */}
       <div className="space-y-4">
-        {Object.keys(meals).map((meal) => {
-          const mealKcal = meals[meal].reduce((sum, item) => sum + (item.kcal || 0), 0);
+        {['Colazione', 'Pranzo', 'Spuntino', 'Cena'].map((meal) => {
+          const mealItems = meals[meal] || [];
+          const mealKcal = mealItems.reduce((sum, item) => sum + (item.kcal || 0), 0);
           
           return (
             <motion.div 
@@ -355,12 +203,12 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
             >
               <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
                 <span className="font-black uppercase tracking-widest text-sm text-white">{meal}</span>
-                <span className="text-xs font-black text-blue-500 font-mono">{mealKcal} kcal</span>
+                <span className="text-xs font-black text-neon font-mono">{mealKcal} kcal</span>
               </div>
               
               <div className="p-4 space-y-3">
                 <AnimatePresence>
-                  {meals[meal].map(item => (
+                  {mealItems.map(item => (
                     <motion.div 
                       key={item.id}
                       initial={{ opacity: 0, height: 0 }}
@@ -373,7 +221,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                         <div className="text-[10px] text-zinc-500 font-mono font-bold uppercase tracking-widest mt-0.5">Pro: {item.protein}g | Carbo: {item.carbs}g | Fat: {item.fat}g</div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="font-black text-blue-500 font-mono">{item.kcal}</span>
+                        <span className="font-black text-neon font-mono">{item.kcal}</span>
                         <button onClick={() => removeFood(meal, item.id)} className="text-zinc-600 hover:text-red-500 transition-colors p-1 bg-white/5 rounded-full">
                           <X size={14} />
                         </button>
@@ -384,25 +232,37 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
 
                 {isAdding === meal ? (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 space-y-4 bg-black/20 border border-white/10 p-4 rounded-2xl">
-                    <div className="flex gap-2">
+                    <div className="space-y-3">
                       <input 
                         type="text" 
-                        placeholder="Descrivi o scansiona..."
+                        placeholder="Descrivi l'alimento (es: 2 uova sode)..."
                         value={newFood.name}
                         onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
-                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 outline-none text-sm font-bold focus:ring-2 ring-blue-500/50 transition-all"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white placeholder:text-zinc-600 outline-none text-sm font-bold focus:ring-2 ring-neon/50 transition-all"
                       />
-                      <label className="cursor-pointer p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center">
-                        <Camera size={20} className="text-blue-500" />
-                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, meal)} disabled={parsingMeal === meal} />
-                      </label>
-                      <button 
-                        onClick={() => handleAIFoodParse(meal)}
-                        disabled={parsingMeal === meal}
-                        className="p-3 bg-blue-500 text-black rounded-xl font-black disabled:opacity-50 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                      >
-                        {parsingMeal === meal ? <Activity size={20} className="animate-spin" /> : <Brain size={20} />}
-                      </button>
+                      
+                      <div className="flex gap-2">
+                        <label className="flex-1 cursor-pointer p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
+                          <Camera size={20} className="text-zinc-400" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Foto</span>
+                          <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, meal)} disabled={parsingMeal === meal} />
+                        </label>
+                        
+                        <button 
+                          onClick={() => handleAIFoodParse(meal)}
+                          disabled={parsingMeal === meal}
+                          className="flex-[2] p-4 bg-neon text-black rounded-xl font-black disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--neon-accent-rgb),0.4)] hover:bg-neon/80 transition-all active:scale-95"
+                        >
+                          {parsingMeal === meal ? (
+                            <Activity size={20} className="animate-spin" />
+                          ) : (
+                            <>
+                              <Brain size={20} />
+                              <span className="text-[10px] font-black uppercase tracking-widest">Analizza con IA</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     {selectedImage && selectedImage.meal === meal && (
@@ -421,31 +281,31 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                     <div className="grid grid-cols-4 gap-2">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Kcal</label>
-                        <input type="number" placeholder="0" value={newFood.kcal} onChange={(e) => setNewFood({ ...newFood, kcal: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-blue-500/50" />
+                        <input type="number" placeholder="0" value={newFood.kcal} onChange={(e) => setNewFood({ ...newFood, kcal: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Pro</label>
-                        <input type="number" placeholder="0" value={newFood.protein} onChange={(e) => setNewFood({ ...newFood, protein: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-blue-500/50" />
+                        <input type="number" placeholder="0" value={newFood.protein} onChange={(e) => setNewFood({ ...newFood, protein: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Carb</label>
-                        <input type="number" placeholder="0" value={newFood.carbs} onChange={(e) => setNewFood({ ...newFood, carbs: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-blue-500/50" />
+                        <input type="number" placeholder="0" value={newFood.carbs} onChange={(e) => setNewFood({ ...newFood, carbs: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Fat</label>
-                        <input type="number" placeholder="0" value={newFood.fat} onChange={(e) => setNewFood({ ...newFood, fat: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-blue-500/50" />
+                        <input type="number" placeholder="0" value={newFood.fat} onChange={(e) => setNewFood({ ...newFood, fat: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-neon/50" />
                       </div>
                     </div>
 
                     <div className="flex gap-3 pt-2">
                       <button onClick={() => { setIsAdding(null); setSelectedImage(null); }} className="flex-1 py-3 text-xs font-black uppercase tracking-widest bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 text-white transition-colors">Annulla</button>
-                      <button onClick={() => addFood(meal)} disabled={!newFood.name || !newFood.kcal} className="flex-1 py-3 text-xs font-black uppercase tracking-widest bg-blue-500 text-black rounded-xl disabled:opacity-50 transition-colors shadow-[0_0_15px_rgba(59,130,246,0.2)]">Salva</button>
+                      <button onClick={() => addFood(meal)} disabled={!newFood.name || !newFood.kcal} className="flex-1 py-3 text-xs font-black uppercase tracking-widest bg-neon text-black rounded-xl disabled:opacity-50 transition-colors shadow-[0_0_15px_rgba(var(--neon-accent-rgb),0.2)]">Salva</button>
                     </div>
                   </motion.div>
                 ) : (
                   <button 
                     onClick={() => { setIsAdding(meal); setNewFood({ meal, name: '', kcal: '', carbs: '', protein: '', fat: '' }); }}
-                    className="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-blue-500 hover:border-blue-500/50 transition-colors flex items-center justify-center gap-2 bg-white/5"
+                    className="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-neon hover:border-neon/50 transition-colors flex items-center justify-center gap-2 bg-white/5"
                   >
                     <Plus size={16} /> Aggiungi Alimento
                   </button>

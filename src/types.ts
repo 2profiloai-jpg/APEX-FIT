@@ -5,6 +5,7 @@ export interface UserProfile {
   readinessScore: number;
   lastSync: string;
   preferences: Record<string, any>;
+  themeColor?: string;
   weight?: number;
   height?: number;
   age?: number;
