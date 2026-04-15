@@ -1,14 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, WorkoutSession } from '../types';
 import { db } from '../firebase';
-import { collection, query, orderBy, limit, onSnapshot, doc } from 'firebase/firestore';
-import { Plus, Target } from 'lucide-react';
+import { collection, query, orderBy, limit, onSnapshot, doc, where } from 'firebase/firestore';
+import { Plus, Target, Calendar, Droplets } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { calculateBMR, calculateTDEE, calculateTargetKcal, calculateMacros } from '../lib/calculations';
+import { WorkoutPlan } from '../types';
 
 export default function Dashboard({ profile, aiStatus }: { profile: UserProfile | null, aiStatus: 'loading' | 'ready' | 'error' }) {
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
+  const [todayPlans, setTodayPlans] = useState<WorkoutPlan[]>([]);
+  const [tomorrowPlans, setTomorrowPlans] = useState<WorkoutPlan[]>([]);
+
+  useEffect(() => {
+    if (!profile?.uid) return;
+    
+    const weekDays = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+    const today = weekDays[new Date().getDay()];
+    const tomorrow = weekDays[(new Date().getDay() + 1) % 7];
+
+    const qToday = query(collection(db, 'users', profile.uid, 'plans'), where('dayOfWeek', '==', today));
+    const qTomorrow = query(collection(db, 'users', profile.uid, 'plans'), where('dayOfWeek', '==', tomorrow));
+
+    const unsubToday = onSnapshot(qToday, (snap) => {
+      setTodayPlans(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkoutPlan)));
+    });
+
+    const unsubTomorrow = onSnapshot(qTomorrow, (snap) => {
+      setTomorrowPlans(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkoutPlan)));
+    });
+
+    return () => {
+      unsubToday();
+      unsubTomorrow();
+    };
+  }, [profile]);
 
   useEffect(() => {
     if (aiStatus === 'error') {
@@ -161,6 +188,58 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         <Plus size={32} strokeWidth={3} />
         INIZIA ALLENAMENTO
       </motion.button>
+
+      {/* Workout Preview */}
+      <div className="grid grid-cols-2 gap-4">
+        <motion.div 
+          whileHover={{ scale: 1.02 }}
+          className="glass rounded-3xl p-5 border border-white/5"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar size={16} className="text-blue-500" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Oggi</span>
+          </div>
+          <div className="font-black uppercase italic tracking-tighter text-lg leading-tight">
+            {todayPlans.length > 0 ? todayPlans[0].name : 'Riposo'}
+          </div>
+          <div className="text-[10px] text-zinc-600 font-bold uppercase mt-1">
+            {todayPlans.length > 0 ? `${todayPlans[0].exercises.length} Esercizi` : 'Recupero attivo'}
+          </div>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ scale: 1.02 }}
+          className="glass rounded-3xl p-5 border border-white/5 opacity-60"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar size={16} className="text-zinc-500" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Domani</span>
+          </div>
+          <div className="font-black uppercase italic tracking-tighter text-lg leading-tight">
+            {tomorrowPlans.length > 0 ? tomorrowPlans[0].name : 'Riposo'}
+          </div>
+          <div className="text-[10px] text-zinc-600 font-bold uppercase mt-1">
+            {tomorrowPlans.length > 0 ? `${tomorrowPlans[0].exercises.length} Esercizi` : 'Recupero attivo'}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Water Reminder */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-3xl p-6 border border-blue-500/20 bg-blue-500/5 flex items-center gap-4"
+      >
+        <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-500">
+          <Droplets size={24} />
+        </div>
+        <div>
+          <h4 className="font-black uppercase italic tracking-tighter text-blue-500">Idratazione</h4>
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            "Ehi campione, hai bevuto abbastanza oggi? Un sorso d'acqua ora vale un record domani!" 💧
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 }

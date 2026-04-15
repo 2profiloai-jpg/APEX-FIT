@@ -9,6 +9,7 @@ import { parseFoodInput } from '../services/geminiService';
 import { calculateBMR, calculateTDEE, calculateTargetKcal, calculateMacros, calculateBMI } from '../lib/calculations';
 
 export default function NutritionHub({ profile }: { profile: UserProfile | null }) {
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [meals, setMeals] = useState<{ [key: string]: { id: string, name: string, kcal: number, carbs?: number, protein?: number, fat?: number }[] }>({
     Colazione: [],
     Pranzo: [],
@@ -78,23 +79,23 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
 
   useEffect(() => {
     if (!profile?.uid) return;
-    const today = new Date().toISOString().split('T')[0];
-    const docRef = doc(db, `users/${profile.uid}/nutrition/${today}`);
+    const docRef = doc(db, `users/${profile.uid}/nutrition/${selectedDate}`);
     
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         setMeals(docSnap.data().meals || { Colazione: [], Pranzo: [], Cena: [], Spuntini: [] });
+      } else {
+        setMeals({ Colazione: [], Pranzo: [], Cena: [], Spuntini: [] });
       }
     }, (error) => {
       console.error('Firestore Error in NutritionHub:', error);
     });
     return () => unsubscribe();
-  }, [profile?.uid]);
+  }, [profile?.uid, selectedDate]);
 
   const saveMeals = async (updatedMeals: any) => {
     if (!profile?.uid) return;
-    const today = new Date().toISOString().split('T')[0];
-    await setDoc(doc(db, `users/${profile.uid}/nutrition/${today}`), { meals: updatedMeals }, { merge: true });
+    await setDoc(doc(db, `users/${profile.uid}/nutrition/${selectedDate}`), { meals: updatedMeals }, { merge: true });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, meal: string) => {
@@ -197,8 +198,40 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
 
   const remainingKcal = Math.round(targetKcal - totalKcal);
 
+  const changeDate = (days: number) => {
+    const date = new Date(selectedDate);
+    date.setDate(date.getDate() + days);
+    setSelectedDate(date.toISOString().split('T')[0]);
+  };
+
+  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+
   return (
     <div className="space-y-8">
+      
+      {/* Date Selector */}
+      <div className="flex items-center justify-between bg-black/20 border border-white/10 rounded-2xl p-2">
+        <button 
+          onClick={() => changeDate(-1)}
+          className="p-3 hover:bg-white/5 rounded-xl text-zinc-400 transition-colors"
+        >
+          <Plus size={20} className="rotate-45" />
+        </button>
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">
+            {isToday ? 'Oggi' : new Date(selectedDate).toLocaleDateString('it-IT', { weekday: 'long' })}
+          </span>
+          <span className="text-sm font-bold text-white">
+            {new Date(selectedDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })}
+          </span>
+        </div>
+        <button 
+          onClick={() => changeDate(1)}
+          className="p-3 hover:bg-white/5 rounded-xl text-zinc-400 transition-colors"
+        >
+          <Plus size={20} />
+        </button>
+      </div>
       
       {/* Header Stats */}
       <motion.section 
