@@ -19,9 +19,16 @@ export const initAI = async () => {
     
     // Fallback to VITE_GEMINI_API_KEY if the user named it that way
     const meta = import.meta as any;
-    if (!apiKey && typeof meta !== 'undefined' && meta.env && meta.env.VITE_GEMINI_API_KEY) {
-      apiKey = meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey && typeof meta !== 'undefined' && meta.env) {
+      apiKey = meta.env.VITE_GEMINI_API_KEY || meta.env.GEMINI_API_KEY || meta.env.GEMINI_API_KEY_;
     }
+    
+    // Check process.env for variations as well
+    try {
+      if (!apiKey && typeof process !== 'undefined' && process.env) {
+        apiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_;
+      }
+    } catch (e) {}
     
     if (!apiKey || apiKey === "undefined" || apiKey === "null") {
       try {
