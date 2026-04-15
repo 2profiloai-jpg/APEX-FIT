@@ -12,8 +12,8 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
 
   useEffect(() => {
     if (aiStatus === 'error') {
-      toast.error("Chiave API Gemini non trovata.", {
-        description: "Vai nelle impostazioni di AI Studio (icona ingranaggio in alto a destra) e inserisci la tua GEMINI_API_KEY nei 'Secrets'.",
+      toast.error("IA non configurata", {
+        description: "Se sei su Vercel, aggiungi VITE_GEMINI_API_KEY nelle Environment Variables e fai un Redeploy. In AI Studio, usa i Secrets.",
         duration: 8000
       });
     }

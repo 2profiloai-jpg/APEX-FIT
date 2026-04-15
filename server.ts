@@ -11,7 +11,12 @@ async function startServer() {
 
   // API routes FIRST
   app.get("/api/config", (req, res) => {
-    res.json({ geminiApiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "" });
+    res.json({ 
+      geminiApiKey: process.env.GEMINI_API_KEY || 
+                    process.env.GEMINI_API_KEY_ || 
+                    process.env.VITE_GEMINI_API_KEY || 
+                    "" 
+    });
   });
 
   // Vite middleware for development

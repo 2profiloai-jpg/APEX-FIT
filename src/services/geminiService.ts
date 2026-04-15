@@ -8,28 +8,24 @@ export const initAI = async () => {
   try {
     let apiKey = "";
     
-    // Safely check for build-time env var
+    // Check process.env (defined by Vite)
     try {
-      if (process.env.GEMINI_API_KEY) {
-        apiKey = process.env.GEMINI_API_KEY;
-      }
-    } catch (e) {
-      // process is not defined, ignore
-    }
-    
-    // Fallback to VITE_GEMINI_API_KEY if the user named it that way
-    const meta = import.meta as any;
-    if (!apiKey && typeof meta !== 'undefined' && meta.env) {
-      apiKey = meta.env.VITE_GEMINI_API_KEY || meta.env.GEMINI_API_KEY || meta.env.GEMINI_API_KEY_;
-    }
-    
-    // Check process.env for variations as well
-    try {
-      if (!apiKey && typeof process !== 'undefined' && process.env) {
-        apiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_;
+      // @ts-ignore
+      const envKey = process.env.GEMINI_API_KEY;
+      if (envKey && envKey !== "undefined" && envKey !== "null") {
+        apiKey = envKey;
       }
     } catch (e) {}
     
+    // Fallback to import.meta.env
+    const meta = import.meta as any;
+    if (!apiKey && meta?.env) {
+      apiKey = meta.env.VITE_GEMINI_API_KEY || 
+               meta.env.GEMINI_API_KEY || 
+               meta.env.GEMINI_API_KEY_;
+    }
+    
+    // Last resort: fetch from server (only works if running full-stack)
     if (!apiKey || apiKey === "undefined" || apiKey === "null") {
       try {
         const res = await fetch('/api/config');
@@ -67,7 +63,7 @@ export const getStrategistAdvice = async (
     return { 
       readinessScore: 75, 
       intensity: "Technical", 
-      tip: "Configura la tua GEMINI_API_KEY nelle impostazioni di AI Studio per ricevere consigli personalizzati." 
+      tip: "Configura la tua GEMINI_API_KEY nelle impostazioni (Secrets su Vercel o AI Studio) per ricevere consigli personalizzati." 
     };
   }
 
@@ -104,7 +100,7 @@ export const getStrategistAdvice = async (
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -128,7 +124,7 @@ export const getStrategistAdvice = async (
 export const parseFoodInput = async (input: string, imageBase64?: string) => {
   const aiClient = getAI();
   if (!aiClient) {
-    throw new Error("Chiave API mancante. Vai nelle impostazioni di AI Studio (icona ingranaggio in alto a destra) e inserisci la tua GEMINI_API_KEY nei 'Secrets'.");
+    throw new Error("Chiave API mancante. Se sei su Vercel, assicurati di aver aggiunto GEMINI_API_KEY nelle Environment Variables del progetto e di aver fatto un Redeploy.");
   }
 
   const prompt = `
@@ -179,7 +175,7 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: [{ role: 'user', parts }],
       config: {
         responseMimeType: "application/json",
@@ -232,7 +228,7 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: prompt,
     });
     return response.text || "Ottimo allenamento completato.";
