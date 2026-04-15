@@ -121,7 +121,7 @@ export const getStrategistAdvice = async (
 export const parseFoodInput = async (input: string, imageBase64?: string) => {
   const aiClient = getAI();
   if (!aiClient) {
-    throw new Error("Chiave API mancante. Se l'hai appena aggiunta, ricarica la pagina.");
+    throw new Error("Chiave API mancante. Vai nelle impostazioni di AI Studio (icona ingranaggio in alto a destra) e inserisci la tua GEMINI_API_KEY nei 'Secrets'.");
   }
 
   const prompt = `

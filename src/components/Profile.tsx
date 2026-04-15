@@ -1,15 +1,60 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { User } from 'firebase/auth';
-import { auth } from '../firebase';
-import { LogOut, Settings, Award, Shield, Bell, ChevronRight, Brain } from 'lucide-react';
+import { auth, db } from '../firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { LogOut, Settings, Award, Shield, Bell, ChevronRight, Brain, User as UserIcon, Clock, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'motion/react';
 import { isAIReady } from '../services/geminiService';
 
 export default function Profile({ profile, user, aiStatus }: { profile: UserProfile | null, user: User, aiStatus: 'loading' | 'ready' | 'error' }) {
+  // Biometric State
+  const [weight, setWeight] = useState(profile?.weight || 0);
+  const [height, setHeight] = useState(profile?.height || 0);
+  const [age, setAge] = useState(profile?.age || 0);
+  const [gender, setGender] = useState<'male' | 'female'>(profile?.gender || 'male');
+  const [activityLevel, setActivityLevel] = useState(profile?.activityLevel || 1.2);
+  const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>(profile?.goal || 'maintain');
+  const [bodyFat, setBodyFat] = useState(profile?.bodyFat || 0);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      if (profile.weight) setWeight(profile.weight);
+      if (profile.height) setHeight(profile.height);
+      if (profile.age) setAge(profile.age);
+      if (profile.gender) setGender(profile.gender);
+      if (profile.activityLevel) setActivityLevel(profile.activityLevel);
+      if (profile.goal) setGoal(profile.goal);
+      if (profile.bodyFat) setBodyFat(profile.bodyFat);
+    }
+  }, [profile]);
+
+  const handleSaveBiometrics = async () => {
+    if (!profile) return;
+    setIsSaving(true);
+    try {
+      await updateDoc(doc(db, 'users', profile.uid), {
+        weight,
+        height,
+        age,
+        gender,
+        activityLevel,
+        goal,
+        bodyFat
+      });
+      toast.success('Parametri salvati correttamente!');
+    } catch (error) {
+      console.error("Errore salvataggio biometria:", error);
+      toast.error('Errore durante il salvataggio.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-24">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -30,6 +75,126 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
           {aiStatus === 'ready' ? 'IA ATTIVA' : aiStatus === 'loading' ? 'CARICAMENTO IA...' : 'CHIAVE IA MANCANTE'}
         </motion.div>
       </motion.div>
+
+      {/* Biometric Entry Section */}
+      <motion.section 
+        whileHover={{ scale: 1.01 }}
+        className="glass rounded-3xl p-6 space-y-6"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <UserIcon className="text-cyan-400" size={20} />
+          <h3 className="font-black uppercase tracking-tighter text-sm italic">Parametri Biometrici</h3>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Peso (kg)</label>
+            <input 
+              type="number" 
+              value={weight || ''} 
+              onChange={(e) => setWeight(parseFloat(e.target.value))}
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
+              placeholder="0.0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Altezza (cm)</label>
+            <input 
+              type="number" 
+              value={height || ''} 
+              onChange={(e) => setHeight(parseFloat(e.target.value))}
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Età</label>
+            <input 
+              type="number" 
+              value={age || ''} 
+              onChange={(e) => setAge(parseInt(e.target.value))}
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Body Fat (%)</label>
+            <input 
+              type="number" 
+              value={bodyFat || ''} 
+              onChange={(e) => setBodyFat(parseFloat(e.target.value))}
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none transition-all"
+              placeholder="Opzionale"
+            />
+          </div>
+          <div className="space-y-1.5 col-span-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Genere</label>
+            <div className="flex bg-black/20 border border-white/10 rounded-xl p-1">
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setGender('male')}
+                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'male' ? 'bg-cyan-400 text-black shadow-lg' : 'text-zinc-500'}`}
+              >
+                M
+              </motion.button>
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setGender('female')}
+                className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${gender === 'female' ? 'bg-cyan-400 text-black shadow-lg' : 'text-zinc-500'}`}
+              >
+                F
+              </motion.button>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Livello di Attività</label>
+          <select 
+            value={activityLevel}
+            onChange={(e) => setActivityLevel(parseFloat(e.target.value))}
+            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-cyan-400/50 outline-none appearance-none transition-all"
+          >
+            <option value={1.2}>Sedentario (Ufficio)</option>
+            <option value={1.375}>Leggero (1-3 allenamenti)</option>
+            <option value={1.55}>Moderato (3-5 allenamenti)</option>
+            <option value={1.725}>Intenso (6-7 allenamenti)</option>
+            <option value={1.9}>Atleta (Lavoro fisico + sport)</option>
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Obiettivo</label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: 'lose', label: 'Perdere' },
+              { id: 'maintain', label: 'Mantenere' },
+              { id: 'gain', label: 'Crescere' }
+            ].map(g => (
+              <motion.button 
+                key={g.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setGoal(g.id as any)}
+                className={`py-2.5 rounded-xl text-[10px] font-black uppercase border transition-all ${goal === g.id ? 'bg-cyan-400 text-black border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.3)]' : 'bg-black/20 border-white/5 text-zinc-500'}`}
+              >
+                {g.label}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        <motion.button 
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleSaveBiometrics}
+          disabled={isSaving}
+          className="w-full py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-cyan-400 transition-all disabled:opacity-50"
+        >
+          {isSaving ? <Clock className="animate-spin" size={16} /> : <Save size={16} />}
+          {isSaving ? 'SALVATAGGIO...' : 'SALVA PARAMETRI'}
+        </motion.button>
+      </motion.section>
 
       <div className="space-y-2">
         <ProfileLink icon={<Award size={18} />} label="Traguardi" onClick={() => toast.info('Traguardi in arrivo presto!')} />
