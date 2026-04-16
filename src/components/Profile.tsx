@@ -35,6 +35,15 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
     }
   }, [profile]);
 
+  useEffect(() => {
+    if (showPreferences) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [showPreferences]);
+
   const handleSaveTheme = async (color: string) => {
     if (!profile) return;
     setThemeColor(color);
@@ -223,10 +232,11 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
       <AnimatePresence>
         {showPreferences && (
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md p-6 flex flex-col"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="fixed inset-0 z-[110] bg-black p-6 flex flex-col"
           >
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
@@ -241,15 +251,14 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               </button>
             </div>
 
-            <div className="space-y-8 flex-1 overflow-y-auto pb-20">
+            <div className="space-y-8 flex-1 overflow-y-auto pb-20 no-scrollbar">
               {/* Theme Selection Section */}
               <section className="space-y-4">
                 <div className="flex flex-col">
-                  <h4 className="font-black uppercase tracking-widest text-xs text-zinc-500 mb-1">Colore Accento</h4>
-                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Personalizza l'atmosfera neon del tuo ecosistema</p>
+                  <h4 className="font-black uppercase tracking-widest text-[10px] text-zinc-500 mb-2">Tema Neon</h4>
                 </div>
 
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-7 gap-3 px-1">
                   {[
                     { id: 'blue', hex: '#3b82f6' },
                     { id: 'red', hex: '#ef4444' },
@@ -258,25 +267,37 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
                     { id: 'purple', hex: '#a855f7' },
                     { id: 'pink', hex: '#ec4899' },
                     { id: 'orange', hex: '#f97316' },
-                    { id: 'cyan', hex: '#06b6d4' }
+                    { id: 'cyan', hex: '#06b6d4' },
+                    { id: 'emerald', hex: '#10b981' },
+                    { id: 'indigo', hex: '#6366f1' },
+                    { id: 'rose', hex: '#f43f5e' },
+                    { id: 'amber', hex: '#f59e0b' },
+                    { id: 'lime', hex: '#84cc16' },
+                    { id: 'violet', hex: '#8b5cf6' },
+                    { id: 'sky', hex: '#0ea5e9' },
+                    { id: 'fuchsia', hex: '#d946ef' },
+                    { id: 'teal', hex: '#14b8a6' },
+                    { id: 'slate', hex: '#64748b' },
+                    { id: 'electric', hex: '#39ff14' },
+                    { id: 'blaze', hex: '#ff4e50' },
+                    { id: 'mint', hex: '#2efef7' }
                   ].map(c => (
                     <motion.button
                       key={c.id}
-                      whileHover={{ scale: 1.1 }}
+                      whileHover={{ scale: 1.15 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => handleSaveTheme(c.id)}
                       className={cn(
-                        "w-full aspect-square rounded-2xl border-2 transition-all shadow-lg relative overflow-hidden",
-                        themeColor === c.id ? "border-white scale-110" : "border-transparent opacity-60"
+                        "w-full aspect-square rounded-full border-2 transition-all relative",
+                        themeColor === c.id ? "border-white scale-110 shadow-[0_0_15px_rgba(var(--neon-accent-rgb),0.5)]" : "border-white/5 opacity-50"
                       )}
                       style={{ 
-                        backgroundColor: c.hex, 
-                        boxShadow: themeColor === c.id ? `0 0 20px ${c.hex}` : 'none' 
+                        backgroundColor: c.hex
                       }}
                     >
                       {themeColor === c.id && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <Check size={20} className="text-white" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Check size={10} className="text-white drop-shadow-md" />
                         </div>
                       )}
                     </motion.button>

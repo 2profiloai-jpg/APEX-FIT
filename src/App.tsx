@@ -144,6 +144,19 @@ export default function App() {
     pink: { hex: '#ec4899', rgb: '236, 72, 153' },
     orange: { hex: '#f97316', rgb: '249, 115, 22' },
     cyan: { hex: '#06b6d4', rgb: '6, 182, 212' },
+    emerald: { hex: '#10b981', rgb: '16, 185, 129' },
+    indigo: { hex: '#6366f1', rgb: '99, 102, 241' },
+    rose: { hex: '#f43f5e', rgb: '244, 63, 94' },
+    amber: { hex: '#f59e0b', rgb: '245, 158, 11' },
+    lime: { hex: '#84cc16', rgb: '132, 204, 22' },
+    violet: { hex: '#8b5cf6', rgb: '139, 92, 246' },
+    sky: { hex: '#0ea5e9', rgb: '14, 165, 233' },
+    fuchsia: { hex: '#d946ef', rgb: '217, 70, 239' },
+    teal: { hex: '#14b8a6', rgb: '20, 184, 166' },
+    slate: { hex: '#64748b', rgb: '100, 116, 139' },
+    electric: { hex: '#39ff14', rgb: '57, 255, 20' },
+    blaze: { hex: '#ff4e50', rgb: '255, 78, 80' },
+    mint: { hex: '#2efef7', rgb: '46, 254, 247' },
   };
 
   const currentTheme = themeColors[profile?.themeColor || 'blue'] || themeColors.blue;

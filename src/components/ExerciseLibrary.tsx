@@ -219,18 +219,22 @@ export default function ExerciseLibrary() {
       <AnimatePresence>
         {selectedExercise && (
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/95 z-[100] overflow-y-auto"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="fixed inset-0 bg-black z-[100] flex flex-col"
           >
-            <div className="p-6 max-w-2xl mx-auto min-h-screen flex flex-col">
-              <div className="flex items-center justify-between mb-6">
+            <div className="p-6 max-w-2xl mx-auto h-full flex flex-col no-scrollbar overflow-y-auto">
+              <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-2">
-                  <Dumbbell className="text-neon" />
+                  <Dumbbell className="text-neon" size={24} />
                   <h3 className="text-2xl font-black uppercase tracking-tighter italic">Voce Atlante</h3>
                 </div>
-                <button onClick={() => setSelectedExercise(null)} className="p-2 bg-zinc-900 rounded-full">
+                <button 
+                  onClick={() => setSelectedExercise(null)} 
+                  className="p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white transition-colors"
+                >
                   <X size={24} />
                 </button>
               </div>

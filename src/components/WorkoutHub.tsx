@@ -233,40 +233,54 @@ export default function WorkoutHub() {
         <AnimatePresence>
           {showExercisePicker && (
             <motion.div 
-              initial={{ opacity: 0, y: 100 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 100 }}
-              className="fixed inset-0 z-50 bg-zinc-950 p-4 overflow-y-auto pb-24"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed inset-0 z-50 bg-black p-6 flex flex-col no-scrollbar"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-black italic uppercase">Seleziona Esercizio</h3>
-                <button onClick={closeExercisePicker} className="p-2 bg-zinc-900 rounded-full">
-                  <X size={20} />
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <Plus className="text-neon" size={24} />
+                  <h3 className="text-2xl font-black uppercase tracking-tighter italic">Seleziona Esercizio</h3>
+                </div>
+                <button 
+                  onClick={closeExercisePicker}
+                  className="p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white transition-colors"
+                >
+                  <X size={24} />
                 </button>
               </div>
               
-              <div className="flex gap-2 overflow-x-auto pb-4 mb-4 hide-scrollbar">
+              <div className="flex gap-2 overflow-x-auto pb-4 mb-4 no-scrollbar -mx-2 px-2">
                 {(['Petto', 'Schiena', 'Gambe', 'Spalle', 'Bicipiti', 'Tricipiti', 'Core', 'Cardio'] as ExerciseCategory[]).map(cat => (
                   <button
                     key={cat}
                     onClick={() => setPickerCategory(pickerCategory === cat ? null : cat)}
-                    className={`px-4 py-2 rounded-full whitespace-nowrap font-bold text-sm transition-colors ${pickerCategory === cat ? 'bg-neon text-black' : 'bg-zinc-900 text-zinc-400'}`}
+                    className={cn(
+                      "px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                      pickerCategory === cat 
+                        ? "bg-neon text-black border-neon shadow-[0_0_20px_rgba(var(--neon-accent-rgb),0.3)]" 
+                        : "bg-white/5 border-white/5 text-zinc-400"
+                    )}
                   >
                     {cat}
                   </button>
                 ))}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar pb-10">
                 {EXERCISE_LIBRARY
                   .filter(ex => !pickerCategory || ex.category === pickerCategory)
                   .map(ex => (
-                  <div key={ex.id} onClick={() => addExerciseToPlan(ex)} className="bg-zinc-900 p-4 rounded-2xl flex items-center justify-between active:scale-95 transition-transform">
+                  <div key={ex.id} onClick={() => addExerciseToPlan(ex)} className="glass p-4 rounded-2xl flex items-center justify-between active:scale-95 transition-all">
                     <div>
-                      <div className="font-bold">{ex.name}</div>
-                      <div className="text-xs text-zinc-500">{ex.targetMuscles.join(', ')}</div>
+                      <div className="font-black uppercase tracking-tighter text-sm italic">{ex.name}</div>
+                      <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">{ex.targetMuscles.slice(0, 2).join(', ')}...</div>
                     </div>
-                    <Plus className="text-neon" size={20} />
+                    <div className="w-10 h-10 bg-neon/10 rounded-xl flex items-center justify-center border border-neon/20">
+                      <Plus className="text-neon" size={20} />
+                    </div>
                   </div>
                 ))}
               </div>
