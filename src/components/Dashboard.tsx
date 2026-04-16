@@ -286,35 +286,43 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
       </motion.section>
 
       {/* Quick Action */}
-      <motion.button 
-        whileHover={{ scale: 1.02, boxShadow: `0 0 30px rgba(var(--neon-accent-rgb),0.3)` }}
-        whileTap={{ scale: 0.95 }}
-        className="w-full py-8 text-2xl bg-neon text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4"
-        onClick={() => {
-          const event = new CustomEvent('start-workout');
-          window.dispatchEvent(event);
-        }}
-      >
-        <Plus size={32} strokeWidth={3} />
-        INIZIA ALLENAMENTO
-      </motion.button>
+      <div className="pt-2">
+        {todayPlans.length > 0 ? (
+          <motion.button 
+            whileHover={{ scale: 1.02, boxShadow: `0 0 30px rgba(var(--neon-accent-rgb),0.3)` }}
+            whileTap={{ scale: 0.95 }}
+            className="w-full py-8 text-2xl bg-neon text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4 group"
+            onClick={() => {
+              const event = new CustomEvent('start-workout', { 
+                detail: { planId: todayPlans[0].id } 
+              });
+              window.dispatchEvent(event);
+            }}
+          >
+            <div className="w-12 h-12 bg-black/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Plus size={32} strokeWidth={3} />
+            </div>
+            INIZIA ALLENAMENTO
+          </motion.button>
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full py-8 glass rounded-3xl flex flex-col items-center justify-center text-center px-6 border-white/10 bg-white/[0.03]"
+          >
+            <div className="w-12 h-12 bg-neon/10 rounded-full flex items-center justify-center mb-3 text-neon/50">
+              <Activity size={24} />
+            </div>
+            <h4 className="text-lg font-black italic uppercase text-white/90 leading-tight">
+              Oggi riposo muscolare
+            </h4>
+            <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mt-2 px-8 leading-relaxed">
+              Il prossimo allenamento arriverà presto. Dormi 7-9 ore per un recupero cellulare ottimale.
+            </p>
+          </motion.div>
+        )}
+      </div>
 
-      {/* Water Reminder */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-3xl p-6 border border-neon/20 bg-neon/5 flex items-center gap-4"
-      >
-        <div className="w-12 h-12 bg-neon/20 rounded-2xl flex items-center justify-center text-neon">
-          <Droplets size={24} />
-        </div>
-        <div>
-          <h4 className="font-black uppercase italic tracking-tighter text-neon">Idratazione</h4>
-          <p className="text-xs text-zinc-400 leading-relaxed">
-            "Ehi campione, hai bevuto abbastanza oggi? Un sorso d'acqua ora vale un record domani!" 💧
-          </p>
-        </div>
-      </motion.div>
     </div>
   );
 }

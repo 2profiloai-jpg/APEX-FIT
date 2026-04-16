@@ -10,12 +10,22 @@ import GripButton from './ui/GripButton';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 
-export default function WorkoutHub() {
+export default function WorkoutHub({ requestedPlanId, onClearRequest }: { requestedPlanId?: string | null, onClearRequest?: () => void }) {
   const weekDays = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
   const today = weekDays[new Date().getDay()];
   const [selectedDay, setSelectedDay] = useState<string>(today);
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [activeSessionPlan, setActiveSessionPlan] = useState<WorkoutPlan | 'free' | null>(null);
+  
+  useEffect(() => {
+    if (requestedPlanId && plans.length > 0) {
+      const plan = plans.find(p => p.id === requestedPlanId);
+      if (plan) {
+        setActiveSessionPlan(plan);
+        onClearRequest?.();
+      }
+    }
+  }, [requestedPlanId, plans, onClearRequest]);
   
   // Plan Builder State
   const [isBuildingPlan, setIsBuildingPlan] = useState(false);

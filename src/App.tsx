@@ -14,7 +14,9 @@ import {
   TrendingUp,
   Clock,
   ChevronRight,
-  Download
+  Download,
+  Milk, // Bottle-like icon
+  Droplets
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'sonner';
@@ -33,6 +35,7 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'workout' | 'library' | 'nutrition' | 'profile'>('dashboard');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [requestedPlanId, setRequestedPlanId] = useState<string | null>(null);
   const [aiStatus, setAiStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   
   // PWA Install State
@@ -79,8 +82,11 @@ export default function App() {
   };
 
   useEffect(() => {
-    const handleStartWorkout = () => {
+    const handleStartWorkout = (e: any) => {
       setActiveTab('workout');
+      if (e.detail?.planId) {
+        setRequestedPlanId(e.detail.planId);
+      }
       setCurrentSessionId('new');
     };
     window.addEventListener('start-workout', handleStartWorkout);
@@ -258,8 +264,11 @@ export default function App() {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-end">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Prontezza</span>
-            <span className="text-neon font-mono font-bold">{profile?.readinessScore}%</span>
+            <div className="flex items-center gap-1.5 text-neon">
+              <Milk size={12} />
+              <span className="text-[9px] text-zinc-300 font-bold uppercase tracking-tight">Ricordati di bere</span>
+            </div>
+            <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter">almeno 2 litri al giorno</span>
           </div>
           <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
             <img src={user.photoURL || ''} alt="Profile" referrerPolicy="no-referrer" />
@@ -289,7 +298,7 @@ export default function App() {
               exit={{ opacity: 0, y: -20, scale: 0.98 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
-              <WorkoutHub />
+              <WorkoutHub requestedPlanId={requestedPlanId} onClearRequest={() => setRequestedPlanId(null)} />
             </motion.div>
           )}
           {activeTab === 'library' && (
