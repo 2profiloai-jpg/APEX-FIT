@@ -133,17 +133,24 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
     Sei un nutrizionista esperto.
     Pasto inserito dall'utente: "${input || 'Nessun testo, basati solo sull\'immagine'}"
     
-    Calcola in modo PRECISO e REALISTICO le calorie e i macronutrienti. 
-    Se le quantità non sono specificate, usa porzioni medie (es. 1 panino = 80-100g, 1 piatto di pasta = 100g).
+    Analizza la richiesta. Usa virgole (,), punti (.) o punti e virgola (;) come separatori principali per dividere i differenti alimenti. Anche congiunzioni (e, ed, con) o spazi chiari indicano nuovi elementi.
+    Esempio: "Pasta al sugo; una mela. Petto di pollo" deve essere diviso in: Pasta al sugo, una mela, Petto di pollo.
+    Calcola in modo PRECISO e REALISTICO le calorie e i macronutrienti per OGNI singolo elemento individuato. 
+    Se le quantità non sono specificate, usa porzioni medie (es. 1 piatto di pasta = 100g cruda, 1 mela = 150g).
     
     DEVI RITORNARE ESCLUSIVAMENTE UN OGGETTO JSON VALIDO.
     Struttura esatta:
     {
-      "name": "Nome chiaro del pasto",
-      "kcal": 550,
-      "carbs": 50,
-      "protein": 30,
-      "fat": 20
+      "items": [
+        {
+          "name": "Nome alimento 1",
+          "kcal": 550,
+          "carbs": 50,
+          "protein": 30,
+          "fat": 20
+        },
+        ...
+      ]
     }
   `;
 
@@ -196,8 +203,8 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
     
     const parsed = JSON.parse(text);
     
-    if (!parsed.name || typeof parsed.kcal !== 'number') {
-      throw new Error("L'IA ha restituito un formato non valido.");
+    if (!parsed.items || !Array.isArray(parsed.items)) {
+      throw new Error("L'IA ha restituito un formato non valido (manca array items).");
     }
     
     return parsed;

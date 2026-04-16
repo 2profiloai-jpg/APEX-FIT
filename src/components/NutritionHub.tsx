@@ -107,19 +107,26 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
     try {
       const imageToPass = hasImage ? selectedImage.dataUrl : undefined;
       const result = await parseFoodInput(newFood.name, imageToPass);
-      if (result && result.name && result.kcal) {
-        const foodItem = {
-          id: Date.now().toString(),
-          name: result.name,
-          kcal: result.kcal,
-          carbs: result.carbs || 0,
-          protein: result.protein || 0,
-          fat: result.fat || 0
-        };
-        const updatedMeals = { ...meals, [meal]: [...meals[meal], foodItem] };
+      if (result && result.items && Array.isArray(result.items)) {
+        const newItems = result.items.map((item: any) => ({
+          id: (Date.now() + Math.random()).toString(),
+          name: item.name,
+          kcal: item.kcal,
+          carbs: item.carbs || 0,
+          protein: item.protein || 0,
+          fat: item.fat || 0
+        }));
+        
+        const updatedMeals = { ...meals, [meal]: [...meals[meal], ...newItems] };
         setMeals(updatedMeals);
         await saveMeals(updatedMeals);
-        toast.success(`${result.name} aggiunto!`);
+        
+        if (newItems.length > 1) {
+          toast.success(`${newItems.length} alimenti aggiunti e divisi!`);
+        } else if (newItems.length === 1) {
+          toast.success(`${newItems[0].name} aggiunto!`);
+        }
+        
         setIsAdding(null);
         setNewFood({ meal: '', name: '', kcal: '', carbs: '', protein: '', fat: '' });
         setSelectedImage(null);
