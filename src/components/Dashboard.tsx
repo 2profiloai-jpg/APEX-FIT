@@ -78,6 +78,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
   const [totalCarbs, setTotalCarbs] = useState(0);
   const [totalFat, setTotalFat] = useState(0);
   const [nutritionHistory, setNutritionHistory] = useState<any[]>([]);
+  const [activeChart, setActiveChart] = useState<'trend' | 'radar'>('trend');
   const [chartRange, setChartRange] = useState<7 | 30>(7);
   const [radarOffset, setRadarOffset] = useState(0); // 0 = oggi, -1 = ieri, ecc.
 
@@ -403,133 +404,144 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         )}
       </motion.section>
 
-      {/* Kcal History Chart */}
+      {/* Analytics Compact Insights */}
       <motion.section 
         whileHover={{ scale: 1.01 }}
         className="glass rounded-3xl p-5 border border-white/5"
       >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp size={16} className="text-neon" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Trend Kcal</span>
-          </div>
-          <div className="flex gap-1">
-            <button 
-              onClick={() => setChartRange(7)}
-              className={`px-2 py-1 text-[8px] font-black uppercase rounded-lg transition-colors ${chartRange === 7 ? 'bg-neon text-black' : 'text-zinc-500 bg-black/40'}`}
-            >
-              7 Giorni
-            </button>
-            <button 
-              onClick={() => setChartRange(30)}
-              className={`px-2 py-1 text-[8px] font-black uppercase rounded-lg transition-colors ${chartRange === 30 ? 'bg-neon text-black' : 'text-zinc-500 bg-black/40'}`}
-            >
-              30 Giorni
-            </button>
-          </div>
-        </div>
-        
-        <div className="h-40 w-full mt-2">
-          {nutritionHistory.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorKcal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--neon-accent)" stopOpacity={0.5} />
-                    <stop offset="95%" stopColor="var(--neon-accent)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#52525b" 
-                  fontSize={8} 
-                  tickLine={false} 
-                  axisLine={false}
-                  tickMargin={10}
-                  interval={chartRange === 7 ? 0 : 'preserveEnd'}
-                />
-                <YAxis 
-                  hide 
-                  domain={['dataMin - 200', 'dataMax + 200']}
-                />
-                <Tooltip 
-                  cursor={false}
-                  contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px', color: '#fff', fontWeight: 'bold' }}
-                  itemStyle={{ color: 'var(--neon-accent)' }}
-                  labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="kcal" 
-                  stroke="var(--neon-accent)" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorKcal)" 
-                  activeDot={{ r: 4, fill: 'var(--neon-accent)', stroke: '#000', strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500 font-bold uppercase tracking-widest text-center px-4">
-              Dati non ancora sufficienti per mostrare il trend. Continua a tracciare i tuoi pasti!
+        {/* Unified Header & Toggles */}
+        <div className="flex flex-col gap-4 mb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity size={16} className="text-neon" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Analisi Nutrizionali</span>
             </div>
-          )}
-        </div>
-      </motion.section>
+            
+            {/* Dynamic Controls based on selected tab */}
+            {activeChart === 'trend' ? (
+              <div className="flex gap-1 bg-black/40 p-1 rounded-xl">
+                <button 
+                  onClick={() => setChartRange(7)}
+                  className={`px-2 py-1 text-[8px] font-black uppercase rounded-lg transition-colors ${chartRange === 7 ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'}`}
+                >
+                  7g
+                </button>
+                <button 
+                  onClick={() => setChartRange(30)}
+                  className={`px-2 py-1 text-[8px] font-black uppercase rounded-lg transition-colors ${chartRange === 30 ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'}`}
+                >
+                  30g
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 bg-black/40 p-1 rounded-xl">
+                <button 
+                  onClick={() => setRadarOffset(prev => prev - 1)}
+                  className="px-2 py-1 text-zinc-500 hover:text-white transition-colors"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="text-[9px] font-black uppercase text-neon w-8 text-center truncate">
+                  {getRadarDisplayDate(radarOffset)}
+                </span>
+                <button 
+                  onClick={() => setRadarOffset(prev => Math.min(0, prev + 1))}
+                  disabled={radarOffset === 0}
+                  className={`px-2 py-1 transition-colors ${radarOffset === 0 ? 'text-zinc-800' : 'text-zinc-500 hover:text-white'}`}
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+          </div>
 
-      {/* Radar Chart Nutrition Insights */}
-      <motion.section 
-        whileHover={{ scale: 1.01 }}
-        className="glass rounded-3xl p-5 border border-white/5"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Target size={16} className="text-neon" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Bilancio Nutrienti</span>
-          </div>
-          <div className="flex items-center gap-3">
+          {/* Segmented Control */}
+          <div className="flex p-1 bg-black/40 rounded-xl">
             <button 
-              onClick={() => setRadarOffset(prev => prev - 1)}
-              className="text-zinc-500 hover:text-white transition-colors"
+              onClick={() => setActiveChart('trend')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-[9px] font-black uppercase rounded-lg transition-colors ${activeChart === 'trend' ? 'bg-zinc-800 text-neon' : 'text-zinc-600'}`}
             >
-              <ChevronLeft size={16} />
+              <TrendingUp size={12} /> Trend Kcal
             </button>
-            <span className="text-[10px] font-black uppercase text-neon w-12 text-center">
-              {getRadarDisplayDate(radarOffset)}
-            </span>
             <button 
-              onClick={() => setRadarOffset(prev => Math.min(0, prev + 1))}
-              disabled={radarOffset === 0}
-              className={`transition-colors ${radarOffset === 0 ? 'text-zinc-800' : 'text-zinc-500 hover:text-white'}`}
+              onClick={() => setActiveChart('radar')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-[9px] font-black uppercase rounded-lg transition-colors ${activeChart === 'radar' ? 'bg-zinc-800 text-neon' : 'text-zinc-600'}`}
             >
-              <ChevronRight size={16} />
+              <Target size={12} /> Bilancio
             </button>
           </div>
         </div>
-        
-        <div className="h-48 w-full mt-2 relative">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-              <PolarGrid stroke="rgba(255,255,255,0.1)" />
-              <PolarAngleAxis dataKey="subject" tick={{ fill: '#a1a1aa', fontSize: 10, fontWeight: 'bold' }} />
-              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-              <Tooltip cursor={false} content={<CustomRadarTooltip />} />
-              <Radar 
-                name="Nutrienti" 
-                dataKey="percent" 
-                stroke="var(--neon-accent)"
-                strokeWidth={2}
-                fill="var(--neon-accent)" 
-                fillOpacity={0.4} 
-              />
-            </RadarChart>
-          </ResponsiveContainer>
-          {existingRadarDay.kcal === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px] rounded-2xl">
-              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest text-center px-4">
-                Nessun pasto tracciato
-              </span>
-            </div>
+
+        {/* Dynamic Chart Container */}
+        <div className="h-44 w-full mt-2 relative">
+          {activeChart === 'trend' ? (
+             nutritionHistory.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorKcal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--neon-accent)" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="var(--neon-accent)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="#52525b" 
+                    fontSize={8} 
+                    tickLine={false} 
+                    axisLine={false}
+                    tickMargin={10}
+                    interval={chartRange === 7 ? 0 : 'preserveEnd'}
+                  />
+                  <YAxis hide domain={['dataMin - 200', 'dataMax + 200']} />
+                  <Tooltip 
+                    cursor={false}
+                    contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px', color: '#fff', fontWeight: 'bold' }}
+                    itemStyle={{ color: 'var(--neon-accent)' }}
+                    labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="kcal" 
+                    stroke="var(--neon-accent)" 
+                    strokeWidth={2}
+                    fillOpacity={1} 
+                    fill="url(#colorKcal)" 
+                    activeDot={{ r: 4, fill: 'var(--neon-accent)', stroke: '#000', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+             ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-500 font-bold uppercase tracking-widest text-center px-4">
+                Dati non ancora sufficienti per mostrare il trend.
+              </div>
+             )
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                  <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Tooltip cursor={false} content={<CustomRadarTooltip />} />
+                  <Radar 
+                    name="Nutrienti" 
+                    dataKey="percent" 
+                    stroke="var(--neon-accent)"
+                    strokeWidth={2}
+                    fill="var(--neon-accent)" 
+                    fillOpacity={0.4} 
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+              {existingRadarDay.kcal === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px] rounded-2xl">
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest text-center px-4">
+                    Nessun pasto tracciato
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </motion.section>
