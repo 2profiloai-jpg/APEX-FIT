@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, WorkoutSession } from '../types';
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, onSnapshot, doc, where, setDoc, getDocs } from 'firebase/firestore';
-import { Plus, Target, Calendar, Droplets, Activity, Zap, X, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Target, Calendar, Droplets, Activity, Zap, X, TrendingUp, ChevronLeft, ChevronRight, BicepsFlexed } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
@@ -282,12 +282,12 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         >
           <div className="flex items-center gap-2 mb-3">
             <Calendar size={16} className="text-neon neon-led" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Oggi</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Oggi</span>
           </div>
-          <div className="font-black uppercase italic tracking-tighter text-lg leading-tight">
+          <div className="font-bold uppercase italic tracking-tighter text-lg leading-tight">
             {todayPlans.length > 0 ? todayPlans[0].name : 'Riposo'}
           </div>
-          <div className="text-[10px] text-zinc-600 font-bold uppercase mt-1">
+          <div className="text-[10px] text-zinc-600 font-medium uppercase mt-1">
             {todayPlans.length > 0 ? `${todayPlans[0].exercises.length} Esercizi` : 'Recupero attivo'}
           </div>
         </motion.div>
@@ -317,17 +317,17 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Target className="text-neon neon-led" size={18} />
-            <h3 className="font-black uppercase tracking-tighter text-xs italic neon-text">Hub Metabolico</h3>
+            <h3 className="font-bold uppercase tracking-tighter text-xs italic neon-text">Hub Metabolico</h3>
           </div>
           
           <div 
-            className="bg-neon/5 border border-neon/20 px-3 py-1 rounded-xl flex items-center gap-2 cursor-pointer"
+            className="bg-neon/5 border border-neon/10 px-3 py-1 rounded-xl flex items-center gap-2 cursor-pointer"
             onClick={() => {
               setTempTarget(targetKcal.toString());
               setIsEditingTarget(true);
             }}
           >
-            <span className="text-[8px] font-black uppercase tracking-widest text-neon">Target</span>
+            <span className="text-[8px] font-bold uppercase tracking-widest text-neon">Target</span>
             {isEditingTarget ? (
               <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                 <input 
@@ -347,13 +347,13 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex flex-col items-center">
-            <span className="text-[8px] uppercase tracking-widest text-zinc-600 mb-0.5 font-black">Assunte</span>
-            <span className="text-2xl font-black text-white font-mono">{Math.round(totalConsumed)}</span>
+            <span className="text-[8px] uppercase tracking-widest text-zinc-600 mb-0.5 font-bold">Assunte</span>
+            <span className="text-2xl font-bold text-white font-mono">{Math.round(totalConsumed)}</span>
           </div>
           <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex flex-col items-center relative overflow-hidden">
-            <span className="text-[8px] uppercase tracking-widest text-zinc-600 mb-0.5 font-black">Rimanenti</span>
-            <span className="text-2xl font-black text-neon font-mono neon-text">{remainingKcal}</span>
-            <div className="absolute bottom-0 left-0 h-1 bg-white/5 w-full">
+            <span className="text-[8px] uppercase tracking-widest text-zinc-600 mb-0.5 font-bold">Rimanenti</span>
+            <span className="text-2xl font-bold text-neon font-mono neon-text">{remainingKcal}</span>
+            <div className="absolute bottom-0 left-0 h-[2px] bg-white/5 w-full">
               <motion.div 
                 className="h-full bg-neon"
                 initial={{ width: 0 }}
@@ -550,9 +550,9 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
       <div className="pt-2">
         {todayPlans.length > 0 ? (
           <motion.button 
-            whileHover={{ scale: 1.02, boxShadow: `0 0 30px rgba(var(--neon-accent-rgb),0.3)` }}
-            whileTap={{ scale: 0.95 }}
-            className="w-full py-8 text-2xl bg-neon text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4 group neon-border"
+            whileHover={{ scale: 1.01, boxShadow: `0 0 20px rgba(var(--neon-accent-rgb),0.1)` }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-3.5 text-lg bg-neon text-black font-bold uppercase italic tracking-widest rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 group neon-border"
             onClick={() => {
               const event = new CustomEvent('start-workout', { 
                 detail: { planId: todayPlans[0].id } 
@@ -560,9 +560,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
               window.dispatchEvent(event);
             }}
           >
-            <div className="w-12 h-12 bg-black/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Plus size={32} strokeWidth={3} />
-            </div>
+            <BicepsFlexed size={20} className="group-hover:scale-110 transition-transform" />
             INIZIA ALLENAMENTO
           </motion.button>
         ) : (
