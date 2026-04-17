@@ -9,10 +9,25 @@
 }
 
 @layer base {
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+  }
   body {
     @apply bg-black text-zinc-100 antialiased;
-    -webkit-tap-highlight-color: transparent;
   }
+  *:focus {
+    outline: none !important;
+  }
+}
+
+/* Fix specific to Recharts surfaces on mobile */
+.recharts-wrapper, 
+.recharts-surface {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+.recharts-polar-angle-axis-tick text {
+  outline: none !important;
 }
 
 /* iOS Glassmorphism */
