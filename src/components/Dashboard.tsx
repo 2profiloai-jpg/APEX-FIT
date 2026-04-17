@@ -281,7 +281,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           className="glass rounded-3xl p-5 border border-white/5"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Calendar size={16} className="text-neon" />
+            <Calendar size={16} className="text-neon neon-led" />
             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Oggi</span>
           </div>
           <div className="font-black uppercase italic tracking-tighter text-lg leading-tight">
@@ -316,8 +316,8 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Target className="text-neon" size={18} />
-            <h3 className="font-black uppercase tracking-tighter text-xs italic">Hub Metabolico</h3>
+            <Target className="text-neon neon-led" size={18} />
+            <h3 className="font-black uppercase tracking-tighter text-xs italic neon-text">Hub Metabolico</h3>
           </div>
           
           <div 
@@ -352,7 +352,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           </div>
           <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex flex-col items-center relative overflow-hidden">
             <span className="text-[8px] uppercase tracking-widest text-zinc-600 mb-0.5 font-black">Rimanenti</span>
-            <span className="text-2xl font-black text-neon font-mono">{remainingKcal}</span>
+            <span className="text-2xl font-black text-neon font-mono neon-text">{remainingKcal}</span>
             <div className="absolute bottom-0 left-0 h-1 bg-white/5 w-full">
               <motion.div 
                 className="h-full bg-neon"
@@ -413,7 +413,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         <div className="flex flex-col gap-4 mb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Activity size={16} className="text-neon" />
+              <Activity size={16} className="text-neon neon-led" />
               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Analisi Nutrizionali</span>
             </div>
             
@@ -552,7 +552,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           <motion.button 
             whileHover={{ scale: 1.02, boxShadow: `0 0 30px rgba(var(--neon-accent-rgb),0.3)` }}
             whileTap={{ scale: 0.95 }}
-            className="w-full py-8 text-2xl bg-neon text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4 group"
+            className="w-full py-8 text-2xl bg-neon text-black font-black uppercase italic tracking-tighter rounded-3xl shadow-xl transition-all flex items-center justify-center gap-4 group neon-border"
             onClick={() => {
               const event = new CustomEvent('start-workout', { 
                 detail: { planId: todayPlans[0].id } 

@@ -260,43 +260,48 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
                   <h4 className="font-black uppercase tracking-widest text-[10px] text-zinc-500 mb-2">Tema Neon</h4>
                 </div>
 
-                <div className="grid grid-cols-7 gap-3 px-1">
+                <div className="grid grid-cols-5 gap-3 px-1">
                   {[
-                    { id: 'blue', hex: '#3b82f6' },
-                    { id: 'red', hex: '#ef4444' },
-                    { id: 'green', hex: '#22c55e' },
-                    { id: 'yellow', hex: '#eab308' },
-                    { id: 'purple', hex: '#a855f7' },
-                    { id: 'pink', hex: '#ec4899' },
-                    { id: 'orange', hex: '#f97316' },
-                    { id: 'cyan', hex: '#06b6d4' },
-                    { id: 'emerald', hex: '#10b981' },
-                    { id: 'indigo', hex: '#6366f1' },
-                    { id: 'rose', hex: '#f43f5e' },
-                    { id: 'amber', hex: '#f59e0b' },
-                    { id: 'lime', hex: '#84cc16' },
-                    { id: 'violet', hex: '#8b5cf6' },
-                    { id: 'sky', hex: '#0ea5e9' },
-                    { id: 'fuchsia', hex: '#d946ef' },
-                    { id: 'teal', hex: '#14b8a6' },
-                    { id: 'slate', hex: '#64748b' },
-                    { id: 'electric', hex: '#39ff14' },
+                    { id: 'crimson', hex: '#ff003c' },
                     { id: 'blaze', hex: '#ff4e50' },
-                    { id: 'mint', hex: '#2efef7' }
+                    { id: 'sunset', hex: '#ff8c00' },
+                    { id: 'amber', hex: '#f59e0b' },
+                    { id: 'lemon', hex: '#dfff00' },
+                    { id: 'electric', hex: '#39ff14' },
+                    { id: 'emerald', hex: '#50ffb1' },
+                    { id: 'mint', hex: '#2efef7' },
+                    { id: 'cyan', hex: '#00ffff' },
+                    { id: 'sky', hex: '#0ea5e9' },
+                    { id: 'blue', hex: '#0066ff' },
+                    { id: 'indigo', hex: '#6366f1' },
+                    { id: 'violet', hex: '#bf00ff' },
+                    { id: 'fuchsia', hex: '#ff00ff' },
+                    { id: 'white', hex: '#ffffff' }
                   ].map(c => (
                     <motion.button
                       key={c.id}
-                      whileHover={{ scale: 1.15 }}
-                      whileTap={{ scale: 0.9 }}
+                      whileHover={{ scale: 1.1, y: -1 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => handleSaveTheme(c.id)}
                       className={cn(
-                        "w-full aspect-square rounded-full border-2 transition-all relative",
-                        themeColor === c.id ? "border-white scale-110 shadow-[0_0_15px_rgba(var(--neon-accent-rgb),0.5)]" : "border-white/5 opacity-50"
+                        "w-full aspect-square rounded-xl border transition-all relative block overflow-hidden group",
+                        themeColor === c.id 
+                          ? "border-white scale-105 shadow-[0_0_15px_rgba(var(--neon-accent-rgb),0.6)]" 
+                          : "border-white/10 opacity-40 hover:opacity-100 hover:border-white/30"
                       )}
                       style={{ 
-                        backgroundColor: c.hex
+                        backgroundColor: c.hex,
+                        boxShadow: themeColor === c.id ? `0 0 15px ${c.hex}99` : 'none'
                       }}
                     >
+                      {/* LED Inner Glow Effect */}
+                      <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-white/40 opacity-50" />
+                      {themeColor === c.id && (
+                        <motion.div 
+                          layoutId="active-glow"
+                          className="absolute inset-0 bg-white/20 animate-pulse"
+                        />
+                      )}
                       {themeColor === c.id && (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <Check size={10} className="text-white drop-shadow-md" />

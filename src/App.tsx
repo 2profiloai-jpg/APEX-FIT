@@ -145,30 +145,24 @@ export default function App() {
   const [exitWarning, setExitWarning] = useState(false);
 
   const themeColors: Record<string, { hex: string, rgb: string }> = {
-    blue: { hex: '#3b82f6', rgb: '59, 130, 246' },
-    red: { hex: '#ef4444', rgb: '239, 68, 68' },
-    green: { hex: '#22c55e', rgb: '34, 197, 94' },
-    yellow: { hex: '#eab308', rgb: '234, 179, 8' },
-    purple: { hex: '#a855f7', rgb: '168, 85, 247' },
-    pink: { hex: '#ec4899', rgb: '236, 72, 153' },
-    orange: { hex: '#f97316', rgb: '249, 115, 22' },
-    cyan: { hex: '#06b6d4', rgb: '6, 182, 212' },
-    emerald: { hex: '#10b981', rgb: '16, 185, 129' },
-    indigo: { hex: '#6366f1', rgb: '99, 102, 241' },
-    rose: { hex: '#f43f5e', rgb: '244, 63, 94' },
-    amber: { hex: '#f59e0b', rgb: '245, 158, 11' },
-    lime: { hex: '#84cc16', rgb: '132, 204, 22' },
-    violet: { hex: '#8b5cf6', rgb: '139, 92, 246' },
-    sky: { hex: '#0ea5e9', rgb: '14, 165, 233' },
-    fuchsia: { hex: '#d946ef', rgb: '217, 70, 239' },
-    teal: { hex: '#14b8a6', rgb: '20, 184, 166' },
-    slate: { hex: '#64748b', rgb: '100, 116, 139' },
-    electric: { hex: '#39ff14', rgb: '57, 255, 20' },
+    crimson: { hex: '#ff003c', rgb: '255, 0, 60' },
     blaze: { hex: '#ff4e50', rgb: '255, 78, 80' },
+    sunset: { hex: '#ff8c00', rgb: '255, 140, 0' },
+    amber: { hex: '#f59e0b', rgb: '245, 158, 11' },
+    lemon: { hex: '#dfff00', rgb: '223, 255, 0' },
+    electric: { hex: '#39ff14', rgb: '57, 255, 20' },
+    emerald: { hex: '#50ffb1', rgb: '80, 255, 177' },
     mint: { hex: '#2efef7', rgb: '46, 254, 247' },
+    cyan: { hex: '#00ffff', rgb: '0, 255, 255' },
+    sky: { hex: '#0ea5e9', rgb: '14, 165, 233' },
+    blue: { hex: '#0066ff', rgb: '0, 102, 255' },
+    indigo: { hex: '#6366f1', rgb: '99, 102, 241' },
+    violet: { hex: '#bf00ff', rgb: '191, 0, 255' },
+    fuchsia: { hex: '#ff00ff', rgb: '255, 0, 255' },
+    white: { hex: '#ffffff', rgb: '255, 255, 255' },
   };
 
-  const currentTheme = themeColors[profile?.themeColor || 'blue'] || themeColors.blue;
+  const currentTheme = themeColors[profile?.themeColor || 'electric'] || themeColors.electric;
 
   useEffect(() => {
     const root = document.documentElement;
@@ -280,8 +274,8 @@ export default function App() {
       {/* Top Bar */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-black/40 backdrop-blur-2xl border-b border-white/5 z-50 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Zap className="text-neon w-6 h-6 fill-current drop-shadow-[0_0_8px_rgba(var(--neon-accent-rgb),0.6)]" />
-          <span className="font-black tracking-tighter italic uppercase text-xl">Apex</span>
+          <Zap className="text-neon w-6 h-6 fill-current neon-led" />
+          <span className="font-black tracking-tighter italic uppercase text-xl neon-text">Apex</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-end">
@@ -360,11 +354,11 @@ export default function App() {
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 h-[calc(5rem+env(safe-area-inset-bottom))] bg-black/40 backdrop-blur-2xl border-t border-white/5 z-50 px-2 flex items-start justify-around pt-4 pb-safe">
-        <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<Activity />} label="Home" />
-        <NavButton active={activeTab === 'workout'} onClick={() => setActiveTab('workout')} icon={<Dumbbell />} label="Allenati" />
-        <NavButton active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')} icon={<Apple />} label="Nutrizione" />
-        <NavButton active={activeTab === 'library'} onClick={() => setActiveTab('library')} icon={<Book />} label="Atlante" />
-        <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserIcon />} label="Profilo" />
+        <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<Activity className={activeTab === 'dashboard' ? 'neon-led' : ''} />} label="Home" />
+        <NavButton active={activeTab === 'workout'} onClick={() => setActiveTab('workout')} icon={<Dumbbell className={activeTab === 'workout' ? 'neon-led' : ''} />} label="Allenati" />
+        <NavButton active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')} icon={<Apple className={activeTab === 'nutrition' ? 'neon-led' : ''} />} label="Nutrizione" />
+        <NavButton active={activeTab === 'library'} onClick={() => setActiveTab('library')} icon={<Book className={activeTab === 'library' ? 'neon-led' : ''} />} label="Atlante" />
+        <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserIcon className={activeTab === 'profile' ? 'neon-led' : ''} />} label="Profilo" />
       </nav>
     </div>
   );
@@ -388,7 +382,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
         />
       )}
       {icon}
-      <span className="text-[10px] font-bold uppercase tracking-tighter">{label}</span>
+      <span className={cn("text-[10px] font-bold uppercase tracking-tighter", active ? "neon-text" : "")}>{label}</span>
     </motion.button>
   );
 }
