@@ -322,73 +322,82 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
               </div>
               
               <div className="p-4 space-y-4">
-                <div className="grid grid-cols-12 gap-1 text-[10px] font-black uppercase tracking-widest text-zinc-500 px-1">
-                  <div className="col-span-1 text-center">#</div>
-                  <div className="col-span-2">Tipo</div>
-                  <div className="col-span-3 text-center">KG</div>
-                  <div className="col-span-3 text-center">Reps</div>
-                  <div className="col-span-2 text-center">RPE</div>
-                  <div className="col-span-1 text-center"></div>
-                </div>
+                <div className="space-y-3">
+                  {ex.sets.map((set, setIdx) => (
+                    <div 
+                      key={setIdx} 
+                      className={cn(
+                        "flex items-center gap-2 p-2 rounded-2xl transition-all border",
+                        set.completed 
+                          ? "bg-zinc-950/50 border-zinc-900 opacity-60" 
+                          : "bg-zinc-900 border-zinc-800 shadow-lg shadow-black/20"
+                      )}
+                    >
+                      {/* Serie Number */}
+                      <div className="flex flex-col items-center justify-center min-w-[32px]">
+                        <span className="text-[8px] font-black uppercase text-zinc-600 mb-0.5">SET</span>
+                        <span className="font-mono font-black text-neon text-sm">{setIdx + 1}</span>
+                      </div>
 
-                {ex.sets.map((set, setIdx) => (
-                  <div key={setIdx} className={cn("grid grid-cols-12 gap-1 items-center transition-opacity", set.completed ? "opacity-50" : "opacity-100")}>
-                    <div className="col-span-1 font-mono text-sm font-bold text-zinc-600 text-center">{setIdx + 1}</div>
-                    <div className="col-span-2">
-                      <select 
-                        value={set.tag}
-                        onChange={(e) => updateSet(exIdx, setIdx, 'tag', e.target.value as any)}
-                        className="bg-transparent text-[10px] font-bold uppercase text-zinc-400 focus:outline-none appearance-none w-full"
-                        disabled={set.completed}
-                      >
-                        <option value="Warm-up">Risc.</option>
-                        <option value="Working">Allen.</option>
-                        <option value="Top">Top</option>
-                        <option value="Drop">Drop</option>
-                      </select>
+                      {/* Weight Input */}
+                      <div className="flex-1 flex flex-col gap-1">
+                        <span className="text-[8px] font-black uppercase text-zinc-500 ml-1">Kili (KG)</span>
+                        <input 
+                          type="number"
+                          inputMode="decimal"
+                          value={set.weight === 0 ? '' : set.weight}
+                          onChange={(e) => updateSet(exIdx, setIdx, 'weight', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          disabled={set.completed}
+                          className="w-full bg-black/40 border border-zinc-800 rounded-xl h-12 text-center font-mono font-black text-lg text-white outline-none focus:border-neon transition-colors"
+                        />
+                      </div>
+
+                      {/* Reps Input */}
+                      <div className="flex-1 flex flex-col gap-1">
+                        <span className="text-[8px] font-black uppercase text-zinc-500 ml-1">Ripetiz.</span>
+                        <input 
+                          type="number"
+                          inputMode="numeric"
+                          value={set.reps === 0 ? '' : set.reps}
+                          onChange={(e) => updateSet(exIdx, setIdx, 'reps', parseInt(e.target.value) || 0)}
+                          placeholder="0"
+                          disabled={set.completed}
+                          className="w-full bg-black/40 border border-zinc-800 rounded-xl h-12 text-center font-mono font-black text-lg text-white outline-none focus:border-neon transition-colors"
+                        />
+                      </div>
+
+                      {/* RPE Select */}
+                      <div className="w-14 flex flex-col gap-1">
+                        <span className="text-[8px] font-black uppercase text-zinc-500 text-center">RPE</span>
+                        <select 
+                          value={set.rpe || 0} 
+                          onChange={(e) => updateSet(exIdx, setIdx, 'rpe', parseInt(e.target.value))}
+                          disabled={set.completed}
+                          className="w-full h-12 bg-black/40 border border-zinc-800 rounded-xl text-center font-mono font-bold text-sm text-neon appearance-none outline-none focus:border-neon"
+                        >
+                          <option value={0}>-</option>
+                          {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Complete Check */}
+                      <div className="pt-4">
+                        <button 
+                          onClick={() => toggleSetComplete(exIdx, setIdx)}
+                          className={cn(
+                            "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+                            set.completed 
+                              ? "bg-neon text-black shadow-[0_0_15px_rgba(var(--neon-accent-rgb),0.4)]" 
+                              : "bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-neon/50"
+                          )}
+                        >
+                          <Check size={20} strokeWidth={4} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="col-span-3">
-                      <Stepper 
-                        value={set.weight} 
-                        onChange={(v) => updateSet(exIdx, setIdx, 'weight', v)} 
-                        step={1.25} 
-                        min={0} 
-                        disabled={set.completed}
-                      />
-                    </div>
-                    <div className="col-span-3">
-                      <Stepper 
-                        value={set.reps} 
-                        onChange={(v) => updateSet(exIdx, setIdx, 'reps', v)} 
-                        step={1} 
-                        min={0} 
-                        disabled={set.completed}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <select 
-                        value={set.rpe || 0} 
-                        onChange={(e) => updateSet(exIdx, setIdx, 'rpe', parseInt(e.target.value))}
-                        className="w-full h-12 bg-zinc-950 border border-zinc-800 rounded-lg px-1 text-center font-mono text-sm appearance-none text-neon"
-                        disabled={set.completed}
-                      >
-                        <option value={0}>-</option>
-                        {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>{r}</option>)}
-                      </select>
-                    </div>
-                    <div className="col-span-1 flex justify-center">
-                      <button 
-                        onClick={() => toggleSetComplete(exIdx, setIdx)}
-                        className={cn(
-                          "w-8 h-12 rounded-lg flex items-center justify-center transition-colors",
-                          set.completed ? "bg-neon text-black" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
-                        )}
-                      >
-                        <Check size={16} strokeWidth={3} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
 
                 <button 
                   onClick={() => addSet(exIdx)}

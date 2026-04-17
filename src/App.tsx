@@ -353,25 +353,25 @@ export default function App() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 h-[calc(5rem+env(safe-area-inset-bottom))] bg-black/40 backdrop-blur-2xl border-t border-white/5 z-50 px-2 flex items-start justify-around pt-4 pb-safe">
-        <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<Activity className={activeTab === 'dashboard' ? 'neon-led' : ''} />} label="Home" />
-        <NavButton active={activeTab === 'workout'} onClick={() => setActiveTab('workout')} icon={<Dumbbell className={activeTab === 'workout' ? 'neon-led' : ''} />} label="Allenati" />
-        <NavButton active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')} icon={<Apple className={activeTab === 'nutrition' ? 'neon-led' : ''} />} label="Nutrizione" />
-        <NavButton active={activeTab === 'library'} onClick={() => setActiveTab('library')} icon={<Book className={activeTab === 'library' ? 'neon-led' : ''} />} label="Atlante" />
-        <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserIcon className={activeTab === 'profile' ? 'neon-led' : ''} />} label="Profilo" />
+      <nav className="fixed bottom-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-bottom))] bg-black/40 backdrop-blur-2xl border-t border-white/5 z-50 px-2 flex items-center justify-around pb-safe">
+        <NavButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<Activity className={activeTab === 'dashboard' ? 'neon-led' : ''} />} />
+        <NavButton active={activeTab === 'workout'} onClick={() => setActiveTab('workout')} icon={<Dumbbell className={activeTab === 'workout' ? 'neon-led' : ''} />} />
+        <NavButton active={activeTab === 'nutrition'} onClick={() => setActiveTab('nutrition')} icon={<Apple className={activeTab === 'nutrition' ? 'neon-led' : ''} />} />
+        <NavButton active={activeTab === 'library'} onClick={() => setActiveTab('library')} icon={<Book className={activeTab === 'library' ? 'neon-led' : ''} />} />
+        <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserIcon className={activeTab === 'profile' ? 'neon-led' : ''} />} />
       </nav>
     </div>
   );
 }
 
-function NavButton({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
+function NavButton({ active, onClick, icon }: { active: boolean, onClick: () => void, icon: React.ReactNode }) {
   return (
     <motion.button 
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-1 transition-colors relative",
+        "flex flex-col items-center transition-colors relative h-12 w-12 justify-center",
         active ? "text-neon" : "text-zinc-500"
       )}
     >
@@ -382,7 +382,6 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
         />
       )}
       {icon}
-      <span className={cn("text-[10px] font-bold uppercase tracking-tighter", active ? "neon-text" : "")}>{label}</span>
     </motion.button>
   );
 }

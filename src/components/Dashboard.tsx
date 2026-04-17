@@ -14,31 +14,6 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
   const [todayPlans, setTodayPlans] = useState<WorkoutPlan[]>([]);
   const [tomorrowPlans, setTomorrowPlans] = useState<WorkoutPlan[]>([]);
 
-  const [isEditingTarget, setIsEditingTarget] = useState(false);
-  const [tempTarget, setTempTarget] = useState('');
-
-  const handleSaveCustomTarget = async () => {
-    if (!profile?.uid) return;
-    const newTarget = parseInt(tempTarget);
-    if (isNaN(newTarget) || newTarget < 500) return;
-    
-    await setDoc(doc(db, 'users', profile.uid), {
-      customTargets: {
-        ...profile.customTargets,
-        kcal: newTarget
-      }
-    }, { merge: true });
-    setIsEditingTarget(false);
-  };
-
-  const handleResetTarget = async () => {
-    if (!profile?.uid) return;
-    await setDoc(doc(db, 'users', profile.uid), {
-      customTargets: null
-    }, { merge: true });
-    setIsEditingTarget(false);
-  };
-
   useEffect(() => {
     if (!profile?.uid) return;
     
@@ -274,91 +249,53 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
   return (
     <div className="space-y-8">
       
-      {/* Workout Preview */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Workout Preview - Focused on Today */}
+      <div className="w-full">
         <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="glass rounded-3xl p-5 border border-white/5"
+          whileHover={{ scale: 1.01 }}
+          className="glass rounded-2xl p-4 border border-white/5"
         >
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar size={16} className="text-neon neon-led" />
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar size={14} className="text-neon neon-led" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Oggi</span>
           </div>
-          <div className="font-bold uppercase italic tracking-tighter text-lg leading-tight">
+          <div className="font-bold uppercase italic tracking-tight text-xl leading-tight neon-text">
             {todayPlans.length > 0 ? todayPlans[0].name : 'Riposo'}
           </div>
           <div className="text-[10px] text-zinc-600 font-medium uppercase mt-1">
-            {todayPlans.length > 0 ? `${todayPlans[0].exercises.length} Esercizi` : 'Recupero attivo'}
-          </div>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="glass rounded-3xl p-5 border border-white/5 opacity-60"
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar size={16} className="text-zinc-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Domani</span>
-          </div>
-          <div className="font-black uppercase italic tracking-tighter text-lg leading-tight">
-            {tomorrowPlans.length > 0 ? tomorrowPlans[0].name : 'Riposo'}
-          </div>
-          <div className="text-[10px] text-zinc-600 font-bold uppercase mt-1">
-            {tomorrowPlans.length > 0 ? `${tomorrowPlans[0].exercises.length} Esercizi` : 'Recupero attivo'}
+            {todayPlans.length > 0 ? `${todayPlans[0].exercises.length} Esercizi nel programma` : 'Recupero attivo e rigenerazione'}
           </div>
         </motion.div>
       </div>
 
-      {/* Metabolic Hub - Compact & Schematic */}
+      {/* Metabolic Hub - Pure Data View */}
       <motion.section 
         whileHover={{ scale: 1.01 }}
-        className="glass rounded-3xl p-5 space-y-4"
+        className="glass rounded-2xl p-5 space-y-4"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Target className="text-neon neon-led" size={18} />
+            <Target className="text-neon neon-led" size={16} />
             <h3 className="font-bold uppercase tracking-tighter text-xs italic neon-text">Hub Metabolico</h3>
-          </div>
-          
-          <div 
-            className="bg-neon/5 border border-neon/10 px-3 py-1 rounded-xl flex items-center gap-2 cursor-pointer"
-            onClick={() => {
-              setTempTarget(targetKcal.toString());
-              setIsEditingTarget(true);
-            }}
-          >
-            <span className="text-[8px] font-bold uppercase tracking-widest text-neon">Target</span>
-            {isEditingTarget ? (
-              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                <input 
-                  type="number" 
-                  value={tempTarget} 
-                  onChange={(e) => setTempTarget(e.target.value)}
-                  className="bg-black/40 border border-neon/50 rounded px-1 py-0.5 text-neon w-12 text-[10px] outline-none font-bold"
-                  autoFocus
-                />
-                <button onClick={handleSaveCustomTarget} className="text-neon"><Zap size={10} /></button>
-              </div>
-            ) : (
-              <span className="text-xs font-bold text-neon font-mono">{Math.round(targetKcal)}</span>
-            )}
           </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex flex-col items-center">
-            <span className="text-[8px] uppercase tracking-widest text-zinc-600 mb-0.5 font-bold">Assunte</span>
-            <span className="text-2xl font-bold text-white font-mono">{Math.round(totalConsumed)}</span>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-white/[0.03] border border-white/10 p-4 rounded-xl flex flex-col items-center justify-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-white/10" />
+            <span className="text-[7px] uppercase tracking-[0.25em] text-zinc-500 mb-1 font-black">Assunte</span>
+            <span className="text-xl font-black text-white font-mono tracking-tighter opacity-90">{Math.round(totalConsumed)}</span>
           </div>
-          <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex flex-col items-center relative overflow-hidden">
-            <span className="text-[8px] uppercase tracking-widest text-zinc-600 mb-0.5 font-bold">Rimanenti</span>
-            <span className="text-2xl font-bold text-neon font-mono neon-text">{remainingKcal}</span>
-            <div className="absolute bottom-0 left-0 h-[2px] bg-white/5 w-full">
+          <div className="bg-white/[0.03] border border-neon/20 p-4 rounded-xl flex flex-col items-center justify-center relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-neon/30" />
+            <span className="text-[7px] uppercase tracking-[0.25em] text-neon/60 mb-1 font-black">Rimanenti</span>
+            <span className="text-xl font-black text-neon font-mono neon-text tracking-tighter">{remainingKcal}</span>
+            <div className="absolute bottom-0 left-0 h-[1px] bg-white/5 w-full">
               <motion.div 
-                className="h-full bg-neon"
+                className="h-full bg-neon shadow-[0_0_10px_rgba(var(--neon-accent-rgb),0.6)]"
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(100, (totalConsumed / targetKcal) * 100)}%` }}
-                transition={{ duration: 1 }}
+                transition={{ duration: 1.2, ease: "easeOut" }}
               />
             </div>
           </div>
@@ -366,14 +303,14 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
 
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: 'Pro', current: totalProtein, target: macros.protein, color: 'text-white' },
-            { label: 'Carb', current: totalCarbs, target: macros.carbs, color: 'text-white' },
-            { label: 'Fat', current: totalFat, target: macros.fat, color: 'text-white' }
+            { label: 'Pro', current: totalProtein, target: macros.protein },
+            { label: 'Carb', current: totalCarbs, target: macros.carbs },
+            { label: 'Fat', current: totalFat, target: macros.fat }
           ].map(m => (
-            <div key={m.label} className="bg-black/20 border border-white/5 rounded-xl p-2 flex flex-col items-center">
-              <span className="text-[7px] font-black uppercase tracking-widest text-zinc-600">{m.label}</span>
-              <span className="text-xs font-black font-mono">
-                {Math.round(m.current)}<span className="text-[8px] text-zinc-600">/{m.target}g</span>
+            <div key={m.label} className="bg-white/[0.02] border border-white/5 rounded-lg p-2 flex flex-col items-center">
+              <span className="text-[6px] font-black uppercase tracking-[0.15em] text-zinc-600 mb-0.5">{m.label}</span>
+              <span className="text-[10px] font-black font-mono text-zinc-300">
+                {Math.round(m.current)}<span className="text-[8px] text-zinc-600 opacity-50 ml-0.5">/{m.target}g</span>
               </span>
             </div>
           ))}
@@ -393,15 +330,6 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
             <span className="text-[10px] font-bold text-zinc-500 font-mono">{bmi.toFixed(1)}</span>
           </div>
         </div>
-
-        {profile?.customTargets?.kcal && Math.abs(calculatedTargetKcal - profile.customTargets.kcal) > 50 && !isEditingTarget && (
-          <button 
-            onClick={handleResetTarget}
-            className="w-full text-[8px] text-black font-black uppercase tracking-widest bg-neon py-1.5 rounded-xl mt-1 hover:bg-neon/80 transition-colors"
-          >
-            Sincronizza a {Math.round(calculatedTargetKcal)} kcal
-          </button>
-        )}
       </motion.section>
 
       {/* Analytics Compact Insights */}
@@ -552,7 +480,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           <motion.button 
             whileHover={{ scale: 1.01, boxShadow: `0 0 20px rgba(var(--neon-accent-rgb),0.1)` }}
             whileTap={{ scale: 0.98 }}
-            className="w-full py-3.5 text-lg bg-neon text-black font-bold uppercase italic tracking-widest rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 group neon-border"
+            className="w-full py-4.5 text-base bg-neon text-black font-black uppercase italic tracking-[0.15em] rounded-xl shadow-lg transition-all flex items-center justify-between px-8 group neon-led"
             onClick={() => {
               const event = new CustomEvent('start-workout', { 
                 detail: { planId: todayPlans[0].id } 
@@ -560,8 +488,9 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
               window.dispatchEvent(event);
             }}
           >
-            <BicepsFlexed size={20} className="group-hover:scale-110 transition-transform" />
-            INIZIA ALLENAMENTO
+            <BicepsFlexed size={20} className="group-hover:scale-110 transition-transform -rotate-6" />
+            <span className="drop-shadow-sm">INIZIA ALLENAMENTO</span>
+            <BicepsFlexed size={20} className="group-hover:scale-110 transition-transform rotate-6" />
           </motion.button>
         ) : (
           <motion.div 

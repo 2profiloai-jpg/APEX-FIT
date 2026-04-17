@@ -19,6 +19,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
   const [activityLevel, setActivityLevel] = useState(profile?.activityLevel || 1.2);
   const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain'>(profile?.goal || 'maintain');
   const [bodyFat, setBodyFat] = useState(profile?.bodyFat || 0);
+  const [customKcal, setCustomKcal] = useState(profile?.customTargets?.kcal || 0);
   const [themeColor, setThemeColor] = useState(profile?.themeColor || 'blue');
   const [isSaving, setIsSaving] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
@@ -33,6 +34,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
       if (profile.goal) setGoal(profile.goal);
       if (profile.bodyFat) setBodyFat(profile.bodyFat);
       if (profile.themeColor) setThemeColor(profile.themeColor);
+      if (profile.customTargets?.kcal) setCustomKcal(profile.customTargets.kcal);
     }
   }, [profile]);
 
@@ -68,7 +70,8 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         gender,
         activityLevel,
         goal,
-        bodyFat
+        bodyFat,
+        customTargets: customKcal > 0 ? { kcal: customKcal } : null
       });
       toast.success('Parametri salvati correttamente!');
     } catch (error) {
@@ -190,7 +193,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Obiettivo</label>
+          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Obiettivo principale</label>
           <div className="grid grid-cols-3 gap-2">
             {[
               { id: 'lose', label: 'Perdere' },
@@ -208,6 +211,28 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               </motion.button>
             ))}
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Target Calorico Personalizzato</label>
+          <div className="relative">
+            <input 
+              type="number" 
+              value={customKcal || ''} 
+              onChange={(e) => setCustomKcal(parseInt(e.target.value))}
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
+              placeholder="Calcolo automatico..."
+            />
+            {customKcal > 0 && (
+              <button 
+                onClick={() => setCustomKcal(0)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-neon uppercase bg-neon/10 px-2 py-1 rounded-lg"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+          <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mt-1 ml-1">Lascia vuoto per il calcolo IA/Parametri</p>
         </div>
 
         <motion.button 
