@@ -210,7 +210,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
             >
               <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
                 <span className="font-black uppercase tracking-widest text-sm text-white">{meal}</span>
-                <span className="text-xs font-black text-neon font-mono">{mealKcal} kcal</span>
+                <span className="text-xs font-black text-neon italic tracking-tighter neon-text uppercase">{mealKcal} kcal</span>
               </div>
               
               <div className="p-4 space-y-3">
@@ -221,14 +221,14 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="flex justify-between items-center text-sm border-b border-white/5 pb-3 last:border-0 last:pb-0"
+                      className="flex justify-between items-center text-sm border-b border-white/5 pb-3 last:border-0 last:pb-0 gap-4"
                     >
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="font-bold text-white">{item.name}</div>
-                        <div className="text-[10px] text-zinc-500 font-mono font-bold uppercase tracking-widest mt-0.5">Pro: {item.protein}g | Carbo: {item.carbs}g | Fat: {item.fat}g</div>
+                        <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">Pro: {item.protein}g | Carbo: {item.carbs}g | Fat: {item.fat}g</div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="font-black text-neon font-mono">{item.kcal}</span>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="font-black text-neon text-base italic tracking-tighter neon-text">{item.kcal}</span>
                         <button onClick={() => removeFood(meal, item.id)} className="text-zinc-600 hover:text-red-500 transition-colors p-1 bg-white/5 rounded-full">
                           <X size={14} />
                         </button>
@@ -288,19 +288,19 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                     <div className="grid grid-cols-4 gap-2">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Kcal</label>
-                        <input type="number" placeholder="0" value={newFood.kcal} onChange={(e) => setNewFood({ ...newFood, kcal: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.kcal} onChange={(e) => setNewFood({ ...newFood, kcal: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Pro</label>
-                        <input type="number" placeholder="0" value={newFood.protein} onChange={(e) => setNewFood({ ...newFood, protein: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.protein} onChange={(e) => setNewFood({ ...newFood, protein: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Carb</label>
-                        <input type="number" placeholder="0" value={newFood.carbs} onChange={(e) => setNewFood({ ...newFood, carbs: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.carbs} onChange={(e) => setNewFood({ ...newFood, carbs: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Fat</label>
-                        <input type="number" placeholder="0" value={newFood.fat} onChange={(e) => setNewFood({ ...newFood, fat: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-mono focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.fat} onChange={(e) => setNewFood({ ...newFood, fat: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                     </div>
 
@@ -310,12 +310,12 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                     </div>
                   </motion.div>
                 ) : (
-                  <button 
-                    onClick={() => { setIsAdding(meal); setNewFood({ meal, name: '', kcal: '', carbs: '', protein: '', fat: '' }); }}
-                    className="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-neon hover:border-neon/50 transition-colors flex items-center justify-center gap-2 bg-white/5"
-                  >
-                    <Plus size={16} /> Aggiungi Alimento
-                  </button>
+          <button 
+            onClick={() => { setIsAdding(meal); setNewFood({ meal, name: '', kcal: '', carbs: '', protein: '', fat: '' }); }}
+            className="w-full py-4 border border-white/5 rounded-2xl text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-neon hover:border-neon/30 transition-colors flex items-center justify-center gap-2 bg-white/[0.02]"
+          >
+            <Plus size={16} /> Aggiungi Alimento
+          </button>
                 )}
               </div>
             </motion.div>

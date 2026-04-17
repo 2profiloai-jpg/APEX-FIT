@@ -282,17 +282,15 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-white/[0.03] border border-white/10 p-4 rounded-xl flex flex-col items-center justify-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-[1px] bg-white/10" />
             <span className="text-[7px] uppercase tracking-[0.25em] text-zinc-500 mb-1 font-black">Assunte</span>
-            <span className="text-xl font-black text-white font-mono tracking-tighter opacity-90">{Math.round(totalConsumed)}</span>
+            <span className="text-xl font-black text-white italic tracking-tighter opacity-90 leading-none">{Math.round(totalConsumed)}</span>
           </div>
-          <div className="bg-white/[0.03] border border-neon/20 p-4 rounded-xl flex flex-col items-center justify-center relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-[1px] bg-neon/30" />
-            <span className="text-[7px] uppercase tracking-[0.25em] text-neon/60 mb-1 font-black">Rimanenti</span>
-            <span className="text-xl font-black text-neon font-mono neon-text tracking-tighter">{remainingKcal}</span>
-            <div className="absolute bottom-0 left-0 h-[1px] bg-white/5 w-full">
+          <div className="bg-white/[0.03] border border-white/10 p-4 rounded-xl flex flex-col items-center justify-center relative overflow-hidden group">
+            <span className="text-[7px] uppercase tracking-[0.25em] text-zinc-500 mb-1 font-black">Rimanenti</span>
+            <span className="text-xl font-black text-neon neon-text italic tracking-tighter leading-none">{remainingKcal}</span>
+            <div className="absolute bottom-0 left-0 h-1 bg-white/5 w-full">
               <motion.div 
-                className="h-full bg-neon shadow-[0_0_10px_rgba(var(--neon-accent-rgb),0.6)]"
+                className="h-full bg-neon"
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(100, (totalConsumed / targetKcal) * 100)}%` }}
                 transition={{ duration: 1.2, ease: "easeOut" }}
@@ -309,8 +307,8 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           ].map(m => (
             <div key={m.label} className="bg-white/[0.02] border border-white/5 rounded-lg p-2 flex flex-col items-center">
               <span className="text-[6px] font-black uppercase tracking-[0.15em] text-zinc-600 mb-0.5">{m.label}</span>
-              <span className="text-[10px] font-black font-mono text-zinc-300">
-                {Math.round(m.current)}<span className="text-[8px] text-zinc-600 opacity-50 ml-0.5">/{m.target}g</span>
+              <span className="text-[10px] font-black text-zinc-300 italic tracking-tighter">
+                {Math.round(m.current)}<span className="text-[8px] text-zinc-600 opacity-50 ml-0.5 not-italic tracking-normal">/{m.target}g</span>
               </span>
             </div>
           ))}
@@ -319,15 +317,15 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         <div className="flex justify-around pt-2 border-t border-white/5">
           <div className="flex flex-col items-center">
             <span className="text-[7px] font-black uppercase tracking-widest text-zinc-700">BMR</span>
-            <span className="text-[10px] font-bold text-zinc-500 font-mono">{Math.round(bmr)}</span>
+            <span className="text-[10px] font-bold text-zinc-500">{Math.round(bmr)}</span>
           </div>
           <div className="flex flex-col items-center">
             <span className="text-[7px] font-black uppercase tracking-widest text-zinc-700">TDEE</span>
-            <span className="text-[10px] font-bold text-zinc-500 font-mono">{Math.round(tdee)}</span>
+            <span className="text-[10px] font-bold text-zinc-500">{Math.round(tdee)}</span>
           </div>
           <div className="flex flex-col items-center">
             <span className="text-[7px] font-black uppercase tracking-widest text-zinc-700">BMI</span>
-            <span className="text-[10px] font-bold text-zinc-500 font-mono">{bmi.toFixed(1)}</span>
+            <span className="text-[10px] font-bold text-zinc-500">{bmi.toFixed(1)}</span>
           </div>
         </div>
       </motion.section>
@@ -480,7 +478,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           <motion.button 
             whileHover={{ scale: 1.01, boxShadow: `0 0 20px rgba(var(--neon-accent-rgb),0.1)` }}
             whileTap={{ scale: 0.98 }}
-            className="w-full py-4.5 text-base bg-neon text-black font-black uppercase italic tracking-[0.15em] rounded-xl shadow-lg transition-all flex items-center justify-between px-8 group neon-led"
+            className="w-full py-4 text-sm bg-neon text-black font-black uppercase italic tracking-[0.2em] rounded-xl shadow-lg transition-all flex items-center justify-center gap-6 px-8 group neon-led"
             onClick={() => {
               const event = new CustomEvent('start-workout', { 
                 detail: { planId: todayPlans[0].id } 

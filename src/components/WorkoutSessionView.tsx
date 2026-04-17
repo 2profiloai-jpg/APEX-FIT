@@ -21,7 +21,7 @@ const Stepper = ({ value, onChange, step = 1, min = 0, label, disabled }: { valu
           onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
           placeholder="0"
           disabled={disabled}
-          className="w-full bg-transparent text-center font-mono font-bold text-base leading-none outline-none text-white appearance-none m-0 p-0"
+          className="w-full bg-transparent text-center font-bold text-base leading-none outline-none text-white appearance-none m-0 p-0"
           style={{ WebkitAppearance: 'none', margin: 0 }}
         />
         {label && <span className="text-[8px] text-zinc-500 uppercase leading-none mt-0.5">{label}</span>}
@@ -258,7 +258,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
             {plan ? plan.name : 'Sessione Attiva'}
           </h2>
           <div className="flex items-center gap-4 mt-2">
-            <div className="flex items-center gap-2 text-neon text-xl font-mono font-bold">
+            <div className="flex items-center gap-2 text-neon text-xl font-black italic tracking-tighter neon-text">
               <Timer size={20} /> {formatTime(timerSeconds)}
             </div>
             <div className="flex items-center gap-2">
@@ -336,7 +336,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                       {/* Serie Number */}
                       <div className="flex flex-col items-center justify-center w-8 mb-2">
                         <span className="text-[6px] font-black uppercase text-zinc-600 mb-0.5 tracking-tighter">SET</span>
-                        <span className="font-mono font-black text-neon text-xs leading-none">{setIdx + 1}</span>
+                        <span className="font-black text-neon text-sm italic tracking-tighter neon-text leading-none">{setIdx + 1}</span>
                       </div>
 
                       {/* Weight Input */}
@@ -349,7 +349,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                           onChange={(e) => updateSet(exIdx, setIdx, 'weight', parseFloat(e.target.value) || 0)}
                           placeholder="0"
                           disabled={set.completed}
-                          className="w-full bg-black/50 border border-white/5 rounded-lg h-11 text-center font-mono font-black text-base text-white outline-none focus:border-neon/50 transition-colors"
+                          className="w-full bg-black/50 border border-white/5 rounded-lg h-11 text-center font-black text-base text-white italic tracking-tighter outline-none focus:border-neon/50 transition-colors"
                         />
                       </div>
 
@@ -363,7 +363,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                           onChange={(e) => updateSet(exIdx, setIdx, 'reps', parseInt(e.target.value) || 0)}
                           placeholder="0"
                           disabled={set.completed}
-                          className="w-full bg-black/50 border border-white/5 rounded-lg h-11 text-center font-mono font-black text-base text-white outline-none focus:border-neon/50 transition-colors"
+                          className="w-full bg-black/50 border border-white/5 rounded-lg h-11 text-center font-black text-base text-white italic tracking-tighter outline-none focus:border-neon/50 transition-colors"
                         />
                       </div>
 
@@ -374,7 +374,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                           value={set.rpe || 0} 
                           onChange={(e) => updateSet(exIdx, setIdx, 'rpe', parseInt(e.target.value))}
                           disabled={set.completed}
-                          className="w-full h-11 bg-black/50 border border-white/5 rounded-lg text-center font-mono font-black text-xs text-neon appearance-none outline-none focus:border-neon/50"
+                          className="w-full h-11 bg-black/50 border border-white/5 rounded-lg text-center font-black text-xs text-neon italic tracking-tighter appearance-none outline-none focus:border-neon/50"
                         >
                           <option value={0}>-</option>
                           {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>{r}</option>)}
@@ -401,7 +401,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
 
                 <button 
                   onClick={() => addSet(exIdx)}
-                  className="w-full py-2 border border-dashed border-zinc-700 rounded-xl text-zinc-500 text-xs font-bold hover:border-zinc-500 hover:text-zinc-300 transition-all"
+                  className="w-full py-2 border border-white/5 rounded-xl text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:border-zinc-700 hover:text-zinc-300 transition-all bg-white/[0.02]"
                 >
                   + AGGIUNGI SERIE
                 </button>

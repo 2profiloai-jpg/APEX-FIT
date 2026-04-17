@@ -175,7 +175,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
           </div>
           <div>
             <label className="block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">Giorno</label>
-            <div className="text-neon font-mono font-bold text-lg">{selectedDay}</div>
+            <div className="text-neon font-bold text-lg">{selectedDay}</div>
           </div>
         </div>
 
@@ -197,7 +197,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
                     <select 
                       value={pe.targetSets}
                       onChange={(e) => updatePlannedExercise(idx, 'targetSets', parseInt(e.target.value) || 0)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center font-mono appearance-none"
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center appearance-none"
                     >
                       {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
@@ -207,7 +207,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
                     <select 
                       value={pe.targetReps}
                       onChange={(e) => updatePlannedExercise(idx, 'targetReps', e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center font-mono appearance-none"
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center appearance-none"
                     >
                       {['1-5', '6-8', '8-12', '12-15', '15-20', 'Max'].map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
@@ -217,7 +217,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
                     <select 
                       value={pe.targetRpe || 8}
                       onChange={(e) => updatePlannedExercise(idx, 'targetRpe', parseInt(e.target.value) || 0)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center font-mono appearance-none"
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center appearance-none"
                     >
                       {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
@@ -229,7 +229,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
 
           <button 
             onClick={openExercisePicker}
-            className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-bold uppercase tracking-widest hover:border-neon hover:text-neon transition-colors flex items-center justify-center gap-2"
+            className="w-full py-4 border border-white/5 rounded-2xl text-zinc-500 font-bold uppercase tracking-widest hover:border-neon hover:text-neon transition-colors flex items-center justify-center gap-2 bg-white/[0.02]"
           >
             <Plus size={20} /> Aggiungi Esercizio
           </button>
@@ -307,16 +307,20 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
         <h2 className="text-3xl font-black tracking-tighter italic uppercase mb-6">Programmazione</h2>
         
         {selectedDay === today && plans.length > 0 && (
-          <div className="mb-8">
-            <button 
+          <div className="mb-6">
+            <motion.button 
+              whileHover={{ scale: 1.01, boxShadow: `0 0 25px rgba(var(--neon-accent-rgb),0.25)` }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setActiveSessionPlan(plans[0])}
-              className="w-full bg-neon text-black p-6 rounded-3xl shadow-[0_0_40px_rgba(var(--neon-accent-rgb),0.3)] hover:scale-[1.02] active:scale-95 transition-all flex flex-col items-center justify-center gap-2 relative overflow-hidden"
+              className="w-full bg-neon text-black py-5 px-8 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-4 relative overflow-hidden group neon-led"
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-              <Play size={32} className="fill-current relative z-10" />
-              <span className="text-2xl font-black tracking-tighter italic uppercase relative z-10">Inizia Sessione</span>
-              <span className="text-xs font-bold uppercase tracking-widest opacity-80 relative z-10">{plans[0].name}</span>
-            </button>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <Play size={20} className="fill-current relative z-10 group-hover:scale-110 transition-transform" />
+              <div className="flex flex-col items-center relative z-10">
+                <span className="text-base font-black tracking-[0.2em] italic uppercase leading-none">Inizia Sessione</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mt-1.5">{plans[0].name}</span>
+              </div>
+            </motion.button>
           </div>
         )}
 
@@ -403,7 +407,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
                     return (
                       <div key={i} className="text-sm text-zinc-400 flex justify-between">
                         <span>{exerciseDetails?.name || 'Esercizio'}</span>
-                        <span className="font-mono">{ex.targetSets}x{ex.targetReps}</span>
+                        <span>{ex.targetSets}x{ex.targetReps}</span>
                       </div>
                     );
                   })}
@@ -414,9 +418,15 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
                   )}
                 </div>
 
-                <GripButton onClick={() => setActiveSessionPlan(plan)} icon={<Play size={20} />} variant="primary">
-                  Inizia Scheda
-                </GripButton>
+                <motion.button 
+                  whileHover={{ scale: 1.01, boxShadow: `0 0 15px rgba(var(--neon-accent-rgb),0.2)` }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setActiveSessionPlan(plan)}
+                  className="w-full py-4 bg-neon text-black font-black uppercase italic tracking-[0.2em] rounded-xl transition-all flex items-center justify-center gap-3 group neon-led"
+                >
+                  <Play size={18} className="fill-current group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] drop-shadow-sm">Inizia Scheda</span>
+                </motion.button>
               </div>
             ))}
           </div>
@@ -427,7 +437,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
         <div className="pt-8">
           <button 
             onClick={() => setActiveSessionPlan('free')}
-            className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-bold uppercase tracking-widest hover:border-neon hover:text-neon transition-colors flex items-center justify-center gap-2"
+            className="w-full py-4 border border-white/5 rounded-2xl text-zinc-500 font-bold uppercase tracking-widest hover:border-neon hover:text-neon transition-colors flex items-center justify-center gap-2 bg-white/[0.02]"
           >
             <Dumbbell size={20} /> Inizia Sessione Libera
           </button>

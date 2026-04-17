@@ -122,7 +122,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={weight || ''} 
               onChange={(e) => setWeight(parseFloat(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
               placeholder="0.0"
             />
           </div>
@@ -132,7 +132,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={height || ''} 
               onChange={(e) => setHeight(parseFloat(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
               placeholder="0"
             />
           </div>
@@ -142,7 +142,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={age || ''} 
               onChange={(e) => setAge(parseInt(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
               placeholder="0"
             />
           </div>
@@ -152,7 +152,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={bodyFat || ''} 
               onChange={(e) => setBodyFat(parseFloat(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
               placeholder="Opzionale"
             />
           </div>
@@ -220,7 +220,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               type="number" 
               value={customKcal || ''} 
               onChange={(e) => setCustomKcal(parseInt(e.target.value))}
-              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-mono font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
+              className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
               placeholder="Calcolo automatico..."
             />
             {customKcal > 0 && (

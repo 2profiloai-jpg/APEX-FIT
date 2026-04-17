@@ -214,7 +214,7 @@ export default function App() {
           }}
           transition={{ duration: 1.2, repeat: Infinity }}
         >
-          <Zap className="text-white w-12 h-12 fill-current" />
+          <Zap className="text-white w-12 h-12 fill-current scale-x-75" />
         </motion.div>
       </div>
     );
@@ -230,7 +230,7 @@ export default function App() {
         >
           <div className="mb-8 flex justify-center">
             <div className="w-20 h-20 bg-neon rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(var(--neon-accent-rgb),0.5)]">
-              <Zap className="text-black w-10 h-10 fill-current" />
+              <Zap className="text-black w-10 h-10 fill-current scale-x-75" />
             </div>
           </div>
           <h1 className="text-5xl font-black tracking-tighter mb-4 italic uppercase">Apex Lift</h1>
@@ -274,7 +274,7 @@ export default function App() {
       {/* Top Bar */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-black/40 backdrop-blur-2xl border-b border-white/5 z-50 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Zap className="text-neon w-6 h-6 fill-current neon-led" />
+          <Zap className="text-neon w-6 h-6 fill-current neon-led scale-x-75" />
           <span className="font-black tracking-tighter italic uppercase text-xl neon-text">Apex</span>
         </div>
         <div className="flex items-center gap-4">
