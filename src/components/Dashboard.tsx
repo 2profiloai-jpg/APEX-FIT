@@ -453,6 +453,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
                   domain={['dataMin - 200', 'dataMax + 200']}
                 />
                 <Tooltip 
+                  cursor={false}
                   contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px', color: '#fff', fontWeight: 'bold' }}
                   itemStyle={{ color: 'var(--neon-accent)' }}
                   labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
@@ -512,7 +513,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
               <PolarGrid stroke="rgba(255,255,255,0.1)" />
               <PolarAngleAxis dataKey="subject" tick={{ fill: '#a1a1aa', fontSize: 10, fontWeight: 'bold' }} />
               <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-              <Tooltip content={<CustomRadarTooltip />} />
+              <Tooltip cursor={false} content={<CustomRadarTooltip />} />
               <Radar 
                 name="Nutrienti" 
                 dataKey="percent" 

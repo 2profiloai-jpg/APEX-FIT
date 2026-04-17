@@ -11,6 +11,7 @@
 @layer base {
   body {
     @apply bg-black text-zinc-100 antialiased;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
