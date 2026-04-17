@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
 import { UserProfile, WorkoutSession, BiometricLog } from './types';
 import { cn } from './lib/utils';
 import { 
@@ -37,6 +37,7 @@ export default function App() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [requestedPlanId, setRequestedPlanId] = useState<string | null>(null);
   const [aiStatus, setAiStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -98,6 +99,8 @@ export default function App() {
 
     const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      setIsAuthLoading(false);
+      
       if (user) {
         const userRef = doc(db, 'users', user.uid);
         
@@ -204,6 +207,24 @@ export default function App() {
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider);
   };
+
+  const root = document.documentElement;
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <motion.div
+          animate={{ 
+            scale: [1, 1.1, 1],
+            opacity: [0.3, 0.7, 0.3] 
+          }}
+          transition={{ duration: 1.2, repeat: Infinity }}
+        >
+          <Zap className="text-white w-12 h-12 fill-current" />
+        </motion.div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
