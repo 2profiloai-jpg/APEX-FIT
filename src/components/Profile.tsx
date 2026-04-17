@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { UserProfile } from '../types';
 import { User } from 'firebase/auth';
 import { auth, db } from '../firebase';
@@ -229,15 +230,16 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
       </div>
 
       {/* Preferences Modal */}
-      <AnimatePresence>
-        {showPreferences && (
-          <motion.div 
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed inset-0 z-[110] bg-black p-6 flex flex-col"
-          >
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showPreferences && (
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed inset-0 z-[110] bg-black p-6 flex flex-col"
+            >
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <Settings className="text-neon" size={24} />
@@ -327,7 +329,9 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       <motion.button 
         whileHover={{ scale: 1.02 }}

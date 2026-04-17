@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, WorkoutSession } from '../types';
 import { db } from '../firebase';
-import { collection, query, orderBy, limit, onSnapshot, doc, where, setDoc } from 'firebase/firestore';
-import { Plus, Target, Calendar, Droplets, Activity, Zap, X } from 'lucide-react';
+import { collection, query, orderBy, limit, onSnapshot, doc, where, setDoc, getDocs } from 'firebase/firestore';
+import { Plus, Target, Calendar, Droplets, Activity, Zap, X, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { calculateBMR, calculateTDEE, calculateTargetKcal, calculateMacros, calculateBMI } from '../lib/calculations';
 import { WorkoutPlan } from '../types';
 
@@ -76,6 +77,9 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
   const [totalProtein, setTotalProtein] = useState(0);
   const [totalCarbs, setTotalCarbs] = useState(0);
   const [totalFat, setTotalFat] = useState(0);
+  const [nutritionHistory, setNutritionHistory] = useState<any[]>([]);
+  const [chartRange, setChartRange] = useState<7 | 30>(7);
+  const [radarOffset, setRadarOffset] = useState(0); // 0 = oggi, -1 = ieri, ecc.
 
   useEffect(() => {
     if (!profile) return;
@@ -122,6 +126,61 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
 
   useEffect(() => {
     if (!profile?.uid) return;
+    
+    const fetchHistory = async () => {
+      try {
+        // Fetch up to last 30 documents (days) to allow toggling between 7 and 30 without re-fetching
+        const q = query(
+          collection(db, `users/${profile.uid}/nutrition`),
+          orderBy('__name__', 'desc'),
+          limit(30)
+        );
+        
+        onSnapshot(q, (snap) => {
+          const history = snap.docs.map(docSnap => {
+            const data = docSnap.data();
+            const meals = data.meals || {};
+            let totalKcal = 0;
+            let totalPro = 0;
+            let totalCarbs = 0;
+            let totalFat = 0;
+            Object.values(meals).forEach((mealArray: any) => {
+              if (Array.isArray(mealArray)) {
+                mealArray.forEach((item: any) => {
+                  totalKcal += (item.kcal || 0);
+                  totalPro += (item.protein || 0);
+                  totalCarbs += (item.carbs || 0);
+                  totalFat += (item.fat || 0);
+                });
+              }
+            });
+            
+            // Format date strictly (docSnap.id is YYYY-MM-DD)
+            const dateObj = new Date(docSnap.id);
+            const formattedDate = dateObj.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+            
+            return {
+              dateStr: docSnap.id,
+              date: formattedDate,
+              kcal: totalKcal,
+              protein: totalPro,
+              carbs: totalCarbs,
+              fat: totalFat
+            };
+          }).reverse(); // Chronological order
+          
+          setNutritionHistory(history);
+        });
+      } catch (error) {
+        console.error('Error fetching nutrition history:', error);
+      }
+    };
+    
+    fetchHistory();
+  }, [profile]);
+
+  useEffect(() => {
+    if (!profile?.uid) return;
     const q = query(
       collection(db, 'users', profile.uid, 'sessions'),
       orderBy('startTime', 'desc'),
@@ -151,6 +210,65 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
   const macros = calculateMacros(weight, targetKcal);
   const remainingKcal = Math.round(targetKcal - totalConsumed);
   const bmi = calculateBMI(weight, height);
+
+  // Helper per riempire le date vuote in modo che il grafico cambi asse X a seconda di chartRange
+  const generateChartData = (range: number) => {
+    const data = [];
+    const today = new Date();
+    for (let i = range - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const existing = nutritionHistory.find(h => h.dateStr === dateStr);
+      
+      data.push({
+        date: d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }),
+        kcal: existing ? existing.kcal : 0
+      });
+    }
+    return data;
+  };
+
+  const chartData = generateChartData(chartRange);
+
+  // Helper per il Radar Chart dei Nutrienti
+  const getRadarDateStr = (offset: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return d.toISOString().split('T')[0];
+  };
+
+  const getRadarDisplayDate = (offset: number) => {
+    if (offset === 0) return 'Oggi';
+    if (offset === -1) return 'Ieri';
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+  };
+
+  const radarDateStr = getRadarDateStr(radarOffset);
+  const existingRadarDay = nutritionHistory.find(h => h.dateStr === radarDateStr) || { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  
+  // Percentuali max a 100% per non rompere il grafico, ma memorizziamo l'actual per il tooltip
+  const radarData = [
+    { subject: 'Kcal', percent: targetKcal ? Math.min((existingRadarDay.kcal / targetKcal) * 100, 100) : 0, actual: existingRadarDay.kcal, target: targetKcal },
+    { subject: 'Pro', percent: macros.protein ? Math.min((existingRadarDay.protein / macros.protein) * 100, 100) : 0, actual: existingRadarDay.protein, target: macros.protein },
+    { subject: 'Carb', percent: macros.carbs ? Math.min((existingRadarDay.carbs / macros.carbs) * 100, 100) : 0, actual: existingRadarDay.carbs, target: macros.carbs },
+    { subject: 'Fat', percent: macros.fat ? Math.min((existingRadarDay.fat / macros.fat) * 100, 100) : 0, actual: existingRadarDay.fat, target: macros.fat },
+  ];
+
+  const CustomRadarTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-black/90 backdrop-blur border border-white/10 p-2 rounded-xl text-xs">
+          <p className="font-bold text-white mb-1">{data.subject}</p>
+          <p className="text-neon">{Math.round(data.actual)} <span className="text-zinc-500 text-[10px]">/ {Math.round(data.target)}</span></p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-8">
@@ -283,6 +401,135 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
             Sincronizza a {Math.round(calculatedTargetKcal)} kcal
           </button>
         )}
+      </motion.section>
+
+      {/* Kcal History Chart */}
+      <motion.section 
+        whileHover={{ scale: 1.01 }}
+        className="glass rounded-3xl p-5 border border-white/5"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={16} className="text-neon" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Trend Kcal</span>
+          </div>
+          <div className="flex gap-1">
+            <button 
+              onClick={() => setChartRange(7)}
+              className={`px-2 py-1 text-[8px] font-black uppercase rounded-lg transition-colors ${chartRange === 7 ? 'bg-neon text-black' : 'text-zinc-500 bg-black/40'}`}
+            >
+              7 Giorni
+            </button>
+            <button 
+              onClick={() => setChartRange(30)}
+              className={`px-2 py-1 text-[8px] font-black uppercase rounded-lg transition-colors ${chartRange === 30 ? 'bg-neon text-black' : 'text-zinc-500 bg-black/40'}`}
+            >
+              30 Giorni
+            </button>
+          </div>
+        </div>
+        
+        <div className="h-40 w-full mt-2">
+          {nutritionHistory.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorKcal" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--neon-accent)" stopOpacity={0.5} />
+                    <stop offset="95%" stopColor="var(--neon-accent)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#52525b" 
+                  fontSize={8} 
+                  tickLine={false} 
+                  axisLine={false}
+                  tickMargin={10}
+                />
+                <YAxis 
+                  hide 
+                  domain={['dataMin - 200', 'dataMax + 200']}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px', color: '#fff', fontWeight: 'bold' }}
+                  itemStyle={{ color: 'var(--neon-accent)' }}
+                  labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="kcal" 
+                  stroke="var(--neon-accent)" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorKcal)" 
+                  activeDot={{ r: 4, fill: 'var(--neon-accent)', stroke: '#000', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500 font-bold uppercase tracking-widest text-center px-4">
+              Dati non ancora sufficienti per mostrare il trend. Continua a tracciare i tuoi pasti!
+            </div>
+          )}
+        </div>
+      </motion.section>
+
+      {/* Radar Chart Nutrition Insights */}
+      <motion.section 
+        whileHover={{ scale: 1.01 }}
+        className="glass rounded-3xl p-5 border border-white/5"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Target size={16} className="text-neon" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Bilancio Nutrienti</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setRadarOffset(prev => prev - 1)}
+              className="text-zinc-500 hover:text-white transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-[10px] font-black uppercase text-neon w-12 text-center">
+              {getRadarDisplayDate(radarOffset)}
+            </span>
+            <button 
+              onClick={() => setRadarOffset(prev => Math.min(0, prev + 1))}
+              disabled={radarOffset === 0}
+              className={`transition-colors ${radarOffset === 0 ? 'text-zinc-800' : 'text-zinc-500 hover:text-white'}`}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+        
+        <div className="h-48 w-full mt-2 relative">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+              <PolarGrid stroke="rgba(255,255,255,0.1)" />
+              <PolarAngleAxis dataKey="subject" tick={{ fill: '#a1a1aa', fontSize: 10, fontWeight: 'bold' }} />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+              <Tooltip content={<CustomRadarTooltip />} />
+              <Radar 
+                name="Nutrienti" 
+                dataKey="percent" 
+                stroke="var(--neon-accent)"
+                strokeWidth={2}
+                fill="var(--neon-accent)" 
+                fillOpacity={0.4} 
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+          {existingRadarDay.kcal === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px] rounded-2xl">
+              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest text-center px-4">
+                Nessun pasto tracciato
+              </span>
+            </div>
+          )}
+        </div>
       </motion.section>
 
       {/* Quick Action */}
