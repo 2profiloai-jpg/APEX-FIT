@@ -264,7 +264,7 @@ export default function App() {
 
   return (
     <div 
-      className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-neon selection:text-black"
+      className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-neon selection:text-black overflow-x-hidden w-full"
       style={{ 
         '--neon-accent': currentTheme.hex,
         '--neon-accent-rgb': currentTheme.rgb
@@ -272,7 +272,7 @@ export default function App() {
     >
       <Toaster position="top-center" expand={true} richColors theme="dark" />
       {/* Top Bar */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-black/40 backdrop-blur-2xl border-b border-white/5 z-50 px-4 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 h-16 bg-black/40 backdrop-blur-2xl border-b border-white/5 z-50 px-4 flex items-center justify-between overflow-hidden">
         <div className="flex items-center gap-2">
           <Zap className="text-neon w-6 h-6 fill-current neon-led scale-x-75" />
           <span className="font-black tracking-tighter italic uppercase text-xl neon-text">Apex</span>
@@ -292,15 +292,15 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="pt-20 pb-32 px-4 max-w-2xl mx-auto">
+      <main className="pt-20 pb-32 px-4 max-w-2xl mx-auto overflow-x-hidden">
         <AnimatePresence mode="wait">
           {activeTab === 'dashboard' && (
             <motion.div 
               key="dashboard" 
-              initial={{ opacity: 0, y: 20, scale: 0.98 }} 
-              animate={{ opacity: 1, y: 0, scale: 1 }} 
-              exit={{ opacity: 0, y: -20, scale: 0.98 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
             >
               <Dashboard profile={profile} aiStatus={aiStatus} />
             </motion.div>
@@ -308,10 +308,10 @@ export default function App() {
           {activeTab === 'workout' && (
             <motion.div 
               key="workout" 
-              initial={{ opacity: 0, y: 20, scale: 0.98 }} 
-              animate={{ opacity: 1, y: 0, scale: 1 }} 
-              exit={{ opacity: 0, y: -20, scale: 0.98 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
             >
               <WorkoutHub requestedPlanId={requestedPlanId} onClearRequest={() => setRequestedPlanId(null)} />
             </motion.div>
@@ -319,10 +319,10 @@ export default function App() {
           {activeTab === 'library' && (
             <motion.div 
               key="library" 
-              initial={{ opacity: 0, y: 20, scale: 0.98 }} 
-              animate={{ opacity: 1, y: 0, scale: 1 }} 
-              exit={{ opacity: 0, y: -20, scale: 0.98 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
             >
               <ExerciseLibrary />
             </motion.div>
@@ -330,10 +330,10 @@ export default function App() {
           {activeTab === 'nutrition' && (
             <motion.div 
               key="nutrition" 
-              initial={{ opacity: 0, y: 20, scale: 0.98 }} 
-              animate={{ opacity: 1, y: 0, scale: 1 }} 
-              exit={{ opacity: 0, y: -20, scale: 0.98 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
             >
               <NutritionHub profile={profile} />
             </motion.div>
@@ -341,10 +341,10 @@ export default function App() {
           {activeTab === 'profile' && (
             <motion.div 
               key="profile" 
-              initial={{ opacity: 0, y: 20, scale: 0.98 }} 
-              animate={{ opacity: 1, y: 0, scale: 1 }} 
-              exit={{ opacity: 0, y: -20, scale: 0.98 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
             >
               <Profile profile={profile} user={user} aiStatus={aiStatus} />
             </motion.div>

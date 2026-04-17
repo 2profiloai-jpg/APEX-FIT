@@ -288,19 +288,19 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                     <div className="grid grid-cols-4 gap-2">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Kcal</label>
-                        <input type="number" placeholder="0" value={newFood.kcal} onChange={(e) => setNewFood({ ...newFood, kcal: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-bold focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.kcal} onChange={(e) => setNewFood({ ...newFood, kcal: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Pro</label>
-                        <input type="number" placeholder="0" value={newFood.protein} onChange={(e) => setNewFood({ ...newFood, protein: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-bold focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.protein} onChange={(e) => setNewFood({ ...newFood, protein: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Carb</label>
-                        <input type="number" placeholder="0" value={newFood.carbs} onChange={(e) => setNewFood({ ...newFood, carbs: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-bold focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.carbs} onChange={(e) => setNewFood({ ...newFood, carbs: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Fat</label>
-                        <input type="number" placeholder="0" value={newFood.fat} onChange={(e) => setNewFood({ ...newFood, fat: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-xs text-center font-bold focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.fat} onChange={(e) => setNewFood({ ...newFood, fat: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                     </div>
 

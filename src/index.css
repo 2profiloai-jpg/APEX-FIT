@@ -32,7 +32,9 @@
     -webkit-user-drag: none !important;
   }
   body {
-    @apply bg-black text-zinc-100 antialiased overscroll-none;
+    @apply bg-black text-zinc-100 antialiased overscroll-none overflow-x-hidden w-full;
+    overscroll-behavior-x: none;
+    position: relative;
   }
   img {
     pointer-events: none; 

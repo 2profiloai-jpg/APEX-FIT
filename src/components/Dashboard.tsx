@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, WorkoutSession } from '../types';
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, onSnapshot, doc, where, setDoc, getDocs } from 'firebase/firestore';
-import { Plus, Target, Calendar, Droplets, Activity, Zap, X, TrendingUp, ChevronLeft, ChevronRight, BicepsFlexed } from 'lucide-react';
+import { Plus, Target, Calendar, Droplets, Activity, Zap, X, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
@@ -252,7 +252,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
       {/* Workout Preview - Focused on Today */}
       <div className="w-full">
         <motion.div 
-          whileHover={{ scale: 1.01 }}
+          whileHover={{ scale: 1.002 }}
           className="glass rounded-2xl p-4 border border-white/5"
         >
           <div className="flex items-center gap-2 mb-2">
@@ -270,7 +270,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
 
       {/* Metabolic Hub - Pure Data View */}
       <motion.section 
-        whileHover={{ scale: 1.01 }}
+        whileHover={{ scale: 1.002 }}
         className="glass rounded-2xl p-5 space-y-4"
       >
         <div className="flex items-center justify-between">
@@ -478,7 +478,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           <motion.button 
             whileHover={{ scale: 1.01, boxShadow: `0 0 20px rgba(var(--neon-accent-rgb),0.1)` }}
             whileTap={{ scale: 0.98 }}
-            className="w-full py-4 text-sm bg-neon text-black font-black uppercase italic tracking-[0.2em] rounded-xl shadow-lg transition-all flex items-center justify-center gap-6 px-8 group neon-led"
+            className="w-full py-4 text-sm bg-neon text-black font-black uppercase italic tracking-[0.2em] rounded-xl shadow-lg transition-all flex items-center justify-center group neon-led"
             onClick={() => {
               const event = new CustomEvent('start-workout', { 
                 detail: { planId: todayPlans[0].id } 
@@ -486,9 +486,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
               window.dispatchEvent(event);
             }}
           >
-            <BicepsFlexed size={20} className="group-hover:scale-110 transition-transform -rotate-6" />
             <span className="drop-shadow-sm">INIZIA ALLENAMENTO</span>
-            <BicepsFlexed size={20} className="group-hover:scale-110 transition-transform rotate-6" />
           </motion.button>
         ) : (
           <motion.div 

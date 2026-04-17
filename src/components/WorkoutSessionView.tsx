@@ -10,27 +10,6 @@ import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import { cn } from '../lib/utils';
 import { getPostWorkoutAdvice } from '../services/geminiService';
 
-const Stepper = ({ value, onChange, step = 1, min = 0, label, disabled }: { value: number, onChange: (v: number) => void, step?: number, min?: number, label?: string, disabled?: boolean }) => {
-  return (
-    <div className={cn("flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg p-1 h-12 transition-all", !disabled && "focus-within:border-neon focus-within:ring-1 focus-within:ring-neon", disabled && "opacity-50 pointer-events-none")}>
-      <button disabled={disabled} onClick={() => onChange(Math.max(min, value - step))} className="w-8 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">-</button>
-      <div className="flex flex-col items-center justify-center flex-1 h-full">
-        <input 
-          type="number" 
-          value={value === 0 ? '' : value} 
-          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-          placeholder="0"
-          disabled={disabled}
-          className="w-full bg-transparent text-center font-bold text-base leading-none outline-none text-white appearance-none m-0 p-0"
-          style={{ WebkitAppearance: 'none', margin: 0 }}
-        />
-        {label && <span className="text-[8px] text-zinc-500 uppercase leading-none mt-0.5">{label}</span>}
-      </div>
-      <button disabled={disabled} onClick={() => onChange(value + step)} className="w-8 h-full flex items-center justify-center bg-zinc-900 rounded text-zinc-400 active:bg-zinc-800">+</button>
-    </div>
-  );
-};
-
 export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { sessionId?: string | null, plan?: WorkoutPlan | null, onSessionEnd: () => void }) {
   const [exercises, setExercises] = useState<SessionExercise[]>(() => {
     if (plan && plan.exercises) {
@@ -312,11 +291,11 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               key={exIdx} 
-              className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden"
+              className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden max-w-full"
             >
-              <div className="p-4 bg-zinc-800/50 flex items-center justify-between">
-                <h3 className="font-black uppercase tracking-tighter text-neon">{exerciseInfo?.name}</h3>
-                <button onClick={() => removeExercise(exIdx)} className="text-zinc-500 hover:text-red-500">
+              <div className="p-4 bg-zinc-800/50 flex items-center justify-between gap-3 overflow-hidden">
+                <h3 className="font-black uppercase tracking-tighter text-neon truncate min-w-0 flex-1">{exerciseInfo?.name}</h3>
+                <button onClick={() => removeExercise(exIdx)} className="text-zinc-500 hover:text-red-500 flex-shrink-0">
                   <Trash2 size={16} />
                 </button>
               </div>
@@ -327,20 +306,20 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                     <div 
                       key={setIdx} 
                       className={cn(
-                        "flex items-end gap-1.5 p-1.5 rounded-xl transition-all border",
+                        "flex items-end gap-1 p-1 rounded-xl transition-all border w-full min-w-0 overflow-hidden",
                         set.completed 
                           ? "bg-zinc-950/40 border-zinc-900 opacity-60" 
                           : "bg-zinc-900/60 border-zinc-800 shadow-xl shadow-black/40"
                       )}
                     >
                       {/* Serie Number */}
-                      <div className="flex flex-col items-center justify-center w-8 mb-2">
+                      <div className="flex flex-col items-center justify-center w-7 mb-2 flex-shrink-0">
                         <span className="text-[6px] font-black uppercase text-zinc-600 mb-0.5 tracking-tighter">SET</span>
                         <span className="font-black text-neon text-sm italic tracking-tighter neon-text leading-none">{setIdx + 1}</span>
                       </div>
 
                       {/* Weight Input */}
-                      <div className="flex-1 flex flex-col gap-1 items-stretch">
+                      <div className="flex-1 min-w-0 flex flex-col gap-1 items-stretch">
                         <span className="text-[6px] font-black uppercase text-zinc-500 text-center tracking-widest">KILI</span>
                         <input 
                           type="number"
@@ -349,12 +328,12 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                           onChange={(e) => updateSet(exIdx, setIdx, 'weight', parseFloat(e.target.value) || 0)}
                           placeholder="0"
                           disabled={set.completed}
-                          className="w-full bg-black/50 border border-white/5 rounded-lg h-11 text-center font-black text-base text-white italic tracking-tighter outline-none focus:border-neon/50 transition-colors"
+                          className="w-full bg-black/50 border border-white/5 rounded-lg h-11 text-center font-black text-base text-white italic tracking-tighter outline-none focus:border-neon/50 transition-colors min-w-0"
                         />
                       </div>
 
                       {/* Reps Input */}
-                      <div className="flex-1 flex flex-col gap-1 items-stretch">
+                      <div className="flex-1 min-w-0 flex flex-col gap-1 items-stretch">
                         <span className="text-[6px] font-black uppercase text-zinc-500 text-center tracking-widest">REPS</span>
                         <input 
                           type="number"
@@ -363,18 +342,18 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                           onChange={(e) => updateSet(exIdx, setIdx, 'reps', parseInt(e.target.value) || 0)}
                           placeholder="0"
                           disabled={set.completed}
-                          className="w-full bg-black/50 border border-white/5 rounded-lg h-11 text-center font-black text-base text-white italic tracking-tighter outline-none focus:border-neon/50 transition-colors"
+                          className="w-full bg-black/50 border border-white/5 rounded-lg h-11 text-center font-black text-base text-white italic tracking-tighter outline-none focus:border-neon/50 transition-colors min-w-0"
                         />
                       </div>
 
                       {/* RPE Select */}
-                      <div className="w-10 flex flex-col gap-1">
+                      <div className="w-10 flex flex-col gap-1 flex-shrink-0">
                         <span className="text-[6px] font-black uppercase text-zinc-500 text-center tracking-widest">RPE</span>
                         <select 
                           value={set.rpe || 0} 
                           onChange={(e) => updateSet(exIdx, setIdx, 'rpe', parseInt(e.target.value))}
                           disabled={set.completed}
-                          className="w-full h-11 bg-black/50 border border-white/5 rounded-lg text-center font-black text-xs text-neon italic tracking-tighter appearance-none outline-none focus:border-neon/50"
+                          className="w-full h-11 bg-black/50 border border-white/5 rounded-lg text-center font-black text-base text-neon italic tracking-tighter appearance-none outline-none focus:border-neon/50"
                         >
                           <option value={0}>-</option>
                           {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>{r}</option>)}
@@ -382,7 +361,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                       </div>
 
                       {/* Complete Check */}
-                      <div className="w-11">
+                      <div className="w-11 flex-shrink-0">
                         <button 
                           onClick={() => toggleSetComplete(exIdx, setIdx)}
                           className={cn(
