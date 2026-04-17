@@ -14,9 +14,16 @@
     -webkit-touch-callout: none !important;
     -webkit-user-select: none !important;
     user-select: none !important;
+    -webkit-user-drag: none !important;
   }
   body {
     @apply bg-black text-zinc-100 antialiased overscroll-none;
+  }
+  img {
+    pointer-events: none; 
+  }
+  button svg, a svg, .nav-icon {
+    pointer-events: none !important; /* Let parent handle clicks on basic UI icons */
   }
   input, textarea {
     -webkit-user-select: auto !important;
