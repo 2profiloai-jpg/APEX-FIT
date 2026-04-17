@@ -241,41 +241,54 @@ export default function ExerciseLibrary() {
 
               {/* Video Player Module (Framed & Responsive) */}
               {selectedExercise.videoUrl && (
-                <div className="w-full md:w-5/6 lg:w-4/5 mx-auto aspect-video bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 mb-8 relative group shadow-2xl">
-                  {loadVideo ? (
-                    <iframe 
-                      key={selectedExercise.id}
-                      src={`${selectedExercise.videoUrl.replace('youtube.com', 'youtube-nocookie.com')}?autoplay=1&playsinline=1&rel=0`}
-                      className="w-full h-full border-0"
-                      title={selectedExercise.name}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                      allowFullScreen
-                    ></iframe>
-                  ) : (
-                    <div 
-                      onClick={() => setLoadVideo(true)}
-                      className="w-full h-full cursor-pointer relative flex items-center justify-center"
-                    >
-                      <img 
-                        src={`https://img.youtube.com/vi/${getVideoId(selectedExercise.videoUrl)}/maxresdefault.jpg`}
-                        alt={selectedExercise.name}
-                        className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-all duration-300"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = `https://img.youtube.com/vi/${getVideoId(selectedExercise.videoUrl)}/hqdefault.jpg`;
-                        }}
-                      />
-                      {/* Play Button Overlay */}
-                      <motion.div 
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="absolute w-16 h-16 bg-neon rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(var(--neon-accent-rgb),0.5)] z-10"
+                <div className="w-full md:w-5/6 lg:w-4/5 mx-auto mb-8 flex flex-col gap-2">
+                  <div className="w-full aspect-video bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 relative group shadow-2xl">
+                    {loadVideo ? (
+                      <iframe 
+                        key={selectedExercise.id}
+                        src={`${selectedExercise.videoUrl.replace('youtube.com', 'youtube-nocookie.com')}?autoplay=1&playsinline=1&rel=0`}
+                        className="w-full h-full border-0"
+                        title={selectedExercise.name}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowFullScreen
+                      ></iframe>
+                    ) : (
+                      <div 
+                        onClick={() => setLoadVideo(true)}
+                        className="w-full h-full cursor-pointer relative flex items-center justify-center"
                       >
-                        <Play size={32} className="text-black fill-current ml-1" />
-                      </motion.div>
-                    </div>
-                  )}
+                        <img 
+                          src={`https://img.youtube.com/vi/${getVideoId(selectedExercise.videoUrl)}/maxresdefault.jpg`}
+                          alt={selectedExercise.name}
+                          className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-all duration-300"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = `https://img.youtube.com/vi/${getVideoId(selectedExercise.videoUrl)}/hqdefault.jpg`;
+                          }}
+                        />
+                        {/* Play Button Overlay */}
+                        <motion.div 
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          className="absolute w-16 h-16 bg-neon rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(var(--neon-accent-rgb),0.5)] z-10"
+                        >
+                          <Play size={32} className="text-black fill-current ml-1" />
+                        </motion.div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* YouTube Fallback Button */}
+                  <a 
+                    href={selectedExercise.videoUrl.replace('/embed/', '/watch?v=')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-white/5 border border-white/10 rounded-xl text-zinc-400 hover:text-white hover:border-white/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest"
+                  >
+                    <span>Il video è bloccato? Apri in YouTube</span>
+                    <ChevronRight size={14} />
+                  </a>
                 </div>
               )}
 
