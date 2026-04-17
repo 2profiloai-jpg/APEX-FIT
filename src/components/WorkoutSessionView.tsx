@@ -327,21 +327,21 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                     <div 
                       key={setIdx} 
                       className={cn(
-                        "flex items-center gap-2 p-2 rounded-2xl transition-all border",
+                        "flex items-end gap-1.5 p-1.5 rounded-xl transition-all border",
                         set.completed 
-                          ? "bg-zinc-950/50 border-zinc-900 opacity-60" 
-                          : "bg-zinc-900 border-zinc-800 shadow-lg shadow-black/20"
+                          ? "bg-zinc-950/40 border-zinc-900 opacity-60" 
+                          : "bg-zinc-900/60 border-zinc-800 shadow-xl shadow-black/40"
                       )}
                     >
                       {/* Serie Number */}
-                      <div className="flex flex-col items-center justify-center min-w-[32px]">
-                        <span className="text-[8px] font-black uppercase text-zinc-600 mb-0.5">SET</span>
-                        <span className="font-mono font-black text-neon text-sm">{setIdx + 1}</span>
+                      <div className="flex flex-col items-center justify-center w-8 mb-2">
+                        <span className="text-[6px] font-black uppercase text-zinc-600 mb-0.5 tracking-tighter">SET</span>
+                        <span className="font-mono font-black text-neon text-xs leading-none">{setIdx + 1}</span>
                       </div>
 
                       {/* Weight Input */}
                       <div className="flex-1 flex flex-col gap-1">
-                        <span className="text-[8px] font-black uppercase text-zinc-500 ml-1">Kili (KG)</span>
+                        <span className="text-[6px] font-black uppercase text-zinc-500 ml-2 tracking-widest">KILI</span>
                         <input 
                           type="number"
                           inputMode="decimal"
@@ -349,13 +349,13 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                           onChange={(e) => updateSet(exIdx, setIdx, 'weight', parseFloat(e.target.value) || 0)}
                           placeholder="0"
                           disabled={set.completed}
-                          className="w-full bg-black/40 border border-zinc-800 rounded-xl h-12 text-center font-mono font-black text-lg text-white outline-none focus:border-neon transition-colors"
+                          className="w-full bg-black/50 border border-white/5 rounded-lg h-11 text-center font-mono font-black text-base text-white outline-none focus:border-neon/50 transition-colors"
                         />
                       </div>
 
                       {/* Reps Input */}
                       <div className="flex-1 flex flex-col gap-1">
-                        <span className="text-[8px] font-black uppercase text-zinc-500 ml-1">Ripetiz.</span>
+                        <span className="text-[6px] font-black uppercase text-zinc-500 ml-2 tracking-widest">REPS</span>
                         <input 
                           type="number"
                           inputMode="numeric"
@@ -363,18 +363,18 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                           onChange={(e) => updateSet(exIdx, setIdx, 'reps', parseInt(e.target.value) || 0)}
                           placeholder="0"
                           disabled={set.completed}
-                          className="w-full bg-black/40 border border-zinc-800 rounded-xl h-12 text-center font-mono font-black text-lg text-white outline-none focus:border-neon transition-colors"
+                          className="w-full bg-black/50 border border-white/5 rounded-lg h-11 text-center font-mono font-black text-base text-white outline-none focus:border-neon/50 transition-colors"
                         />
                       </div>
 
                       {/* RPE Select */}
-                      <div className="w-14 flex flex-col gap-1">
-                        <span className="text-[8px] font-black uppercase text-zinc-500 text-center">RPE</span>
+                      <div className="w-10 flex flex-col gap-1">
+                        <span className="text-[6px] font-black uppercase text-zinc-500 text-center tracking-widest">RPE</span>
                         <select 
                           value={set.rpe || 0} 
                           onChange={(e) => updateSet(exIdx, setIdx, 'rpe', parseInt(e.target.value))}
                           disabled={set.completed}
-                          className="w-full h-12 bg-black/40 border border-zinc-800 rounded-xl text-center font-mono font-bold text-sm text-neon appearance-none outline-none focus:border-neon"
+                          className="w-full h-11 bg-black/50 border border-white/5 rounded-lg text-center font-mono font-black text-xs text-neon appearance-none outline-none focus:border-neon/50"
                         >
                           <option value={0}>-</option>
                           {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>{r}</option>)}
@@ -382,17 +382,17 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                       </div>
 
                       {/* Complete Check */}
-                      <div className="pt-4">
+                      <div className="w-11">
                         <button 
                           onClick={() => toggleSetComplete(exIdx, setIdx)}
                           className={cn(
-                            "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+                            "w-full h-11 rounded-lg flex items-center justify-center transition-all",
                             set.completed 
-                              ? "bg-neon text-black shadow-[0_0_15px_rgba(var(--neon-accent-rgb),0.4)]" 
-                              : "bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-neon/50"
+                              ? "bg-neon text-black shadow-[0_0_10px_rgba(var(--neon-accent-rgb),0.3)]" 
+                              : "bg-zinc-800 text-zinc-500 border border-zinc-700 hover:border-neon/40"
                           )}
                         >
-                          <Check size={20} strokeWidth={4} />
+                          <Check size={18} strokeWidth={4} />
                         </button>
                       </div>
                     </div>
