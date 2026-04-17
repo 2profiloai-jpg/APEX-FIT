@@ -247,7 +247,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed inset-0 z-50 bg-black p-6 flex flex-col no-scrollbar"
+              className="fixed inset-0 z-50 bg-black p-6 flex flex-col thin-scrollbar"
             >
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
@@ -262,13 +262,13 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
                 </button>
               </div>
               
-              <div className="flex gap-2 overflow-x-auto pb-4 mb-4 no-scrollbar -mx-2 px-2">
+              <div className="flex gap-2 overflow-x-auto pb-4 mb-4 thin-scrollbar snap-x -mx-2 px-2">
                 {(['Petto', 'Schiena', 'Gambe', 'Spalle', 'Bicipiti', 'Tricipiti', 'Core', 'Cardio'] as ExerciseCategory[]).map(cat => (
                   <button
                     key={cat}
                     onClick={() => setPickerCategory(pickerCategory === cat ? null : cat)}
                     className={cn(
-                      "px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                      "px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap snap-start",
                       pickerCategory === cat 
                         ? "bg-neon text-black border-neon shadow-[0_0_20px_rgba(var(--neon-accent-rgb),0.3)]" 
                         : "bg-white/5 border-white/5 text-zinc-400"
@@ -279,7 +279,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
                 ))}
               </div>
 
-              <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar pb-10">
+              <div className="space-y-3 flex-1 overflow-y-auto thin-scrollbar pb-10 cursor-pointer">
                 {EXERCISE_LIBRARY
                   .filter(ex => !pickerCategory || ex.category === pickerCategory)
                   .map(ex => (

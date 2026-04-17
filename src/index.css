@@ -93,3 +93,32 @@
 .min-h-screen-safe {
   min-height: -webkit-fill-available;
 }
+
+/* Elegant Thin Scrollbar */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 1px;
+  height: 1px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neon);
+}
+
+/* Hide scrollbar entirely (keep existing class just in case) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

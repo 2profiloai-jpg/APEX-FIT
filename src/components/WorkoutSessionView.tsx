@@ -436,13 +436,13 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 px-6 font-black uppercase tracking-tighter text-sm focus:ring-1 ring-neon outline-none"
               />
               
-              <div className="flex overflow-x-auto pb-2 -mx-2 px-2 gap-2 no-scrollbar">
+              <div className="flex overflow-x-auto pb-4 mb-2 -mx-2 px-2 gap-2 thin-scrollbar snap-x">
                 {['Petto', 'Schiena', 'Gambe', 'Spalle', 'Bicipiti', 'Tricipiti', 'Core'].map(cat => (
                   <button 
                     key={cat}
                     onClick={() => setPickerCategory(pickerCategory === cat ? null : cat as ExerciseCategory)}
                     className={cn(
-                      "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
+                      "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap snap-start",
                       pickerCategory === cat 
                         ? "bg-neon text-black border-neon shadow-[0_0_10px_rgba(var(--neon-accent-rgb),0.2)]" 
                         : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-neon hover:border-neon"
