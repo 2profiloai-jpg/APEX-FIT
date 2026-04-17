@@ -446,6 +446,7 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
                   tickLine={false} 
                   axisLine={false}
                   tickMargin={10}
+                  interval={chartRange === 7 ? 0 : 'preserveEnd'}
                 />
                 <YAxis 
                   hide 
