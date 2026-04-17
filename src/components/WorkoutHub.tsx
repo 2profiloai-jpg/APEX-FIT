@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { WorkoutPlan, PlannedExercise, Exercise, ExerciseCategory } from '../types';
-import { Calendar, Plus, Play, Dumbbell, X, ChevronRight, Save } from 'lucide-react';
+import { Calendar, Plus, Play, Dumbbell, X, ChevronRight, Save, Activity, Brain, AlertCircle, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import WorkoutSessionView from './WorkoutSessionView';
 import GripButton from './ui/GripButton';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
+import { getPlanBalanceAnalysis, BalanceScore } from '../services/smartCoachService';
 
 export default function WorkoutHub({ requestedPlanId, onClearRequest }: { requestedPlanId?: string | null, onClearRequest?: () => void }) {
   const weekDays = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
@@ -143,6 +144,8 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
     setPlannedExercises(plannedExercises.filter((_, i) => i !== index));
   };
 
+  const balance = getPlanBalanceAnalysis(plannedExercises);
+
   if (activeSessionPlan) {
     return (
       <WorkoutSessionView 
@@ -213,13 +216,17 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">RPE</label>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Affaticamento</label>
                     <select 
-                      value={pe.targetRpe || 8}
-                      onChange={(e) => updatePlannedExercise(idx, 'targetRpe', parseInt(e.target.value) || 0)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center appearance-none"
+                      value={pe.targetEffort || 'MEDIO'}
+                      onChange={(e) => updatePlannedExercise(idx, 'targetEffort', e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-center appearance-none text-[10px] font-black italic text-neon"
                     >
-                      {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>{r}</option>)}
+                      <option value="POCO">POCO</option>
+                      <option value="MEDIO">MEDIO</option>
+                      <option value="GIUSTO">GIUSTO</option>
+                      <option value="MOLTO">MOLTO</option>
+                      <option value="MOLTISSIMO">MAX</option>
                     </select>
                   </div>
                 </div>
@@ -234,6 +241,63 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
             <Plus size={20} /> Aggiungi Esercizio
           </button>
         </div>
+
+        {/* Balance Analyzer */}
+        {plannedExercises.length > 0 && (
+          <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-5 space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Brain size={16} className="text-neon" />
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Balance Analyzer</h4>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { label: 'Push', val: balance.pushes },
+                { label: 'Pull', val: balance.pulls },
+                { label: 'Legs', val: balance.legs },
+                { label: 'Core', val: balance.core }
+              ].map(b => (
+                <div key={b.label} className="bg-black/40 rounded-xl p-2 flex flex-col items-center">
+                  <span className="text-[7px] font-black uppercase text-zinc-600 mb-0.5">{b.label}</span>
+                  <span className="text-xs font-black text-white italic">{b.val} <span className="text-[8px] not-italic text-zinc-600">set</span></span>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2">
+              <div className="flex justify-between items-end mb-1">
+                <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Indice Carico Metabolico (ICM)</span>
+                <span className={cn(
+                  "text-xs font-black italic",
+                  balance.metabolicLevel > 4 ? "text-red-500" : balance.metabolicLevel > 2.5 ? "text-yellow-500" : "text-neon"
+                )}>
+                  {balance.metabolicLevel.toFixed(1)}
+                </span>
+              </div>
+              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(100, (balance.metabolicLevel / 6) * 100)}%` }}
+                  className={cn(
+                    "h-full transition-colors",
+                    balance.metabolicLevel > 4 ? "bg-red-500" : balance.metabolicLevel > 2.5 ? "bg-yellow-500" : "bg-neon"
+                  )}
+                />
+              </div>
+            </div>
+
+            {balance.suggestions.length > 0 && (
+              <div className="space-y-2 mt-2">
+                {balance.suggestions.map((s, i) => (
+                  <div key={i} className="flex gap-2 text-[9px] text-zinc-400 font-bold leading-relaxed bg-white/[0.02] p-2 rounded-lg border border-white/5">
+                    <AlertCircle size={10} className="text-yellow-500 flex-shrink-0 mt-0.5" />
+                    <span>{s}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <GripButton onClick={handleSavePlan} icon={<Save size={20} />} variant="primary">
           Salva Scheda
@@ -308,19 +372,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
         
         {selectedDay === today && plans.length > 0 && (
           <div className="mb-6">
-            <motion.button 
-              whileHover={{ scale: 1.01, boxShadow: `0 0 25px rgba(var(--neon-accent-rgb),0.25)` }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveSessionPlan(plans[0])}
-              className="w-full bg-neon text-black py-5 px-8 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-4 relative overflow-hidden group neon-led"
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <Play size={20} className="fill-current relative z-10 group-hover:scale-110 transition-transform" />
-              <div className="flex flex-col items-center relative z-10">
-                <span className="text-base font-black tracking-[0.2em] italic uppercase leading-none">Inizia Sessione</span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-70 mt-1.5">{plans[0].name}</span>
-              </div>
-            </motion.button>
+            <div />
           </div>
         )}
 
@@ -394,7 +446,13 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h4 className="text-2xl font-black italic uppercase">{plan.name}</h4>
-                    <p className="text-zinc-500 text-sm font-bold uppercase tracking-widest">{plan.exercises.length} Esercizi</p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">{plan.exercises.length} Esercizi</p>
+                      <div className="flex items-center gap-1">
+                        <Activity size={10} className="text-neon" />
+                        <span className="text-[10px] font-black text-neon italic">ICM {getPlanBalanceAnalysis(plan.exercises).metabolicLevel.toFixed(1)}</span>
+                      </div>
+                    </div>
                   </div>
                   <button onClick={() => handleDeletePlan(plan.id)} className="text-zinc-600 hover:text-red-400">
                     <X size={20} />

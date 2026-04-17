@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, WorkoutSession } from '../types';
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, onSnapshot, doc, where, setDoc, getDocs } from 'firebase/firestore';
-import { Plus, Target, Calendar, Droplets, Activity, Zap, X, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Plus, Target, Calendar, Droplets, Activity, Zap, X, TrendingUp, ChevronLeft, ChevronRight, Brain, AlertTriangle, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { calculateBMR, calculateTDEE, calculateTargetKcal, calculateMacros, calculateBMI } from '../lib/calculations';
-import { WorkoutPlan } from '../types';
+import { cn } from '../lib/utils';
+import { WorkoutPlan, EffortLevel } from '../types';
+import { getReadyToTrainAdvice, CoachAdvice } from '../services/smartCoachService';
 
 export default function Dashboard({ profile, aiStatus }: { profile: UserProfile | null, aiStatus: 'loading' | 'ready' | 'error' }) {
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
@@ -56,6 +58,16 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
   const [activeChart, setActiveChart] = useState<'trend' | 'radar'>('trend');
   const [chartRange, setChartRange] = useState<7 | 30>(7);
   const [radarOffset, setRadarOffset] = useState(0); // 0 = oggi, -1 = ieri, ecc.
+  const [coachAdvice, setCoachAdvice] = useState<CoachAdvice | null>(null);
+
+  useEffect(() => {
+    if (todayPlans.length > 0) {
+      const advice = getReadyToTrainAdvice(todayPlans[0], recentSessions);
+      setCoachAdvice(advice);
+    } else {
+      setCoachAdvice(null);
+    }
+  }, [todayPlans, recentSessions]);
 
   useEffect(() => {
     if (!profile) return;
@@ -471,6 +483,43 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           )}
         </div>
       </motion.section>
+
+      {/* Ready-to-Train Smart Coach */}
+      {todayPlans.length > 0 && coachAdvice && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={cn(
+            "p-5 rounded-3xl border flex flex-col gap-3 relative overflow-hidden",
+            coachAdvice.type === 'warning' ? "bg-red-500/10 border-red-500/20" : 
+            coachAdvice.type === 'success' ? "bg-neon/10 border-neon/20" : "bg-blue-500/10 border-blue-500/20"
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center",
+              coachAdvice.type === 'warning' ? "bg-red-500/20 text-red-500" : 
+              coachAdvice.type === 'success' ? "bg-neon/20 text-neon" : "bg-blue-500/20 text-blue-500"
+            )}>
+              {coachAdvice.type === 'warning' ? <AlertTriangle size={16} /> : 
+               coachAdvice.type === 'success' ? <Sparkles size={16} /> : <Brain size={16} />}
+            </div>
+            <span className={cn(
+              "text-[10px] font-black uppercase tracking-[0.2em]",
+              coachAdvice.type === 'warning' ? "text-red-500" : 
+              coachAdvice.type === 'success' ? "text-neon" : "text-blue-500"
+            )}>
+              Smart Coach Insight
+            </span>
+          </div>
+          <p className="text-xs font-bold italic text-white/90 leading-relaxed pr-8">
+            "{coachAdvice.message}"
+          </p>
+          <div className="absolute top-4 right-4 opacity-10">
+            <Brain size={48} />
+          </div>
+        </motion.div>
+      )}
 
       {/* Quick Action */}
       <div className="pt-2">

@@ -37,10 +37,13 @@ export interface Exercise {
 
 export type SetTag = 'Warm-up' | 'Working' | 'Top' | 'Back-off' | 'Drop' | 'Cluster' | 'Myo-rep';
 
+export type EffortLevel = 'POCO' | 'MEDIO' | 'GIUSTO' | 'MOLTO' | 'MOLTISSIMO';
+
 export interface WorkoutSet {
   weight: number;
   reps: number;
   rpe?: number;
+  effort?: EffortLevel;
   tag: SetTag;
   completed?: boolean;
 }
@@ -63,6 +66,7 @@ export interface PlannedExercise {
   targetSets: number;
   targetReps: string;
   targetRpe?: number;
+  targetEffort?: EffortLevel;
 }
 
 export interface WorkoutPlan {

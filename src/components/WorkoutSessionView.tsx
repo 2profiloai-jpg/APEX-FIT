@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
-import { WorkoutSession, SessionExercise, WorkoutSet, Exercise, ExerciseCategory, WorkoutPlan } from '../types';
-import { X, Plus, Save, Timer, ChevronDown, ChevronUp, Trash2, Play, Pause, RotateCcw, Brain, Check } from 'lucide-react';
+import { WorkoutSession, SessionExercise, WorkoutSet, Exercise, ExerciseCategory, WorkoutPlan, EffortLevel } from '../types';
+import { X, Plus, Save, Timer, ChevronDown, ChevronUp, Trash2, Play, Pause, RotateCcw, Brain, Check, Info, TrendingUp } from 'lucide-react';
 import GripButton from './ui/GripButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import { cn } from '../lib/utils';
 import { getPostWorkoutAdvice } from '../services/geminiService';
+import { getEffortFeedback, getRestAdvice, getTechniqueCue, getProgressGoal, getImmediateLoadSuggestion } from '../services/smartCoachService';
+import { query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 
 export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { sessionId?: string | null, plan?: WorkoutPlan | null, onSessionEnd: () => void }) {
+  const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
   const [exercises, setExercises] = useState<SessionExercise[]>(() => {
     if (plan && plan.exercises) {
       return plan.exercises.map(pe => ({
@@ -36,8 +39,23 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [restTimer, setRestTimer] = useState<number | null>(null);
+  const [exerciseCues, setExerciseCues] = useState<Record<string, string>>({});
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const restTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch recent sessions for AI analysis
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    const q = query(
+      collection(db, 'users', auth.currentUser.uid, 'sessions'),
+      orderBy('startTime', 'desc'),
+      limit(5)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setRecentSessions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkoutSession)));
+    });
+    return unsubscribe;
+  }, []);
 
   // Persistence
   useEffect(() => {
@@ -162,7 +180,9 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
     setExercises(newExercises);
     
     if (isNowComplete) {
-      startRest(90); // Default 90s rest
+      const exerciseId = exercises[exerciseIndex].exerciseId;
+      const restTime = getRestAdvice(exerciseId, currentSet.effort);
+      startRest(restTime);
     }
   };
 
@@ -286,6 +306,12 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
       <div className="space-y-6">
         {exercises.map((ex, exIdx) => {
           const exerciseInfo = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId);
+          const progressGoal = getProgressGoal(ex.exerciseId, recentSessions);
+          
+          if (!exerciseCues[ex.exerciseId] && exerciseInfo) {
+            setExerciseCues(prev => ({ ...prev, [ex.exerciseId]: getTechniqueCue(ex.exerciseId) }));
+          }
+
           return (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
@@ -294,13 +320,32 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
               className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden max-w-full"
             >
               <div className="p-4 bg-zinc-800/50 flex items-center justify-between gap-3 overflow-hidden">
-                <h3 className="font-black uppercase tracking-tighter text-neon truncate min-w-0 flex-1">{exerciseInfo?.name}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-black uppercase tracking-tighter text-neon truncate leading-tight">{exerciseInfo?.name}</h3>
+                  {progressGoal && (
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <TrendingUp size={10} className="text-zinc-500" />
+                      <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest leading-none">Goal: {progressGoal.target}</span>
+                    </div>
+                  )}
+                </div>
                 <button onClick={() => removeExercise(exIdx)} className="text-zinc-500 hover:text-red-500 flex-shrink-0">
                   <Trash2 size={16} />
                 </button>
               </div>
               
               <div className="p-4 space-y-4">
+                {/* AI Technique Cue */}
+                {exerciseCues[ex.exerciseId] && (
+                  <div className="flex gap-2 p-3 bg-neon/5 border border-neon/10 rounded-2xl">
+                    <Brain size={14} className="text-neon flex-shrink-0" />
+                    <p className="text-[10px] text-zinc-300 font-bold italic leading-tight">
+                      <span className="text-neon uppercase not-italic mr-1">Coach:</span> 
+                      {exerciseCues[ex.exerciseId]}
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   {ex.sets.map((set, setIdx) => (
                     <div 
@@ -346,17 +391,41 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                         />
                       </div>
 
-                      {/* RPE Select */}
-                      <div className="w-10 flex flex-col gap-1 flex-shrink-0">
-                        <span className="text-[6px] font-black uppercase text-zinc-500 text-center tracking-widest">RPE</span>
+                      {/* Effort Select */}
+                      <div className="w-20 flex flex-col gap-1 flex-shrink-0">
+                        <span className="text-[6px] font-black uppercase text-zinc-500 text-center tracking-widest">SFORZO</span>
                         <select 
-                          value={set.rpe || 0} 
-                          onChange={(e) => updateSet(exIdx, setIdx, 'rpe', parseInt(e.target.value))}
+                          value={set.effort || ''} 
+                          onChange={(e) => {
+                            const val = e.target.value as EffortLevel;
+                            updateSet(exIdx, setIdx, 'effort', val);
+                            if (val) {
+                              const feedback = getEffortFeedback(val);
+                              const loadSuggestion = getImmediateLoadSuggestion(set.weight, val);
+                              
+                              if (val === 'MOLTISSIMO') {
+                                toast.error("Limite raggiunto!", {
+                                  description: loadSuggestion || "Troppo pesante? Considera di scalare il peso per finire in sicurezza.",
+                                  duration: 5000,
+                                  icon: <Brain className="text-red-500" />
+                                });
+                              } else {
+                                toast.info(feedback, { 
+                                  description: loadSuggestion || undefined,
+                                  duration: 3000 
+                                });
+                              }
+                            }
+                          }}
                           disabled={set.completed}
-                          className="w-full h-11 bg-black/50 border border-white/5 rounded-lg text-center font-black text-base text-neon italic tracking-tighter appearance-none outline-none focus:border-neon/50"
+                          className="w-full h-11 bg-black/50 border border-white/5 rounded-lg text-center font-black text-[10px] text-neon italic tracking-tighter appearance-none outline-none focus:border-neon/50"
                         >
-                          <option value={0}>-</option>
-                          {[1,2,3,4,5,6,7,8,9,10].map(r => <option key={r} value={r}>{r}</option>)}
+                          <option value="">-</option>
+                          <option value="POCO">POCO</option>
+                          <option value="MEDIO">MEDIO</option>
+                          <option value="GIUSTO">GIUSTO</option>
+                          <option value="MOLTO">MOLTO</option>
+                          <option value="MOLTISSIMO">MAX</option>
                         </select>
                       </div>
 

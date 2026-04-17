@@ -86,10 +86,10 @@ export const getStrategistAdvice = async (
     ${JSON.stringify(history.slice(-3))}
     
     REGOLE FONDAMENTALI PER IL CONSIGLIO (tip):
-    1. Analisi Scostamento Nutrizionale: Se c'è un forte scostamento tra calorie assunte e obiettivo, fallo notare (es. "Oggi sei sotto di 400kcal rispetto al tuo obiettivo di massa. Considera uno snack proteico prima di dormire.").
+    1. Analisi Scostamento Nutrizionale: Se c'è un forte scostamento tra calorie assunte e obiettivo, fallo notare.
     2. Bio-feedback: Usa i dati biometrici per consigliare idratazione, recupero o volume.
-    3. Ottimizzazione Workout (RPE): Analizza gli RPE recenti se rilevanti.
-    4. CONSTRAINT: NIENTE frasi motivazionali generiche (max 10% del testo). Sii analitico, scientifico e diretto.
+    3. Ottimizzazione Workout (Sforzo): Analizza i livelli di sforzo recenti ('POCO', 'MEDIO', 'MOLTO', 'MOLTISSIMO').
+    4. CONSTRAINT: NIENTE frasi motivazionali generiche. Sii analitico e diretto.
     
     Ritorna solo JSON:
     {
@@ -228,12 +228,13 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
     L'utente ha appena terminato questo allenamento:
     ${JSON.stringify(sessionData)}
     
-    Analizza i dati (kg, reps, RPE) e fornisci un feedback POST-ALLENAMENTO di massimo 3 frasi.
+    Analizza i dati (kg, reps, sforzo) e fornisci un feedback POST-ALLENAMENTO di massimo 3 frasi.
+    Lo sforzo è indicato come: 'POCO' (troppo leggero), 'MEDIO' (ottimale), 'MOLTO' (alto), 'MOLTISSIMO' (cedimento/limite).
     Regole:
-    1. Se l'RPE medio è basso (sotto 6), consiglia esplicitamente di aumentare i carichi la prossima volta.
-    2. Se l'RPE è alto (9-10) su molti set, consiglia di fare attenzione al recupero o di abbassare il volume.
+    1. Se lo sforzo è 'POCO' su molti set, consiglia esplicitamente di aumentare i carichi drasticamente la prossima volta.
+    2. Se lo sforzo è spesso 'MOLTISSIMO', consiglia di fare attenzione al recupero centrale.
     3. Sii specifico su un esercizio se noti qualcosa di rilevante.
-    4. Niente saluti o frasi motivazionali inutili. Vai dritto al punto su COME e COSA cambiare la prossima volta.
+    4. Niente saluti. Vai dritto al punto su COME e COSA cambiare la prossima volta.
   `;
 
   try {
