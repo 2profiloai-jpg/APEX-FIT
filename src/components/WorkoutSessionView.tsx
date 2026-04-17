@@ -340,8 +340,8 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                       </div>
 
                       {/* Weight Input */}
-                      <div className="flex-1 flex flex-col gap-1">
-                        <span className="text-[6px] font-black uppercase text-zinc-500 ml-2 tracking-widest">KILI</span>
+                      <div className="flex-1 flex flex-col gap-1 items-stretch">
+                        <span className="text-[6px] font-black uppercase text-zinc-500 text-center tracking-widest">KILI</span>
                         <input 
                           type="number"
                           inputMode="decimal"
@@ -354,8 +354,8 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                       </div>
 
                       {/* Reps Input */}
-                      <div className="flex-1 flex flex-col gap-1">
-                        <span className="text-[6px] font-black uppercase text-zinc-500 ml-2 tracking-widest">REPS</span>
+                      <div className="flex-1 flex flex-col gap-1 items-stretch">
+                        <span className="text-[6px] font-black uppercase text-zinc-500 text-center tracking-widest">REPS</span>
                         <input 
                           type="number"
                           inputMode="numeric"
