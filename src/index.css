@@ -11,9 +11,16 @@
 @layer base {
   * {
     -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
   }
   body {
-    @apply bg-black text-zinc-100 antialiased;
+    @apply bg-black text-zinc-100 antialiased overscroll-none;
+  }
+  input, textarea {
+    -webkit-user-select: auto !important;
+    user-select: auto !important;
   }
   *:focus {
     outline: none !important;
@@ -28,6 +35,12 @@
 }
 .recharts-polar-angle-axis-tick text {
   outline: none !important;
+}
+.recharts-tooltip-cursor {
+  display: none !important;
+  fill: transparent !important;
+  stroke: transparent !important;
+  opacity: 0 !important;
 }
 
 /* iOS Glassmorphism */
