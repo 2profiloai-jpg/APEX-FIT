@@ -10,6 +10,7 @@ import { calculateBMR, calculateTDEE, calculateTargetKcal, calculateMacros, calc
 import { cn } from '../lib/utils';
 import { WorkoutPlan, EffortLevel } from '../types';
 import { getReadyToTrainAdvice, CoachAdvice } from '../services/smartCoachService';
+import { getProactiveFeedback } from '../services/liaService';
 
 export default function Dashboard({ profile, aiStatus }: { profile: UserProfile | null, aiStatus: 'loading' | 'ready' | 'error' }) {
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
@@ -520,6 +521,18 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           </div>
         </motion.div>
       )}
+      
+      {recentSessions.length > 0 && getProactiveFeedback(recentSessions).map((fb, idx) => (
+         <motion.div key={idx} className="p-5 mt-4 rounded-3xl border border-purple-500/20 bg-purple-500/5 flex flex-col gap-3">
+           <div className="flex items-center gap-2">
+             <div className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-500/20 text-purple-400">
+               <Sparkles size={16} />
+             </div>
+             <h3 className="text-sm font-black uppercase tracking-widest text-purple-400">LIA Analysis</h3>
+           </div>
+           <p className="text-xs text-zinc-300 font-bold leading-relaxed">{fb.message}</p>
+         </motion.div>
+      ))}
 
       {/* Quick Action */}
       <div className="pt-2">

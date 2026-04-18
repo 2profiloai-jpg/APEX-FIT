@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Exercise, ExerciseCategory } from '../types';
 import { Search, Info, Play, ChevronRight, X, Dumbbell, Target, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -131,11 +131,30 @@ export const EXERCISE_LIBRARY: Exercise[] = [
   { id: 'c10', name: 'Cable Crunch', category: 'Core', targetMuscles: ['Addominali (Retto)'], equipment: 'Cavi', type: 'Isolamento', proNote: 'Permette di sovraccaricare l\'addome con i pesi.', instructions: '1. In ginocchio davanti a una puleggia alta con la corda.\n2. Afferra la corda e portala dietro la nuca.\n3. Fletti il busto verso il basso contraendo gli addominali (immagina di portare i gomiti alle ginocchia).\n4. Torna su lentamente.', videoUrl: 'https://www.youtube.com/embed/5ChlIBq8t0I' }
 ];
 
-export default function ExerciseLibrary() {
+export default function ExerciseLibrary({ focusedExerciseId, onReturn }: { focusedExerciseId?: string | null, onReturn?: () => void }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | null>(null);
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  
+  // Set initial selected exercise if focusedExerciseId is provided
+  const initialExercise = focusedExerciseId ? EXERCISE_LIBRARY.find(e => e.id === focusedExerciseId) : null;
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(initialExercise || null);
   const [loadVideo, setLoadVideo] = useState(false);
+
+  // Update selectedExercise if focusedExerciseId changes (prop sync)
+  useEffect(() => {
+    if (focusedExerciseId) {
+      const ex = EXERCISE_LIBRARY.find(e => e.id === focusedExerciseId);
+      if (ex) {
+        setSelectedExercise(ex);
+        setLoadVideo(false);
+      }
+    }
+  }, [focusedExerciseId]);
+
+  const handleCloseDetail = () => {
+    setSelectedExercise(null);
+    if (onReturn) onReturn();
+  };
 
   const handleSelectExercise = (ex: Exercise) => {
     setSelectedExercise(ex);
@@ -158,62 +177,66 @@ export default function ExerciseLibrary() {
 
   return (
     <div className="space-y-6">
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
-        <input 
-          type="text" 
-          placeholder="CERCA NELL'ATLANTE..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 font-black uppercase tracking-tighter text-sm focus:ring-1 ring-neon outline-none"
-        />
-      </div>
+      {!focusedExerciseId && (
+        <>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
+            <input 
+              type="text" 
+              placeholder="CERCA NELL'ATLANTE..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 font-black uppercase tracking-tighter text-sm focus:ring-1 ring-neon outline-none"
+            />
+          </div>
 
-      <div className="flex overflow-x-auto pb-4 mb-2 -mx-4 px-4 gap-2 thin-scrollbar snap-x">
-        {categories.map(cat => (
-          <motion.button 
-            key={cat} 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
-            className={cn(
-              "border px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap snap-start",
-              selectedCategory === cat 
-                ? "bg-neon text-black border-neon shadow-[0_0_20px_rgba(var(--neon-accent-rgb),0.3)]" 
-                : "glass text-zinc-400 hover:text-neon hover:border-neon"
-            )}
-          >
-            {cat}
-          </motion.button>
-        ))}
-      </div>
+          <div className="flex overflow-x-auto pb-4 mb-2 -mx-4 px-4 gap-2 thin-scrollbar snap-x">
+            {categories.map(cat => (
+              <motion.button 
+                key={cat} 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                className={cn(
+                  "border px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap snap-start",
+                  selectedCategory === cat 
+                    ? "bg-neon text-black border-neon shadow-[0_0_20px_rgba(var(--neon-accent-rgb),0.3)]" 
+                    : "glass text-zinc-400 hover:text-neon hover:border-neon"
+                )}
+              >
+                {cat}
+              </motion.button>
+            ))}
+          </div>
 
-      <div className="space-y-3">
-        {filteredExercises.map(ex => (
-          <motion.div 
-            key={ex.id} 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleSelectExercise(ex)}
-            className="glass p-4 rounded-2xl flex items-center justify-between group cursor-pointer transition-colors"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-black/40 rounded-xl flex items-center justify-center border border-white/5 group-hover:bg-neon transition-colors">
-                <Play size={20} className="text-zinc-500 group-hover:text-black fill-current" />
-              </div>
-              <div>
-                <h4 className="font-black uppercase tracking-tighter text-sm italic">{ex.name}</h4>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{ex.category}</span>
-                  <span className="text-[10px] text-zinc-600">•</span>
-                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{ex.equipment}</span>
+          <div className="space-y-3">
+            {filteredExercises.map(ex => (
+              <motion.div 
+                key={ex.id} 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleSelectExercise(ex)}
+                className="glass p-4 rounded-2xl flex items-center justify-between group cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-black/40 rounded-xl flex items-center justify-center border border-white/5 group-hover:bg-neon transition-colors">
+                    <Play size={20} className="text-zinc-500 group-hover:text-black fill-current" />
+                  </div>
+                  <div>
+                    <h4 className="font-black uppercase tracking-tighter text-sm italic">{ex.name}</h4>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{ex.category}</span>
+                      <span className="text-[10px] text-zinc-600">•</span>
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{ex.equipment}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <ChevronRight size={16} className="text-zinc-700" />
-          </motion.div>
-        ))}
-      </div>
+                <ChevronRight size={16} className="text-zinc-700" />
+              </motion.div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Exercise Detail Modal */}
       <AnimatePresence>
@@ -232,7 +255,7 @@ export default function ExerciseLibrary() {
                   <h3 className="text-2xl font-black uppercase tracking-tighter italic">Voce Atlante</h3>
                 </div>
                 <button 
-                  onClick={() => setSelectedExercise(null)} 
+                  onClick={handleCloseDetail} 
                   className="p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white transition-colors"
                 >
                   <X size={24} />
@@ -299,7 +322,7 @@ export default function ExerciseLibrary() {
                     <Dumbbell className="text-neon" size={16} />
                     <span className="text-[10px] font-black uppercase tracking-widest">Dettaglio Esercizio</span>
                   </div>
-                  <button onClick={() => setSelectedExercise(null)} className="text-[10px] font-black uppercase tracking-widest hover:text-neon transition-colors">
+                  <button onClick={handleCloseDetail} className="text-[10px] font-black uppercase tracking-widest hover:text-neon transition-colors">
                     Chiudi Scheda
                   </button>
                 </div>
@@ -372,8 +395,8 @@ export default function ExerciseLibrary() {
               </div>
 
               <div className="mt-8 pb-8">
-                <GripButton variant="accent" className="w-full" onClick={() => setSelectedExercise(null)}>
-                  CHIUDI ATLANTE
+                <GripButton variant="accent" className="w-full" onClick={handleCloseDetail}>
+                  {focusedExerciseId ? 'TORNA ALL\'ALLENAMENTO' : 'CHIUDI ATLANTE'}
                 </GripButton>
               </div>
             </div>

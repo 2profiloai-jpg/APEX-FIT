@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 import { getPlanBalanceAnalysis, BalanceScore } from '../services/smartCoachService';
 
-export default function WorkoutHub({ requestedPlanId, onClearRequest }: { requestedPlanId?: string | null, onClearRequest?: () => void }) {
+export default function WorkoutHub({ requestedPlanId, onClearRequest, onNavigateToLibrary }: { requestedPlanId?: string | null, onClearRequest?: () => void, onNavigateToLibrary: (id: string) => void }) {
   const weekDays = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
   const today = weekDays[new Date().getDay()];
   const [selectedDay, setSelectedDay] = useState<string>(today);
@@ -34,6 +34,15 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
   const [plannedExercises, setPlannedExercises] = useState<PlannedExercise[]>([]);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [pickerCategory, setPickerCategory] = useState<ExerciseCategory | null>(null);
+
+  // Recovery of active session
+  useEffect(() => {
+    const saved = localStorage.getItem('apex_active_session');
+    if (saved) {
+      // If we have saved session data, jump directly to active session
+      setActiveSessionPlan('free'); 
+    }
+  }, []);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -151,6 +160,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest }: { reques
       <WorkoutSessionView 
         plan={activeSessionPlan === 'free' ? null : activeSessionPlan} 
         onSessionEnd={() => setActiveSessionPlan(null)} 
+        onNavigateToLibrary={onNavigateToLibrary}
       />
     );
   }

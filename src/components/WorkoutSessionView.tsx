@@ -2,17 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { WorkoutSession, SessionExercise, WorkoutSet, Exercise, ExerciseCategory, WorkoutPlan, EffortLevel } from '../types';
-import { X, Plus, Save, Timer, ChevronDown, ChevronUp, Trash2, Play, Pause, RotateCcw, Brain, Check, Info, TrendingUp } from 'lucide-react';
+import { X, Plus, Save, Timer, ChevronDown, ChevronUp, Trash2, Play, Pause, RotateCcw, Brain, Check, Info, TrendingUp, Dumbbell, Activity, CircleDashed, Square, Triangle, User, ArrowUp, ArrowDown } from 'lucide-react';
 import GripButton from './ui/GripButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import { cn } from '../lib/utils';
 import { getPostWorkoutAdvice } from '../services/geminiService';
+import { analyzeSessionCompletion } from '../services/liaService';
 import { getEffortFeedback, getRestAdvice, getTechniqueCue, getProgressGoal, getImmediateLoadSuggestion } from '../services/smartCoachService';
 import { query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 
-export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { sessionId?: string | null, plan?: WorkoutPlan | null, onSessionEnd: () => void }) {
+export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNavigateToLibrary }: { sessionId?: string | null, plan?: WorkoutPlan | null, onSessionEnd: () => void, onNavigateToLibrary: (id: string) => void }) {
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
   const [exercises, setExercises] = useState<SessionExercise[]>(() => {
     if (plan && plan.exercises) {
@@ -32,6 +33,17 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
   const [showSummary, setShowSummary] = useState(false);
   const [postWorkoutAdvice, setPostWorkoutAdvice] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
+
+  const getExerciseBlueprint = (exercise: Exercise) => {
+    // Specific blueprints for exercises based on ID
+    if (exercise.id.startsWith('p')) return <div className="flex items-center gap-1"><User size={20} className="text-neon"/><Activity size={20} className="text-neon"/></div>;
+    if (exercise.id.startsWith('s')) return <div className="flex items-center gap-1"><User size={20} className="text-neon"/><ArrowDown size={20} className="text-neon"/></div>;
+    if (exercise.id.startsWith('g')) return <div className="flex items-center gap-1"><User size={20} className="text-neon"/><Triangle size={20} className="text-neon"/></div>;
+    if (exercise.id.startsWith('sp')) return <div className="flex items-center gap-1"><User size={20} className="text-neon"/><ArrowUp size={20} className="text-neon"/></div>;
+    
+    // Default Fallback
+    return <Dumbbell size={20} className="text-neon" />;
+  };
   const [pickerSearch, setPickerSearch] = useState('');
   const [pickerCategory, setPickerCategory] = useState<ExerciseCategory | null>(null);
   
@@ -59,7 +71,20 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
 
   // Persistence
   useEffect(() => {
-    if (!plan && sessionId === 'new') {
+    const handleBeforeUnload = () => {
+      localStorage.setItem('apex_active_session', JSON.stringify({
+        exercises,
+        timerSeconds,
+        lastUpdated: new Date().toISOString()
+      }));
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [exercises, timerSeconds]);
+
+  useEffect(() => {
+    // Universal recovery: check localStorage on every mount if we don't have a plan yet
+    if (!plan) {
       const saved = localStorage.getItem('apex_active_session');
       if (saved) {
         try {
@@ -67,12 +92,13 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
           if (parsed.exercises && parsed.exercises.length > 0) {
             setExercises(parsed.exercises);
             setTimerSeconds(parsed.timerSeconds || 0);
-            toast.info('Sessione precedente recuperata');
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error("Failed to parse saved session", e);
+        }
       }
     }
-  }, [plan, sessionId]);
+  }, [plan]);
 
   useEffect(() => {
     if (exercises.length > 0) {
@@ -158,6 +184,14 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
     setExercises(newExercises);
   };
 
+  const saveSession = (currentExercises: SessionExercise[], currentTimer: number) => {
+    localStorage.setItem('apex_active_session', JSON.stringify({
+      exercises: currentExercises,
+      timerSeconds: currentTimer,
+      lastUpdated: new Date().toISOString()
+    }));
+  };
+
   const updateSet = (exerciseIndex: number, setIndex: number, field: keyof WorkoutSet, value: any) => {
     const newExercises = [...exercises];
     newExercises[exerciseIndex].sets[setIndex] = {
@@ -165,6 +199,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
       [field]: value
     };
     setExercises(newExercises);
+    saveSession(newExercises, timerSeconds);
   };
 
   const toggleSetComplete = (exerciseIndex: number, setIndex: number) => {
@@ -178,6 +213,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
     };
     
     setExercises(newExercises);
+    saveSession(newExercises, timerSeconds);
     
     if (isNowComplete) {
       const exerciseId = exercises[exerciseIndex].exerciseId;
@@ -200,14 +236,24 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
         endTime: new Date().toISOString(),
         exercises: exercises
       };
+      const sessionDataForLIA = {
+        id: 'new',
+        ...sessionData
+      } as WorkoutSession;
+      
+      const liaFeedback = analyzeSessionCompletion(sessionDataForLIA);
+      
       await addDoc(collection(db, 'users', auth.currentUser.uid, 'sessions'), sessionData);
       localStorage.removeItem('apex_active_session');
       toast.success('Allenamento salvato con successo!');
       
-      // Fetch post workout advice
       setShowSummary(true);
-      const advice = await getPostWorkoutAdvice(sessionData);
-      setPostWorkoutAdvice(advice);
+      if (liaFeedback) {
+        setPostWorkoutAdvice(liaFeedback.message);
+      } else {
+        const advice = await getPostWorkoutAdvice(sessionData);
+        setPostWorkoutAdvice(advice);
+      }
       
     } catch (error) {
       console.error("Errore salvataggio:", error);
@@ -321,7 +367,19 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
             >
               <div className="p-4 bg-zinc-800/50 flex items-center justify-between gap-3 overflow-hidden">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-black uppercase tracking-tighter text-neon truncate leading-tight">{exerciseInfo?.name}</h3>
+                  <h3 className="font-black uppercase tracking-tighter text-neon truncate leading-tight flex items-center gap-2">
+                    <button 
+                      onClick={() => onNavigateToLibrary(ex.exerciseId)}
+                      className="hover:underline hover:text-white transition-colors"
+                    >
+                      {exerciseInfo?.name.toUpperCase()}
+                    </button>
+                    {restTimer !== null && (
+                      <span className="text-[10px] bg-neon text-black px-1.5 py-0.5 rounded italic font-bold">
+                        REST: {restTimer}s
+                      </span>
+                    )}
+                  </h3>
                   {progressGoal && (
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <TrendingUp size={10} className="text-zinc-500" />
@@ -421,11 +479,11 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd }: { 
                           className="w-full h-11 bg-black/50 border border-white/5 rounded-lg text-center font-black text-[10px] text-neon italic tracking-tighter appearance-none outline-none focus:border-neon/50"
                         >
                           <option value="">-</option>
-                          <option value="POCO">POCO</option>
-                          <option value="MEDIO">MEDIO</option>
-                          <option value="GIUSTO">GIUSTO</option>
-                          <option value="MOLTO">MOLTO</option>
-                          <option value="MOLTISSIMO">MAX</option>
+                          <option value="POCO">Molto Leggero (Riscaldamento)</option>
+                          <option value="MEDIO">Facile (Potevo farne molte altre)</option>
+                          <option value="GIUSTO">Sfidante ma Gestibile (Buona intensità)</option>
+                          <option value="MOLTO">Difficile (Al limite della tecnica corretta)</option>
+                          <option value="MOLTISSIMO">Estremo (Cedimento muscolare totale)</option>
                         </select>
                       </div>
 

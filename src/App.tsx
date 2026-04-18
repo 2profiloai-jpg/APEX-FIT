@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Download,
   Milk, // Bottle-like icon
-  Droplets
+  Droplets,
+  Brain
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'sonner';
@@ -36,6 +37,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'workout' | 'library' | 'nutrition' | 'profile'>('dashboard');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [requestedPlanId, setRequestedPlanId] = useState<string | null>(null);
+  const [focusedExerciseId, setFocusedExerciseId] = useState<string | null>(null);
   const [aiStatus, setAiStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   
@@ -278,15 +280,23 @@ export default function App() {
           <span className="font-black tracking-tighter italic uppercase text-xl neon-text">Apex</span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1.5 text-neon">
-              <Milk size={12} />
-              <span className="text-[9px] text-zinc-300 font-bold uppercase tracking-tight">Ricordati di bere</span>
+          <button className="relative p-2 bg-zinc-800 rounded-lg text-neon hover:bg-zinc-700 transition-colors">
+            <Brain size={18} />
+            {/* Indicatore visivo se ci sono nuovi consigli */}
+            <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-black" />
+          </button>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end">
+              <div className="flex items-center gap-1.5 text-neon">
+                <Milk size={12} />
+                <span className="text-[9px] text-zinc-300 font-bold uppercase tracking-tight">Ricordati di bere</span>
+              </div>
+              <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter">almeno 2 litri al giorno</span>
             </div>
-            <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter">almeno 2 litri al giorno</span>
-          </div>
-          <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
-            <img src={user.photoURL || ''} alt="Profile" referrerPolicy="no-referrer" />
+            <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
+              <img src={user.photoURL || ''} alt="Profile" referrerPolicy="no-referrer" />
+            </div>
           </div>
         </div>
       </header>
@@ -313,7 +323,14 @@ export default function App() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              <WorkoutHub requestedPlanId={requestedPlanId} onClearRequest={() => setRequestedPlanId(null)} />
+              <WorkoutHub 
+                requestedPlanId={requestedPlanId} 
+                onClearRequest={() => setRequestedPlanId(null)} 
+                onNavigateToLibrary={(exerciseId) => {
+                  setFocusedExerciseId(exerciseId);
+                  setActiveTab('library');
+                }} 
+              />
             </motion.div>
           )}
           {activeTab === 'library' && (
@@ -324,7 +341,13 @@ export default function App() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              <ExerciseLibrary />
+              <ExerciseLibrary 
+                focusedExerciseId={focusedExerciseId} 
+                onReturn={() => {
+                  setFocusedExerciseId(null);
+                  setActiveTab('workout');
+                }} 
+              />
             </motion.div>
           )}
           {activeTab === 'nutrition' && (
