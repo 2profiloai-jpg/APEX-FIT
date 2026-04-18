@@ -485,50 +485,13 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
         </div>
       </motion.section>
 
-      {/* Ready-to-Train Smart Coach */}
-      {todayPlans.length > 0 && coachAdvice && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className={cn(
-            "p-5 rounded-3xl border flex flex-col gap-3 relative overflow-hidden",
-            coachAdvice.type === 'warning' ? "bg-red-500/10 border-red-500/20" : 
-            coachAdvice.type === 'success' ? "bg-neon/10 border-neon/20" : "bg-blue-500/10 border-blue-500/20"
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center",
-              coachAdvice.type === 'warning' ? "bg-red-500/20 text-red-500" : 
-              coachAdvice.type === 'success' ? "bg-neon/20 text-neon" : "bg-blue-500/20 text-blue-500"
-            )}>
-              {coachAdvice.type === 'warning' ? <AlertTriangle size={16} /> : 
-               coachAdvice.type === 'success' ? <Sparkles size={16} /> : <Brain size={16} />}
-            </div>
-            <span className={cn(
-              "text-[10px] font-black uppercase tracking-[0.2em]",
-              coachAdvice.type === 'warning' ? "text-red-500" : 
-              coachAdvice.type === 'success' ? "text-neon" : "text-blue-500"
-            )}>
-              Smart Coach Insight
-            </span>
-          </div>
-          <p className="text-xs font-bold italic text-white/90 leading-relaxed pr-8">
-            "{coachAdvice.message}"
-          </p>
-          <div className="absolute top-4 right-4 opacity-10">
-            <Brain size={48} />
-          </div>
-        </motion.div>
-      )}
-      
       {recentSessions.length > 0 && getProactiveFeedback(recentSessions).map((fb, idx) => (
          <motion.div key={idx} className="p-5 mt-4 rounded-3xl border border-purple-500/20 bg-purple-500/5 flex flex-col gap-3">
            <div className="flex items-center gap-2">
              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-500/20 text-purple-400">
                <Sparkles size={16} />
              </div>
-             <h3 className="text-sm font-black uppercase tracking-widest text-purple-400">LIA Analysis</h3>
+             <h3 className="text-sm font-black uppercase tracking-widest text-purple-400">IA ANALYSIS</h3>
            </div>
            <p className="text-xs text-zinc-300 font-bold leading-relaxed">{fb.message}</p>
          </motion.div>

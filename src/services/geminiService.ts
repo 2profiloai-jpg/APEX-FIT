@@ -130,13 +130,17 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
   }
 
   const prompt = `
-    Sei un nutrizionista esperto.
+    Sei un nutrizionista clinico esperto del mercato ITALIANO e un database nutrizionale iper-preciso. Il tuo calcolo DEVE basarsi ESCLUSIVAMENTE sulle etichette dei prodotti reali venduti in ITALIA (Tabelle CREA, IEO, formule europee per le multinazionali). NON usare i vecchi database generici americani (es. USDA) per i prodotti commerciali preconfezionati, perché in Italia le ricette e il contenuto di zuccheri sono drasticamente diversi.
+    
     Pasto inserito dall'utente: "${input || 'Nessun testo, basati solo sull\'immagine'}"
     
-    Analizza la richiesta. Usa virgole (,), punti (.) o punti e virgola (;) come separatori principali per dividere i differenti alimenti. Anche congiunzioni (e, ed, con) o spazi chiari indicano nuovi elementi.
-    Esempio: "Pasta al sugo; una mela. Petto di pollo" deve essere diviso in: Pasta al sugo, una mela, Petto di pollo.
-    Calcola in modo PRECISO e REALISTICO le calorie e i macronutrienti per OGNI singolo elemento individuato. 
-    Se le quantità non sono specificate, usa porzioni medie (es. 1 piatto di pasta = 100g cruda, 1 mela = 150g).
+    ATTENZIONE SULLE QUANTITA' E LA MATEMATICA:
+    1. Regola del Mercato Italiano: Leggi grammi (g) o millilitri (ml). Valuta TUTTI i cibi e bevande confezionate secondo le etichette italiane odierne. Esempio ferreo: in Italia la Fanta è ormai senza zuccheri aggiunti, quindi se l'utente scrive "fanta da 330 ml" DEVI restituire 20 kcal, NON le 150-200 kcal della versione americana. Applica questo calcolo "reale e italiano" a tutti i brand e catene.
+    2. Usa una base di calcolo per 100g e moltiplica *esattamente* per la proporzione richiesta (es. 250g = 2.5).
+    3. I macronutrienti devono matematicamente combaciare con le kcal! Calcola prima le kcal italiane e poi i macro: (Carbo * 4) + (Pro * 4) + (Fat * 9) = Kcal totali. Tolleranza massima del 3-5% per arrotondamenti.
+    4. Se nessuna quantità è specificata, scegli porzioni umane medie per un pasto italiano tipico e DICHIARA la stima di peso usata nel nome (es. "Risotto (1 porzione media, ~80g a crudo)").
+
+    Dividi accuratamente gli elementi se presenti separatori (; , . - e, con).
     
     DEVI RITORNARE ESCLUSIVAMENTE UN OGGETTO JSON VALIDO.
     Struttura esatta:
@@ -144,12 +148,11 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
       "items": [
         {
           "name": "Nome alimento 1",
-          "kcal": 550,
-          "carbs": 50,
-          "protein": 30,
-          "fat": 20
-        },
-        ...
+          "kcal": valore numerico preciso,
+          "carbs": valore numerico,
+          "protein": valore numerico,
+          "fat": valore numerico
+        }
       ]
     }
   `;
@@ -217,6 +220,52 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
   }
 };
 
+export const suggestMealForRemainingMacros = async (
+  remainingKcal: number, 
+  remainingPro: number, 
+  remainingCarbs: number, 
+  remainingFat: number,
+  pantryItems?: string[],
+  favoriteMeals?: any[],
+  workoutContext?: string
+) => {
+  const aiClient = getAI();
+  if (!aiClient) {
+    throw new Error("Chiave API mancante. Impossibile generare suggerimenti.");
+  }
+  
+  if (remainingKcal <= 50) return "Hai già raggiunto il tuo obiettivo calorico per oggi. Ottimo lavoro!";
+
+  const pantryStr = pantryItems?.length ? pantryItems.join(', ') : 'Nessuna dispensa specificata, usa ingredienti comuni.';
+  const favStr = favoriteMeals?.length ? JSON.stringify(favoriteMeals.map(f => ({ name: f.name, kcal: f.foods.reduce((acc: number, cur: any) => acc + (cur.kcal||0), 0) }))) : 'Nessun pasto preferito.';
+  
+  const prompt = `
+    Sei un assistente nutrizionale pratico e diretto.
+    L'obiettivo dell'utente è raggiungere il suo target calorico della giornata.
+    
+    Kcal mancanti oggi: ${Math.round(remainingKcal)} kcal.
+    
+    Ingredienti disponibili nella sua Dispensa: ${pantryStr}
+    
+    REGOLE:
+    1. L'obiettivo principale è suggerire uno o due cibi/pasti veloci che coprano esattamente o quasi le ${Math.round(remainingKcal)} kcal mancanti.
+    2. Usa MAGGIORMENTE o ESCLUSIVAMENTE gli alimenti presenti nella "Dispensa".
+    3. Formula una o due frasi semplici. Esempio: "Per raggiungere le tue calorie oggi, mangia 150g di yogurt greco e 20g di mandorle dalla tua dispensa."
+    4. Indirizza le porzioni in modo matematico in modo che la somma delle calorie degli alimenti suggeriti si avvicini a ${Math.round(remainingKcal)} kcal.
+    5. Usa un tono informale e dritto al punto. Nessuna introduzione, parla solo di cibo e quantità. Non parlare di "macro" o "proteine/grassi/carboidrati" a meno che non sia strettamente necessario, concentrati sulle CALORIE.
+  `;
+
+  try {
+    const response = await aiClient.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+    });
+    return response.text || "Nessun suggerimento generato.";
+  } catch (error: any) {
+    console.error("Meal Suggestion Error:", error);
+    throw new Error("L'IA è sovraccarica o non disponibile al momento. Riprova più tardi.");
+  }
+};
 export const getPostWorkoutAdvice = async (sessionData: any) => {
   const aiClient = getAI();
   if (!aiClient) {

@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { db } from '../firebase';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
-import { Plus, X, Camera, Brain, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, X, Camera, Brain, Activity, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { parseFoodInput } from '../services/geminiService';
+import { parseFoodInput, suggestMealForRemainingMacros } from '../services/geminiService';
+import { cn } from '../lib/utils';
 
 export default function NutritionHub({ profile }: { profile: UserProfile | null }) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -19,6 +20,8 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
   const [isAdding, setIsAdding] = useState<string | null>(null);
   const [parsingMeal, setParsingMeal] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ meal: string, dataUrl: string } | null>(null);
+  const [suggestedMeal, setSuggestedMeal] = useState<string | null>(null);
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   // Totals
   let totalKcal = 0;
@@ -198,6 +201,71 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
       
       {/* Meals List */}
       <div className="space-y-4">
+        {/* Suggestion Section */}
+        <div className="p-4 rounded-3xl border border-purple-500/20 bg-purple-500/5 space-y-3 relative overflow-hidden">
+           {/* Pulsing background effect */}
+           <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/0 via-purple-500/5 to-purple-500/0 pointer-events-none" />
+           <div className="flex justify-between items-center relative z-10">
+             <div className="space-y-1">
+               <h3 className="text-xs font-black uppercase tracking-widest text-purple-300 flex items-center gap-2">
+                 <Sparkles size={16} /> Raggiungi Le Calorie
+               </h3>
+               {!profile?.customTargets?.kcal && (
+                 <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+                   Imposta il Target in Profilo per attivare
+                 </p>
+               )}
+             </div>
+             
+             <button 
+               onClick={async () => {
+                 const targets = profile?.customTargets;
+                 if (!targets) {
+                   toast.error("Vai nel Profilo e compila il Target Calorico per attivare i suggerimenti!");
+                   return;
+                 }
+                 setIsSuggesting(true);
+                 try {
+                   const remKcal = Math.max(0, targets.kcal - totalKcal);
+                   const remPro = Math.max(0, targets.protein - totalProtein);
+                   const remCarb = Math.max(0, targets.carbs - totalCarbs);
+                   const remFat = Math.max(0, targets.fat - totalFat);
+                   
+                   // Get user pantry from profile, defaults to empty array if not defined
+                   const pantry = profile.preferences?.pantry || [];
+                   const favs: any[] = []; // For now empty, user could define them elsewhere.
+
+                   // Build workout context string dynamically
+                   // We ideally want actual sessions here, but let's pass a placeholder to the LLM indicating to focus on macros and pantry.
+                   const workoutContext = "Oggi. Valuta la dispensa per chiudere a target.";
+
+                   const suggestion = await suggestMealForRemainingMacros(remKcal, remPro, remCarb, remFat, pantry, favs, workoutContext);
+                   setSuggestedMeal(suggestion);
+                 } catch (err: any) {
+                   toast.error(err.message || "Errore nel generare suggerimenti.");
+                 } finally {
+                   setIsSuggesting(false);
+                 }
+               }}
+               disabled={isSuggesting || !profile?.customTargets?.kcal}
+               className={cn(
+                 "text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-xl transition-all flex items-center gap-2",
+                 profile?.customTargets?.kcal 
+                  ? "bg-purple-500 text-black hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]" 
+                  : "bg-purple-500/10 text-purple-500/50"
+               )}
+             >
+               {isSuggesting ? <Activity size={14} className="animate-spin" /> : 'Suggerisci Cibo'}
+             </button>
+           </div>
+           
+           {suggestedMeal && (
+             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="text-sm text-zinc-300 font-medium whitespace-pre-line bg-black/40 p-4 rounded-2xl border border-white/5 relative z-10 leading-relaxed shadow-inner">
+               {suggestedMeal}
+             </motion.div>
+           )}
+        </div>
+
         {['Colazione', 'Pranzo', 'Spuntino', 'Cena'].map((meal) => {
           const mealItems = meals[meal] || [];
           const mealKcal = mealItems.reduce((sum, item) => sum + (item.kcal || 0), 0);

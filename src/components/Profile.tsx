@@ -23,6 +23,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
   const [themeColor, setThemeColor] = useState(profile?.themeColor || 'blue');
   const [isSaving, setIsSaving] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
+  const [pantryText, setPantryText] = useState("");
 
   useEffect(() => {
     if (profile) {
@@ -35,6 +36,9 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
       if (profile.bodyFat) setBodyFat(profile.bodyFat);
       if (profile.themeColor) setThemeColor(profile.themeColor);
       if (profile.customTargets?.kcal) setCustomKcal(profile.customTargets.kcal);
+      if (profile.preferences?.pantry) {
+        setPantryText(profile.preferences.pantry.join(', '));
+      }
     }
   }, [profile]);
 
@@ -63,6 +67,16 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
     if (!profile) return;
     setIsSaving(true);
     try {
+      let newCustomTargets = profile.customTargets || undefined;
+      if (customKcal > 0) {
+        newCustomTargets = {
+          kcal: customKcal,
+          protein: Math.round(weight * 2.2), // Safe high protein
+          fat: Math.round((customKcal * 0.25) / 9), // 25% fats
+          carbs: Math.round((customKcal - (Math.round(weight * 2.2) * 4) - ((customKcal * 0.25))) / 4)
+        };
+      }
+
       await updateDoc(doc(db, 'users', profile.uid), {
         weight,
         height,
@@ -71,9 +85,13 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         activityLevel,
         goal,
         bodyFat,
-        customTargets: customKcal > 0 ? { kcal: customKcal } : null
+        customTargets: customKcal > 0 ? newCustomTargets : null,
+        preferences: {
+          ...profile.preferences,
+          pantry: pantryText.split(',').map(item => item.trim()).filter(Boolean)
+        }
       });
-      toast.success('Parametri salvati correttamente!');
+      toast.success('Parametri e Dispensa salvati correttamente!');
     } catch (error) {
       console.error("Errore salvataggio biometria:", error);
       toast.error('Errore durante il salvataggio.');
@@ -279,6 +297,29 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
             </div>
 
             <div className="space-y-8 flex-1 overflow-y-auto pb-20 no-scrollbar">
+              
+              {/* Pantry Section */}
+              <section className="space-y-4">
+                <div className="flex flex-col">
+                  <h4 className="font-black uppercase tracking-widest text-[10px] text-zinc-500 mb-1">La tua Dispensa</h4>
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest leading-relaxed">Inserisci qui gli alimenti che hai sempre in casa. L'IA li userà per suggerirti cosa mangiare per raggiungere il tuo target calorico. (Separa con virgola o vai a capo)</p>
+                </div>
+                <div className="relative">
+                  <textarea 
+                    value={pantryText}
+                    onChange={(e) => setPantryText(e.target.value)}
+                    placeholder="Es: Uova, fesa di tacchino, yogurt greco, avena, mandorle..."
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 min-h-[120px] text-sm font-medium text-white focus:ring-2 ring-neon/50 outline-none transition-all resize-none"
+                  />
+                  <button 
+                    onClick={handleSaveBiometrics}
+                    className="absolute bottom-4 right-4 bg-neon text-black p-2 rounded-xl hover:bg-white transition-colors"
+                  >
+                     <Save size={16} />
+                  </button>
+                </div>
+              </section>
+
               {/* Theme Selection Section */}
               <section className="space-y-4">
                 <div className="flex flex-col">

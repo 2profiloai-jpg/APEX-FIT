@@ -28,13 +28,14 @@ import WorkoutHub from './components/WorkoutHub';
 import ExerciseLibrary from './components/ExerciseLibrary';
 import Profile from './components/Profile';
 import NutritionHub from './components/NutritionHub';
+import IACoachScreen from './components/IACoachScreen';
 import { initAI } from './services/geminiService';
 import { Apple } from 'lucide-react';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'workout' | 'library' | 'nutrition' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'workout' | 'library' | 'nutrition' | 'profile' | 'coach'>('dashboard');
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [requestedPlanId, setRequestedPlanId] = useState<string | null>(null);
   const [focusedExerciseId, setFocusedExerciseId] = useState<string | null>(null);
@@ -280,7 +281,10 @@ export default function App() {
           <span className="font-black tracking-tighter italic uppercase text-xl neon-text">Apex</span>
         </div>
         <div className="flex items-center gap-4">
-          <button className="relative p-2 bg-zinc-800 rounded-lg text-neon hover:bg-zinc-700 transition-colors">
+          <button 
+            onClick={() => setActiveTab('coach')}
+            className="relative p-2 bg-zinc-800 rounded-lg text-neon hover:bg-zinc-700 transition-colors"
+          >
             <Brain size={18} />
             {/* Indicatore visivo se ci sono nuovi consigli */}
             <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-black" />
@@ -370,6 +374,17 @@ export default function App() {
               transition={{ duration: 0.2 }}
             >
               <Profile profile={profile} user={user} aiStatus={aiStatus} />
+            </motion.div>
+          )}
+          {activeTab === 'coach' && (
+            <motion.div 
+              key="coach" 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <IACoachScreen profile={profile} />
             </motion.div>
           )}
         </AnimatePresence>
