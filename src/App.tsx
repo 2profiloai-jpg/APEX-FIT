@@ -282,24 +282,32 @@ export default function App() {
         </div>
         <div className="flex items-center gap-2">
           <motion.button 
-            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             animate={{ 
-              boxShadow: ["0 0 0px rgba(var(--neon-accent-rgb), 0)", "0 0 15px rgba(var(--neon-accent-rgb), 0.4)", "0 0 0px rgba(var(--neon-accent-rgb), 0)"]
+              textShadow: activeTab === 'coach' ? "none" : "0 0 8px rgba(var(--neon-accent-rgb), 0.8)",
             }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             onClick={() => setActiveTab('coach')}
             className={cn(
-              "relative p-2.5 rounded-xl transition-all ml-1 flex items-center justify-center overflow-hidden group",
+              "relative p-2 rounded-full transition-all ml-1 flex items-center justify-center group",
               activeTab === 'coach' 
-                ? "bg-neon text-black shadow-[0_0_20px_rgba(var(--neon-accent-rgb),0.4)]" 
-                : "bg-zinc-900 border border-white/10 text-neon hover:border-neon/50"
+                ? "bg-neon text-black shadow-[0_0_25px_rgba(var(--neon-accent-rgb),0.5)]" 
+                : "text-neon hover:bg-neon/10"
             )}
           >
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Brain size={18} className={cn("relative z-10", activeTab === 'coach' ? "animate-pulse" : "")} />
-            {/* Indicatore visivo se ci sono nuovi consigli */}
-            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-zinc-900 z-20 group-hover:scale-110 transition-transform" />
+            <Brain size={20} className={cn("relative z-10", activeTab === 'coach' ? "" : "drop-shadow-[0_0_5px_rgba(var(--neon-accent-rgb),0.5)]")} />
+            {/* Notifica */}
+            <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-black z-20 group-hover:scale-125 transition-transform" />
+            
+            {/* Glow orbitale esterno quando inattivo */}
+            {activeTab !== 'coach' && (
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 3, repeat: Infinity }}
+                className="absolute inset-0 bg-neon/5 rounded-full -z-10 blur-md"
+              />
+            )}
           </motion.button>
           
           <div className="flex items-center gap-4 ml-2">
