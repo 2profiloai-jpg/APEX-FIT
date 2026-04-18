@@ -88,6 +88,7 @@ export interface BiometricLog {
 export interface FoodItem {
   id: string;
   name: string;
+  amount?: string;
   kcal: number;
   carbs?: number;
   protein?: number;

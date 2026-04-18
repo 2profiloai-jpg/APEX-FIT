@@ -360,7 +360,6 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest, onNavigate
                   <div key={ex.id} onClick={() => addExerciseToPlan(ex)} className="glass p-4 rounded-2xl flex items-center justify-between active:scale-95 transition-all">
                     <div>
                       <div className="font-black uppercase tracking-tighter text-sm italic">{ex.name}</div>
-                      <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">{ex.targetMuscles.slice(0, 2).join(', ')}...</div>
                     </div>
                     <div className="w-10 h-10 bg-neon/10 rounded-xl flex items-center justify-center border border-neon/20">
                       <Plus className="text-neon" size={20} />

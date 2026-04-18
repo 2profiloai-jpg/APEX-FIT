@@ -24,6 +24,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
   const [isSaving, setIsSaving] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [pantryText, setPantryText] = useState("");
+  const [portionsText, setPortionsText] = useState("");
 
   useEffect(() => {
     if (profile) {
@@ -38,6 +39,9 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
       if (profile.customTargets?.kcal) setCustomKcal(profile.customTargets.kcal);
       if (profile.preferences?.pantry) {
         setPantryText(profile.preferences.pantry.join(', '));
+      }
+      if (profile.preferences?.typicalPortions) {
+        setPortionsText(profile.preferences.typicalPortions);
       }
     }
   }, [profile]);
@@ -88,7 +92,8 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         customTargets: customKcal > 0 ? newCustomTargets : null,
         preferences: {
           ...profile.preferences,
-          pantry: pantryText.split(',').map(item => item.trim()).filter(Boolean)
+          pantry: pantryText.split(',').map(item => item.trim()).filter(Boolean),
+          typicalPortions: portionsText.trim()
         }
       });
       toast.success('Parametri e Dispensa salvati correttamente!');
@@ -298,24 +303,39 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
 
             <div className="space-y-8 flex-1 overflow-y-auto pb-20 no-scrollbar">
               
-              {/* Pantry Section */}
+              {/* Food Preferences Section */}
               <section className="space-y-4">
                 <div className="flex flex-col">
-                  <h4 className="font-black uppercase tracking-widest text-[10px] text-zinc-500 mb-1">La tua Dispensa</h4>
-                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest leading-relaxed">Inserisci qui gli alimenti che hai sempre in casa. L'IA li userà per suggerirti cosa mangiare per raggiungere il tuo target calorico. (Separa con virgola o vai a capo)</p>
+                  <h4 className="font-black uppercase tracking-widest text-[10px] text-zinc-500 mb-1">Preferenze Cibo (IA)</h4>
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest leading-relaxed">Configura la tua dispensa e i tuoi limiti di porzioni per guidare i suggerimenti dell'IA.</p>
                 </div>
-                <div className="relative">
-                  <textarea 
-                    value={pantryText}
-                    onChange={(e) => setPantryText(e.target.value)}
-                    placeholder="Es: Uova, fesa di tacchino, yogurt greco, avena, mandorle..."
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 min-h-[120px] text-sm font-medium text-white focus:ring-2 ring-neon/50 outline-none transition-all resize-none"
-                  />
+                
+                <div className="space-y-4 bg-black/20 p-4 rounded-2xl border border-white/5">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">La tua Dispensa</label>
+                    <textarea 
+                      value={pantryText}
+                      onChange={(e) => setPantryText(e.target.value)}
+                      placeholder="Uova, pasta, petto di pollo..."
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm font-medium text-white outline-none resize-none min-h-[80px]"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Porzioni Abituali</label>
+                    <textarea 
+                      value={portionsText}
+                      onChange={(e) => setPortionsText(e.target.value)}
+                      placeholder="Max 80g pasta, max 2 uova..."
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm font-medium text-white outline-none resize-none min-h-[80px]"
+                    />
+                  </div>
+                  
                   <button 
                     onClick={handleSaveBiometrics}
-                    className="absolute bottom-4 right-4 bg-neon text-black p-2 rounded-xl hover:bg-white transition-colors"
+                    className="w-full bg-neon/10 border border-neon/20 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-neon hover:bg-neon hover:text-black transition-all flex items-center justify-center gap-2"
                   >
-                     <Save size={16} />
+                    <Save size={14} /> Salva Cibo
                   </button>
                 </div>
               </section>

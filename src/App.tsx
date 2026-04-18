@@ -280,17 +280,17 @@ export default function App() {
           <Zap className="text-neon w-6 h-6 fill-current neon-led scale-x-75" />
           <span className="font-black tracking-tighter italic uppercase text-xl neon-text">Apex</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <button 
             onClick={() => setActiveTab('coach')}
-            className="relative p-2 bg-zinc-800 rounded-lg text-neon hover:bg-zinc-700 transition-colors"
+            className="relative p-2 bg-zinc-800 rounded-lg text-neon hover:bg-zinc-700 transition-colors ml-1"
           >
             <Brain size={18} />
             {/* Indicatore visivo se ci sono nuovi consigli */}
             <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-black" />
           </button>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 ml-2">
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1.5 text-neon">
                 <Milk size={12} />

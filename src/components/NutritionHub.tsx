@@ -16,11 +16,11 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
     Spuntino: [],
     Cena: []
   });
-  const [newFood, setNewFood] = useState({ meal: '', name: '', kcal: '', carbs: '', protein: '', fat: '' });
+  const [newFood, setNewFood] = useState({ meal: '', name: '', amount: '', kcal: '', carbs: '', protein: '', fat: '' });
   const [isAdding, setIsAdding] = useState<string | null>(null);
   const [parsingMeal, setParsingMeal] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ meal: string, dataUrl: string } | null>(null);
-  const [suggestedMeal, setSuggestedMeal] = useState<string | null>(null);
+  const [suggestedMeal, setSuggestedMeal] = useState<{ text: string, items: any[] } | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
 
   // Totals
@@ -37,6 +37,19 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
       totalFat += item.fat || 0;
     });
   });
+
+  // Calculate estimated target if custom is not set
+  const weight = profile?.weight || 70;
+  const height = profile?.height || 175;
+  const age = profile?.age || 30;
+  const isFemale = profile?.gender === 'female';
+  const bmr = 10 * weight + 6.25 * height - 5 * age + (isFemale ? -161 : 5);
+  const activityMultiplier = profile?.activityLevel || 1.55;
+  const goalMult = profile?.goal === 'lose' ? 0.8 : profile?.goal === 'gain' ? 1.15 : 1;
+  const targetKcal = profile?.customTargets?.kcal || Math.round(bmr * activityMultiplier * goalMult);
+  const targetPro = profile?.customTargets?.protein || Math.round(weight * 2.2);
+  const targetFat = profile?.customTargets?.fat || Math.round((targetKcal * 0.25) / 9);
+  const targetCarbs = profile?.customTargets?.carbs || Math.round((targetKcal - (targetPro * 4) - (targetFat * 9)) / 4);
 
   useEffect(() => {
     if (!profile?.uid) return;
@@ -102,7 +115,6 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
   };
 
   const handleAIFoodParse = async (meal: string) => {
-    console.log("handleAIFoodParse called for meal:", meal);
     const hasImage = selectedImage && selectedImage.meal === meal;
     if (!newFood.name.trim() && !hasImage) return;
     
@@ -131,7 +143,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
         }
         
         setIsAdding(null);
-        setNewFood({ meal: '', name: '', kcal: '', carbs: '', protein: '', fat: '' });
+        setNewFood({ meal: '', name: '', amount: '', kcal: '', carbs: '', protein: '', fat: '' });
         setSelectedImage(null);
       }
     } catch (error: any) {
@@ -146,6 +158,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
     const foodItem = {
       id: Date.now().toString(),
       name: newFood.name,
+      amount: newFood.amount,
       kcal: parseInt(newFood.kcal),
       carbs: parseInt(newFood.carbs) || 0,
       protein: parseInt(newFood.protein) || 0,
@@ -155,7 +168,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
     setMeals(updatedMeals);
     await saveMeals(updatedMeals);
     setIsAdding(null);
-    setNewFood({ meal: '', name: '', kcal: '', carbs: '', protein: '', fat: '' });
+    setNewFood({ meal: '', name: '', amount: '', kcal: '', carbs: '', protein: '', fat: '' });
   };
 
   const removeFood = async (meal: string, id: string) => {
@@ -168,6 +181,33 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
     const date = new Date(selectedDate);
     date.setDate(date.getDate() + days);
     setSelectedDate(date.toISOString().split('T')[0]);
+  };
+
+  const handleAddSuggestedItems = async () => {
+    if (!suggestedMeal || !suggestedMeal.items.length) return;
+    
+    const updatedMeals = { ...meals };
+
+    suggestedMeal.items.forEach(item => {
+      const target = item.mealType || 'Spuntino';
+      const newItem = {
+        id: (Date.now() + Math.random()).toString(),
+        name: item.name,
+        amount: item.amount,
+        kcal: item.kcal,
+        carbs: item.carbs || 0,
+        protein: item.protein || 0,
+        fat: item.fat || 0
+      };
+      
+      if (!updatedMeals[target]) updatedMeals[target] = [];
+      updatedMeals[target] = [...updatedMeals[target], newItem];
+    });
+    
+    setMeals(updatedMeals);
+    await saveMeals(updatedMeals);
+    setSuggestedMeal(null);
+    toast.success(`Suggerimento salvato correttamente nelle varie sezioni!`);
   };
 
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
@@ -203,43 +243,34 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
       <div className="space-y-4">
         {/* Suggestion Section */}
         <div className="p-4 rounded-3xl border border-purple-500/20 bg-purple-500/5 space-y-3 relative overflow-hidden">
-           {/* Pulsing background effect */}
            <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/0 via-purple-500/5 to-purple-500/0 pointer-events-none" />
            <div className="flex justify-between items-center relative z-10">
              <div className="space-y-1">
                <h3 className="text-xs font-black uppercase tracking-widest text-purple-300 flex items-center gap-2">
                  <Sparkles size={16} /> Raggiungi Le Calorie
                </h3>
-               {!profile?.customTargets?.kcal && (
-                 <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
-                   Imposta il Target in Profilo per attivare
-                 </p>
-               )}
              </div>
              
              <button 
                onClick={async () => {
-                 const targets = profile?.customTargets;
-                 if (!targets) {
-                   toast.error("Vai nel Profilo e compila il Target Calorico per attivare i suggerimenti!");
-                   return;
-                 }
                  setIsSuggesting(true);
                  try {
-                   const remKcal = Math.max(0, targets.kcal - totalKcal);
-                   const remPro = Math.max(0, targets.protein - totalProtein);
-                   const remCarb = Math.max(0, targets.carbs - totalCarbs);
-                   const remFat = Math.max(0, targets.fat - totalFat);
+                   const remKcal = Math.max(0, targetKcal - totalKcal);
+                   const remPro = Math.max(0, targetPro - totalProtein);
+                   const remCarb = Math.max(0, targetCarbs - totalCarbs);
+                   const remFat = Math.max(0, targetFat - totalFat);
                    
-                   // Get user pantry from profile, defaults to empty array if not defined
-                   const pantry = profile.preferences?.pantry || [];
-                   const favs: any[] = []; // For now empty, user could define them elsewhere.
+                   const pantry = profile?.preferences?.pantry || [];
+                   const portions = profile?.preferences?.typicalPortions || '';
+                   const favs: any[] = []; 
 
-                   // Build workout context string dynamically
-                   // We ideally want actual sessions here, but let's pass a placeholder to the LLM indicating to focus on macros and pantry.
-                   const workoutContext = "Oggi. Valuta la dispensa per chiudere a target.";
+                   const eatenSummary = Object.entries(meals)
+                     .map(([name, list]) => `${name}: ${(list as any[]).length > 0 ? (list as any[]).map(i => i.name).join(', ') : 'Vuoto'}`)
+                     .join('\n');
 
-                   const suggestion = await suggestMealForRemainingMacros(remKcal, remPro, remCarb, remFat, pantry, favs, workoutContext);
+                   const workoutContext = `Oggi. Pasti già fatti: \n${eatenSummary}. \nConsidera l'orario attuale per suggerire se fare uno spuntino o passare direttamente alla cena.`;
+
+                   const suggestion = await suggestMealForRemainingMacros(remKcal, remPro, remCarb, remFat, pantry, favs, workoutContext, targetKcal, portions);
                    setSuggestedMeal(suggestion);
                  } catch (err: any) {
                    toast.error(err.message || "Errore nel generare suggerimenti.");
@@ -247,21 +278,44 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                    setIsSuggesting(false);
                  }
                }}
-               disabled={isSuggesting || !profile?.customTargets?.kcal}
+               disabled={isSuggesting}
                className={cn(
                  "text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-xl transition-all flex items-center gap-2",
-                 profile?.customTargets?.kcal 
-                  ? "bg-purple-500 text-black hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]" 
-                  : "bg-purple-500/10 text-purple-500/50"
+                 "bg-purple-500 text-black hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]" 
                )}
              >
-               {isSuggesting ? <Activity size={14} className="animate-spin" /> : 'Suggerisci Cibo'}
+               {isSuggesting ? <Activity size={14} className="animate-spin" /> : 'Suggerisci pasto'}
              </button>
            </div>
            
            {suggestedMeal && (
-             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="text-sm text-zinc-300 font-medium whitespace-pre-line bg-black/40 p-4 rounded-2xl border border-white/5 relative z-10 leading-relaxed shadow-inner">
-               {suggestedMeal}
+             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4 relative z-10">
+               <div className="text-sm text-zinc-300 font-medium whitespace-pre-line bg-black/40 p-4 rounded-2xl border border-white/5 leading-relaxed shadow-inner">
+                 {typeof suggestedMeal === 'string' ? suggestedMeal : suggestedMeal.text}
+                 
+                 {typeof suggestedMeal !== 'string' && suggestedMeal.items.length > 0 && (
+                   <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
+                     <div className="text-[10px] font-black uppercase tracking-widest text-purple-300 mb-2">Lista della spesa / Ingredienti:</div>
+                     {suggestedMeal.items.map((item, idx) => (
+                       <div key={idx} className="flex justify-between items-center bg-white/5 p-2 rounded-xl text-xs">
+                         <span className="font-bold text-white">{item.name}</span>
+                         <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-lg text-[10px] uppercase font-black">{item.amount || 'q.b.'}</span>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+               </div>
+
+               {typeof suggestedMeal !== 'string' && suggestedMeal.items.length > 0 && (
+                 <div className="flex flex-col gap-2">
+                   <button 
+                     onClick={() => handleAddSuggestedItems()}
+                     className="bg-neon text-black font-black uppercase tracking-widest text-xs px-4 py-3 rounded-xl hover:bg-white transition-all shadow-lg flex items-center justify-center gap-2"
+                   >
+                     Aggiungi a Diario
+                   </button>
+                 </div>
+               )}
              </motion.div>
            )}
         </div>
@@ -292,7 +346,14 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                       className="flex justify-between items-center text-sm border-b border-white/5 pb-3 last:border-0 last:pb-0 gap-4"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="font-bold text-white">{item.name}</div>
+                        <div className="font-bold text-white flex items-center gap-2">
+                          {item.name}
+                          {item.amount && (
+                            <span className="text-[10px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-zinc-400 font-black uppercase tracking-widest">
+                              {item.amount}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">Pro: {item.protein}g | Carbo: {item.carbs}g | Fat: {item.fat}g</div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
@@ -308,13 +369,22 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                 {isAdding === meal ? (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 space-y-4 bg-black/20 border border-white/10 p-4 rounded-2xl">
                     <div className="space-y-3">
-                      <input 
-                        type="text" 
-                        placeholder="Descrivi l'alimento (es: 2 uova sode)..."
-                        value={newFood.name}
-                        onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white placeholder:text-zinc-600 outline-none text-sm font-bold focus:ring-2 ring-neon/50 transition-all"
-                      />
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          placeholder="Nome alimento..."
+                          value={newFood.name}
+                          onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
+                          className="flex-[2] bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white placeholder:text-zinc-600 outline-none text-sm font-bold focus:ring-2 ring-neon/50 transition-all"
+                        />
+                        <input 
+                          type="text" 
+                          placeholder="Q.tà..."
+                          value={newFood.amount}
+                          onChange={(e) => setNewFood({ ...newFood, amount: e.target.value })}
+                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white placeholder:text-zinc-600 outline-none text-sm font-bold focus:ring-2 ring-neon/50 transition-all"
+                        />
+                      </div>
                       
                       <div className="flex gap-2">
                         <label className="flex-1 cursor-pointer p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
@@ -342,7 +412,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
 
                     {selectedImage && selectedImage.meal === meal && (
                       <div className="relative h-24 rounded-xl overflow-hidden border border-white/10">
-                        <img src={selectedImage.dataUrl} alt="Preview" className="w-full h-full object-cover opacity-70" />
+                        <img src={selectedImage.dataUrl} alt="Preview" className="w-full h-full object-cover opacity-70" referrerPolicy="no-referrer" />
                         <button onClick={() => setSelectedImage(null)} className="absolute top-2 right-2 bg-black/80 p-1.5 rounded-lg text-red-500 hover:bg-red-500 hover:text-white transition-colors"><X size={14} /></button>
                       </div>
                     )}
@@ -379,7 +449,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                   </motion.div>
                 ) : (
           <button 
-            onClick={() => { setIsAdding(meal); setNewFood({ meal, name: '', kcal: '', carbs: '', protein: '', fat: '' }); }}
+            onClick={() => { setIsAdding(meal); setNewFood({ meal, name: '', amount: '', kcal: '', carbs: '', protein: '', fat: '' }); }}
             className="w-full py-4 border border-white/5 rounded-2xl text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-neon hover:border-neon/30 transition-colors flex items-center justify-center gap-2 bg-white/[0.02]"
           >
             <Plus size={16} /> Aggiungi Alimento

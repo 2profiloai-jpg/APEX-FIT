@@ -227,32 +227,39 @@ export const suggestMealForRemainingMacros = async (
   remainingFat: number,
   pantryItems?: string[],
   favoriteMeals?: any[],
-  workoutContext?: string
-) => {
+  workoutContext?: string,
+  targetKcal?: number,
+  portionsContext?: string
+): Promise<{ text: string, items: { name: string, kcal: number, carbs: number, protein: number, fat: number }[] }> => {
   const aiClient = getAI();
   if (!aiClient) {
     throw new Error("Chiave API mancante. Impossibile generare suggerimenti.");
   }
   
-  if (remainingKcal <= 50) return "Hai già raggiunto il tuo obiettivo calorico per oggi. Ottimo lavoro!";
+  if (remainingKcal <= 50) return { text: "Hai già raggiunto il tuo obiettivo calorico per oggi. Ottimo lavoro!", items: [] };
 
   const pantryStr = pantryItems?.length ? pantryItems.join(', ') : 'Nessuna dispensa specificata, usa ingredienti comuni.';
-  const favStr = favoriteMeals?.length ? JSON.stringify(favoriteMeals.map(f => ({ name: f.name, kcal: f.foods.reduce((acc: number, cur: any) => acc + (cur.kcal||0), 0) }))) : 'Nessun pasto preferito.';
+  const portionsStr = portionsContext ? `\n    - ABITUDINI E PORZIONI DELL'UTENTE: ${portionsContext}` : '';
   
   const prompt = `
-    Sei un assistente nutrizionale pratico e diretto.
-    L'obiettivo dell'utente è raggiungere il suo target calorico della giornata.
+    Sei un assistente nutrizionale pratico e realistico. Il tuo compito è dare consigli sani e funzionali in testo assolutamente normale e pulito.
     
-    Kcal mancanti oggi: ${Math.round(remainingKcal)} kcal.
+    STATO DELL'UTENTE:
+    - Target giornaliero: ${targetKcal ? Math.round(targetKcal) : 'non specificato'} kcal
+    - Kcal mancanti oggi: ${Math.round(remainingKcal)} kcal${portionsStr}
     
     Ingredienti disponibili nella sua Dispensa: ${pantryStr}
     
-    REGOLE:
-    1. L'obiettivo principale è suggerire uno o due cibi/pasti veloci che coprano esattamente o quasi le ${Math.round(remainingKcal)} kcal mancanti.
-    2. Usa MAGGIORMENTE o ESCLUSIVAMENTE gli alimenti presenti nella "Dispensa".
-    3. Formula una o due frasi semplici. Esempio: "Per raggiungere le tue calorie oggi, mangia 150g di yogurt greco e 20g di mandorle dalla tua dispensa."
-    4. Indirizza le porzioni in modo matematico in modo che la somma delle calorie degli alimenti suggeriti si avvicini a ${Math.round(remainingKcal)} kcal.
-    5. Usa un tono informale e dritto al punto. Nessuna introduzione, parla solo di cibo e quantità. Non parlare di "macro" o "proteine/grassi/carboidrati" a meno che non sia strettamente necessario, concentrati sulle CALORIE.
+    REGOLE FONDAMENTALI:
+    1. FORMATTAZIONE TESTO PURA: DIVIETO ASSOLUTO di usare Markdown. NON inserire MAI asterischi (*), cancelletti (#), trattini bassi (_) o altri simboli di formattazione. Scrivi il testo come in un normale messaggio WhatsApp (puoi usare emoji).
+    2. CHIAREZZA SUI NUMERI: Menziona sempre in modo esplicito le calorie mancanti ("Ti mancano X calorie") e specifica le calorie indicative dei pasti che suggerisci ("Questo ti darà circa Y calorie").
+    3. RISPETTA RIGOROSAMENTE LE PORZIONI: ${portionsContext ? 'Se l\'utente ha indicato limiti (es. "max 80g di pasta"), DEVI rispettarli tassativamente. ' : ''}Mantieni SEMPRE porzioni "umane" e realistiche (es. 80-100g di pasta, 2-3 uova, 1 vasetto di yogurt). NON FORZARE MAI porzioni estreme per far tornare i conti matematici.
+    4. PRIORITÀ ALLA DISPENSA: componi opzioni sensate usando prima di tutto gli ingredienti della dispensa fornita.
+    5. OPZIONI SOSTITUTIVE: Se la dispensa non basta, o se serve qualcosa di più sano, suggerisci alimenti esterni (es. "potresti aggiungere una mela").
+    6. PRAGMATISMO: Se mancano troppe calorie (es. 800 kcal) e l'utente mangia poco per volta, suggerisci uno spuntino normale ma denso (es. 400-500 kcal) ed evita abbuffate forzate. Meglio restare sani che perfetti nei calcoli.
+    7. DATI STRUTTURATI: Alla fine del tuo messaggio, aggiungi SEMPRE un blocco racchiuso tra i tag [DATA] e [/DATA] che contenga un array JSON con i singoli alimenti suggeriti nel seguente formato: [{"name": string, "amount": string, "kcal": number, "carbs": number, "protein": number, "fat": number, "mealType": "Colazione" | "Pranzo" | "Spuntino" | "Cena"}].
+       Il campo "amount" deve indicare la quantità specifica (es. "100g", "2 fette", "1 cucchiaio") coerente con le "Porzioni Abituali" dell'utente se fornite.
+       Scegli il "mealType" più logico in base al contesto.
   `;
 
   try {
@@ -260,7 +267,26 @@ export const suggestMealForRemainingMacros = async (
       model: "gemini-3-flash-preview",
       contents: prompt,
     });
-    return response.text || "Nessun suggerimento generato.";
+    
+    const fullText = response.text || "";
+    const dataRegex = /\[DATA\]([\s\S]*?)\[\/DATA\]/;
+    const match = fullText.match(dataRegex);
+    
+    let items = [];
+    let cleanText = fullText.replace(dataRegex, '').trim();
+
+    if (match && match[1]) {
+      try {
+        items = JSON.parse(match[1].trim());
+      } catch (e) {
+        console.error("JSON parsing error in suggestion:", e);
+      }
+    }
+
+    // Pulizia finale del testo
+    cleanText = cleanText.replace(/[*#_]/g, '');
+    
+    return { text: cleanText, items };
   } catch (error: any) {
     console.error("Meal Suggestion Error:", error);
     throw new Error("L'IA è sovraccarica o non disponibile al momento. Riprova più tardi.");
