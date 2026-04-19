@@ -19,6 +19,16 @@ export interface UserProfile {
     carbs: number;
     fat: number;
   };
+  gymInventory?: GymEquipment[];
+}
+
+export interface GymEquipment {
+  id: string;
+  name: string;
+  category: ExerciseCategory | 'Generic';
+  targetMuscles: string[];
+  equipmentType: 'Machine' | 'Dumbbells' | 'Barbell' | 'Bodyweight' | 'Cable';
+  addedAt: string;
 }
 
 export type ExerciseCategory = 'Petto' | 'Schiena' | 'Gambe' | 'Spalle' | 'Bicipiti' | 'Tricipiti' | 'Core' | 'Cardio';
@@ -50,6 +60,7 @@ export interface WorkoutSet {
 
 export interface SessionExercise {
   exerciseId: string;
+  customName?: string;
   sets: WorkoutSet[];
 }
 
@@ -63,6 +74,7 @@ export interface WorkoutSession {
 
 export interface PlannedExercise {
   exerciseId: string;
+  customName?: string;
   targetSets: number;
   targetReps: string;
   targetRpe?: number;

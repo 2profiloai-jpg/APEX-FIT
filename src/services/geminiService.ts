@@ -250,16 +250,18 @@ export const suggestMealForRemainingMacros = async (
     
     Ingredienti disponibili nella sua Dispensa: ${pantryStr}
     
+    CONTESTO DIARIO ALIMENTARE (Pasti già fatti e orario):
+    ${workoutContext || 'Nessun pasto registrato per oggi.'}
+    
     REGOLE FONDAMENTALI:
     1. FORMATTAZIONE TESTO PURA: DIVIETO ASSOLUTO di usare Markdown. NON inserire MAI asterischi (*), cancelletti (#), trattini bassi (_) o altri simboli di formattazione. Scrivi il testo come in un normale messaggio WhatsApp (puoi usare emoji).
-    2. CHIAREZZA SUI NUMERI: Menziona sempre in modo esplicito le calorie mancanti ("Ti mancano X calorie") e specifica le calorie indicative dei pasti che suggerisci ("Questo ti darà circa Y calorie").
-    3. RISPETTA RIGOROSAMENTE LE PORZIONI: ${portionsContext ? 'Se l\'utente ha indicato limiti (es. "max 80g di pasta"), DEVI rispettarli tassativamente. ' : ''}Mantieni SEMPRE porzioni "umane" e realistiche (es. 80-100g di pasta, 2-3 uova, 1 vasetto di yogurt). NON FORZARE MAI porzioni estreme per far tornare i conti matematici.
-    4. PRIORITÀ ALLA DISPENSA: componi opzioni sensate usando prima di tutto gli ingredienti della dispensa fornita.
-    5. OPZIONI SOSTITUTIVE: Se la dispensa non basta, o se serve qualcosa di più sano, suggerisci alimenti esterni (es. "potresti aggiungere una mela").
-    6. PRAGMATISMO: Se mancano troppe calorie (es. 800 kcal) e l'utente mangia poco per volta, suggerisci uno spuntino normale ma denso (es. 400-500 kcal) ed evita abbuffate forzate. Meglio restare sani che perfetti nei calcoli.
-    7. DATI STRUTTURATI: Alla fine del tuo messaggio, aggiungi SEMPRE un blocco racchiuso tra i tag [DATA] e [/DATA] che contenga un array JSON con i singoli alimenti suggeriti nel seguente formato: [{"name": string, "amount": string, "kcal": number, "carbs": number, "protein": number, "fat": number, "mealType": "Colazione" | "Pranzo" | "Spuntino" | "Cena"}].
-       Il campo "amount" deve indicare la quantità specifica (es. "100g", "2 fette", "1 cucchiaio") coerente con le "Porzioni Abituali" dell'utente se fornite.
-       Scegli il "mealType" più logico in base al contesto.
+    2. STRUTTURA GIORNALIERA: Anche se l'utente non ha inserito preferenze, DEVI strutturare il consiglio coprendo Colazione, Pranzo, Spuntino e Cena (in base a cosa manca). Usa esplicitamente i nomi dei pasti come intestazioni nel testo (es. "Colazione:", "Pranzo:", ecc.).
+    3. CHIAREZZA E OBIETTIVO: Menziona sempre le calorie mancanti. Sii d'aiuto: il tuo obiettivo è far raggiungere all'utente il target calorico per ottimizzare il recupero muscolare e l'efficacia dell'allenamento. Se mancano molte calorie, suddividile tra i pasti rimanenti per arrivare ESATTAMENTE o quasi al target.
+    4. NO RIPETIZIONI: Controlla i "pasti già fatti" nel contesto. DIVIETO ASSOLUTO di suggerire alimenti già consumati (es. se ha mangiato tonno a pranzo, NON consigliare tonno a cena). Varia sempre le scelte.
+    5. PORZIONI REALISTICHE MA EFFICACI: Mantieni porzioni "umane" (es. 80-120g pasta, 150-250g carne/pesce). Se per arrivare a target servono molte calorie, aggiungi alimenti densi (frutta secca, burro d'arachidi, olio d'oliva, parmigiano) invece di dosi disumane di riso o pollo.
+    6. MANCANZA PREFERENZE: Se non ci sono preferenze/dispensa, suggerisci i "punti saldi" della nutrizione sportiva d'élite (Avena, Yogurt Greco, Riso Basmati, Patate Dolci, Pollo, Salmone, Uova, Avocado, Mandorle, Mirtilli).
+    7. PRAGMATISMO: Se mancano troppe calorie (>1000 kcal) a fine giornata, suggerisci come recuperare il più possibile con cibi densi senza forzare un'abbuffata insana, ricordando però che il target è fondamentale per i risultati.
+    8. DATI STRUTTURATI: Alla fine del tuo messaggio, aggiungi SEMPRE un blocco racchiuso tra i tag [DATA] e [/DATA] che contenga un array JSON con i singoli alimenti suggeriti nel seguente formato: [{"name": string, "amount": string, "kcal": number, "carbs": number, "protein": number, "fat": number, "mealType": "Colazione" | "Pranzo" | "Spuntino" | "Cena"}].
   `;
 
   try {
@@ -325,5 +327,151 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
       return "Analisi IA non disponibile (Limite raggiunto). Ottimo lavoro comunque!";
     }
     return "Allenamento salvato. Analisi IA non disponibile al momento.";
+  }
+};
+
+export const analyzeGymEquipment = async (imagesBase64?: string | string[], textInput?: string) => {
+  const aiClient = getAI();
+  if (!aiClient) throw new Error("AI not configured");
+
+  const prompt = `
+    Sei un esperto di biomeccanica e attrezzatura da palestra di rilevanza mondiale. 
+    Analizza l'input (testo o immagini) e identifica i macchinari o l'attrezzatura presente.
+    ${textInput ? `Testo fornito dall'utente: "${textInput}"` : 'Basati sulle immagini fornite. Ignora le persone, i riflessi e lo sfondo. Cerca con la massima attenzione ogni macchina, manubrio, panca o cavo visibile. Analizza TUTTE le foto fornite in un unico colpo.'}
+    
+    Per ogni macchina identificata con certezza, fornisci: 
+    1. Nome standard (es. "Lat Machine", "Leg Extension", "Multipower")
+    2. Categoria (Petto, Schiena, Gambe, Spalle, Bicipiti, Tricipiti, Core, Cardio)
+    3. Muscoli Target (es. ["Gran Dorsale", "Bicipite Brachiale"])
+    4. Tipo (Machine, Dumbbells, Barbell, Bodyweight, Cable)
+    
+    Ritorna solo JSON:
+    {
+      "equipment": [
+        {
+          "name": "string",
+          "category": "string",
+          "targetMuscles": ["string", "string"],
+          "equipmentType": "Machine" | "Dumbbells" | "Barbell" | "Bodyweight" | "Cable"
+        }
+      ]
+    }
+  `;
+
+  const parts: any[] = [];
+  
+  if (imagesBase64) {
+    const imagesArray = Array.isArray(imagesBase64) ? imagesBase64 : [imagesBase64];
+    for (const imageBase64 of imagesArray) {
+      if (!imageBase64) continue;
+      let mimeType = "image/jpeg";
+      let base64Data = imageBase64;
+      if (imageBase64.startsWith('data:')) {
+        const commaIndex = imageBase64.indexOf(',');
+        if (commaIndex !== -1) {
+          mimeType = imageBase64.substring(5, imageBase64.indexOf(';'));
+          base64Data = imageBase64.substring(commaIndex + 1);
+        }
+      }
+      parts.push({ inlineData: { mimeType, data: base64Data } });
+    }
+  }
+  
+  parts.push({ text: prompt });
+
+  try {
+    const response = await aiClient.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ role: 'user', parts }],
+      config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || "{}");
+  } catch (error) {
+    console.error("Gym Analysis Error:", error);
+    throw error;
+  }
+};
+
+export const suggestExerciseAlternative = async (
+  currentExerciseName: string,
+  inventory: string[],
+  completedExercises: string[],
+  isCrowded: boolean = false
+) => {
+  const aiClient = getAI();
+  if (!aiClient) return null;
+
+  const prompt = `
+    Sei "Lia", l'IA di coaching e biomeccanica di Apex Lift.
+    L'utente deve fare "${currentExerciseName}" ma l'attrezzatura è occupata.
+    
+    Attrezzatura mappata nella sua palestra: ${inventory.join(', ')}
+    Esercizi già completati oggi: ${completedExercises.join(', ')}
+    Situazione Palestra: ${isCrowded ? 'MOLTO AFFOLLATA (prediligi corpo libero o manubri per evitare attese)' : 'Normale'}
+    
+    REGOLE CRITICHE:
+    1. STRICT MUSCLE MATCH: L'alternativa DEVE allenare gli stessi identici muscoli dell'esercizio originale. MAI suggerire un esercizio per le gambe se l'originale era per il dorso.
+    2. CORPO LIBERO SEMPRE VALIDO: Considera tutti gli esercizi a CORPO LIBERO (bodyweight) copme SEMPRE disponibili (es. Push-up, Trazioni, Squat, Affondi, Plank, ecc.). Si può sempre trovare uno spazio a terra.
+    3. VINCOLO INVENTARIO: Se non usi il corpo libero, puoi usare SOLO l'attrezzatura esplicitamente nominata nell'inventario mappato.
+    4. FALLBACK "NESSUNA ALTERNATIVA": Se non ci sono macchine mappate idonee per quel muscolo E non c'è un esercizio a corpo libero che possa sostituirlo in modo efficace, devi tassativamente restituire come alternative "Nessuna alternativa disponibile" e spiegare in reason che non ha mappato attrezzi idonei per quel gruppo muscolare.
+    5. Non suggerire esercizi già completati.
+    
+    Ritorna JSON:
+    {
+      "alternative": "Nome Esercizio (o 'Nessuna alternativa disponibile')",
+      "reason": "Spiegazione tecnica del perché o spiegazione del perché mancano attrezzi",
+      "videoTip": "Breve nota su come eseguire il movimento (lascia vuoto se nessuna alternativa)"
+    }
+  `;
+
+  try {
+    const response = await aiClient.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || "{}");
+  } catch (error) {
+    console.error("Alternative Suggestion Error:", error);
+    return null;
+  }
+};
+
+export const generateInstantWorkout = async (
+  muscleFocus: string,
+  timeMinutes: number,
+  inventory: string[]
+) => {
+  const aiClient = getAI();
+  if (!aiClient) return null;
+
+  const prompt = `
+    Crea un allenamento istantaneo di ${timeMinutes} minuti focalizzato su: ${muscleFocus}.
+    Usa SOLO questa attrezzatura: ${inventory.join(', ')}.
+    
+    Ritorna JSON:
+    {
+      "name": "Titolo Allenamento",
+      "exercises": [
+        {
+          "name": "Nome Esercizio",
+          "sets": number,
+          "reps": "string",
+          "notes": "string"
+        }
+      ]
+    }
+  `;
+
+  try {
+    const response = await aiClient.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: { responseMimeType: "application/json" }
+    });
+    return JSON.parse(response.text || "{}");
+  } catch (error) {
+    console.error("Instant Workout Error:", error);
+    return null;
   }
 };

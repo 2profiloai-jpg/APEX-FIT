@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
-import { WorkoutPlan, PlannedExercise, Exercise, ExerciseCategory } from '../types';
-import { Calendar, Plus, Play, Dumbbell, X, ChevronRight, Save, Activity, Brain, AlertCircle, Info } from 'lucide-react';
+import { WorkoutPlan, PlannedExercise, Exercise, ExerciseCategory, UserProfile } from '../types';
+import { Calendar, Plus, Play, Dumbbell, X, ChevronRight, Save, Activity, Brain, AlertCircle, Info, Loader2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import WorkoutSessionView from './WorkoutSessionView';
+import GymMapper from './GymMapper';
 import GripButton from './ui/GripButton';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 import { getPlanBalanceAnalysis, BalanceScore } from '../services/smartCoachService';
+import { generateInstantWorkout } from '../services/geminiService';
 
-export default function WorkoutHub({ requestedPlanId, onClearRequest, onNavigateToLibrary }: { requestedPlanId?: string | null, onClearRequest?: () => void, onNavigateToLibrary: (id: string) => void }) {
+export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, onNavigateToLibrary }: { profile: UserProfile | null, requestedPlanId?: string | null, onClearRequest?: () => void, onNavigateToLibrary: (id: string) => void }) {
   const weekDays = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
   const today = weekDays[new Date().getDay()];
   const [selectedDay, setSelectedDay] = useState<string>(today);
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [activeSessionPlan, setActiveSessionPlan] = useState<WorkoutPlan | 'free' | null>(null);
+  const [showGymMapper, setShowGymMapper] = useState(false);
+  const [isGeneratingInstant, setIsGeneratingInstant] = useState(false);
   
   useEffect(() => {
     if (requestedPlanId && plans.length > 0) {
@@ -158,6 +162,7 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest, onNavigate
   if (activeSessionPlan) {
     return (
       <WorkoutSessionView 
+        profile={profile}
         plan={activeSessionPlan === 'free' ? null : activeSessionPlan} 
         onSessionEnd={() => setActiveSessionPlan(null)} 
         onNavigateToLibrary={onNavigateToLibrary}
@@ -168,6 +173,12 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest, onNavigate
   if (isBuildingPlan) {
     return (
       <div className="space-y-6">
+        <AnimatePresence>
+          {showGymMapper && (
+            <GymMapper profile={profile} onClose={() => setShowGymMapper(false)} />
+          )}
+        </AnimatePresence>
+        
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-black tracking-tighter italic uppercase">Crea Scheda</h2>
           <button onClick={closePlanBuilder} className="p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white">
@@ -374,10 +385,131 @@ export default function WorkoutHub({ requestedPlanId, onClearRequest, onNavigate
     );
   }
 
+  const handleInstantWorkout = async (focus: string) => {
+    if (!profile?.gymInventory || profile.gymInventory.length === 0) {
+      toast.error("Mappa prima la tua palestra per usare l'IA!");
+      setShowGymMapper(true);
+      return;
+    }
+
+    setIsGeneratingInstant(true);
+    try {
+      const inventoryNames = profile.gymInventory.map(i => i.name);
+      const workout = await generateInstantWorkout(focus, 45, inventoryNames);
+      if (workout) {
+        // Create a temporary plan for the session
+        const tempPlan: WorkoutPlan = {
+          id: 'instant-' + Date.now(),
+          userId: profile.uid,
+          name: workout.name,
+          date: new Date().toISOString().split('T')[0],
+          exercises: workout.exercises.map((ex: any) => ({
+            exerciseId: 'CUSTOM', // Placeholder
+            customName: ex.name, // We'll need to handle custom names in SessionView
+            targetSets: ex.sets,
+            targetReps: ex.reps,
+            targetEffort: 'MEDIO'
+          }))
+        };
+        setActiveSessionPlan(tempPlan);
+        toast.success("Allenamento generato su misura!");
+      }
+    } catch (err) {
+      toast.error("Errore nella generazione dell'IA");
+    } finally {
+      setIsGeneratingInstant(false);
+    }
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-10 pb-20">
+      <AnimatePresence>
+        {showGymMapper && (
+          <GymMapper profile={profile} onClose={() => setShowGymMapper(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* LIA RADAR SECTION - EMERGENCY VISIBILITY */}
+      <section id="lia-gym-mapping" className="relative group">
+        <div className="absolute -inset-1 bg-gradient-to-r from-neon via-blue-500 to-neon rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+        <div className="relative bg-zinc-900 border border-white/10 rounded-[2.2rem] p-6 overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+            <Zap size={80} className="text-neon" />
+          </div>
+          
+          <div className="flex flex-col gap-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-neon rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(var(--neon-accent-rgb),0.4)]">
+                  <Brain size={32} className="text-black" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">Lia Gym IQ</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-2 h-2 rounded-full bg-neon animate-pulse" />
+                    <span className="text-[10px] text-neon font-black uppercase tracking-[0.2em]">
+                      {profile?.gymInventory?.length ? 'Sistema Online' : 'Configurazione Necessaria'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => setShowGymMapper(true)}
+                className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white active:scale-90 transition-all"
+              >
+                <Plus size={24} />
+              </button>
+            </div>
+
+            {!profile?.gymInventory?.length ? (
+              <div className="space-y-4">
+                <p className="text-xs text-zinc-400 font-bold leading-relaxed pr-8">
+                  "Non posso aiutarti con le alternative IA finché non so quali macchinari hai in palestra. Mappali ora per sbloccare il vero potenziale."
+                </p>
+                <GripButton onClick={() => setShowGymMapper(true)} variant="primary" className="w-full h-16 text-lg">
+                  MAPPA PALESTRA ORA
+                </GripButton>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  disabled={isGeneratingInstant}
+                  onClick={() => handleInstantWorkout('Upper Body Mixed')}
+                  className="bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col gap-3 active:scale-95 transition-all text-left group"
+                >
+                  <Zap size={20} className="text-neon" />
+                  <div>
+                    <span className="block text-[11px] font-black uppercase tracking-widest text-white italic">Instant Upper</span>
+                    <span className="text-[9px] text-zinc-600 font-bold uppercase truncate">IA Custom Gear</span>
+                  </div>
+                </button>
+                <button 
+                  disabled={isGeneratingInstant}
+                  onClick={() => handleInstantWorkout('Lower Body Focus')}
+                  className="bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col gap-3 active:scale-95 transition-all text-left group"
+                >
+                  <Activity size={20} className="text-neon" />
+                  <div>
+                    <span className="block text-[11px] font-black uppercase tracking-widest text-white italic">Instant Lower</span>
+                    <span className="text-[9px] text-zinc-600 font-bold uppercase truncate">IA Custom Gear</span>
+                  </div>
+                </button>
+              </div>
+            )}
+            
+            {isGeneratingInstant && (
+              <div className="flex items-center justify-center gap-3 py-3 bg-neon/10 rounded-2xl border border-neon/20">
+                <Loader2 size={16} className="text-neon animate-spin" />
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-neon">Analizzando biomeccanica...</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
       <div>
-        <h2 className="text-3xl font-black tracking-tighter italic uppercase mb-6">Programmazione</h2>
+        <h2 className="text-4xl font-black tracking-tighter italic uppercase mb-8 border-l-4 border-neon pl-4">Programmazione</h2>
         
         {selectedDay === today && plans.length > 0 && (
           <div className="mb-6">

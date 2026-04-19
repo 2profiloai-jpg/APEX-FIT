@@ -297,9 +297,9 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                    <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
                      <div className="text-[10px] font-black uppercase tracking-widest text-purple-300 mb-2">Lista della spesa / Ingredienti:</div>
                      {suggestedMeal.items.map((item, idx) => (
-                       <div key={idx} className="flex justify-between items-center bg-white/5 p-2 rounded-xl text-xs">
-                         <span className="font-bold text-white">{item.name}</span>
-                         <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-lg text-[10px] uppercase font-black">{item.amount || 'q.b.'}</span>
+                       <div key={idx} className="flex justify-between items-center bg-white/5 p-2 rounded-xl text-xs gap-3">
+                         <span className="font-bold text-white truncate">{item.name}</span>
+                         <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-lg text-[10px] uppercase font-black flex-shrink-0">{item.amount || 'q.b.'}</span>
                        </div>
                      ))}
                    </div>
@@ -343,13 +343,13 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="flex justify-between items-center text-sm border-b border-white/5 pb-3 last:border-0 last:pb-0 gap-4"
+                      className="flex justify-between items-center text-sm border-b border-white/5 pb-3 last:border-0 last:pb-0 gap-3"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="font-bold text-white flex items-center gap-2">
-                          {item.name}
+                          <span className="truncate">{item.name}</span>
                           {item.amount && (
-                            <span className="text-[10px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-zinc-400 font-black uppercase tracking-widest">
+                            <span className="text-[10px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-zinc-400 font-black uppercase tracking-widest flex-shrink-0">
                               {item.amount}
                             </span>
                           )}
@@ -369,20 +369,20 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                 {isAdding === meal ? (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 space-y-4 bg-black/20 border border-white/10 p-4 rounded-2xl">
                     <div className="space-y-3">
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <input 
                           type="text" 
                           placeholder="Nome alimento..."
                           value={newFood.name}
                           onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
-                          className="flex-[2] bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white placeholder:text-zinc-600 outline-none text-sm font-bold focus:ring-2 ring-neon/50 transition-all"
+                          className="flex-[3] bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white placeholder:text-zinc-600 outline-none text-sm font-bold focus:ring-2 ring-neon/50 transition-all"
                         />
                         <input 
                           type="text" 
-                          placeholder="Q.tà..."
+                          placeholder="Quantità (es: 100g)..."
                           value={newFood.amount}
                           onChange={(e) => setNewFood({ ...newFood, amount: e.target.value })}
-                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white placeholder:text-zinc-600 outline-none text-sm font-bold focus:ring-2 ring-neon/50 transition-all"
+                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 outline-none text-xs font-bold focus:ring-2 ring-neon/50 transition-all"
                         />
                       </div>
                       
@@ -423,22 +423,22 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                       <div className="h-px bg-white/10 flex-1"></div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Kcal</label>
-                        <input type="number" placeholder="0" value={newFood.kcal} onChange={(e) => setNewFood({ ...newFood, kcal: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.kcal} onChange={(e) => setNewFood({ ...newFood, kcal: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Pro</label>
-                        <input type="number" placeholder="0" value={newFood.protein} onChange={(e) => setNewFood({ ...newFood, protein: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.protein} onChange={(e) => setNewFood({ ...newFood, protein: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Carb</label>
-                        <input type="number" placeholder="0" value={newFood.carbs} onChange={(e) => setNewFood({ ...newFood, carbs: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.carbs} onChange={(e) => setNewFood({ ...newFood, carbs: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-1">Fat</label>
-                        <input type="number" placeholder="0" value={newFood.fat} onChange={(e) => setNewFood({ ...newFood, fat: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
+                        <input type="number" placeholder="0" value={newFood.fat} onChange={(e) => setNewFood({ ...newFood, fat: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg py-3 px-2 text-white outline-none text-base text-center font-bold focus:ring-1 ring-neon/50" />
                       </div>
                     </div>
 

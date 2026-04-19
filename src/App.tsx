@@ -348,6 +348,7 @@ export default function App() {
               transition={{ duration: 0.2 }}
             >
               <WorkoutHub 
+                profile={profile}
                 requestedPlanId={requestedPlanId} 
                 onClearRequest={() => setRequestedPlanId(null)} 
                 onNavigateToLibrary={(exerciseId) => {

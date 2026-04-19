@@ -1,24 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
-import { WorkoutSession, SessionExercise, WorkoutSet, Exercise, ExerciseCategory, WorkoutPlan, EffortLevel } from '../types';
-import { X, Plus, Save, Timer, ChevronDown, ChevronUp, Trash2, Play, Pause, RotateCcw, Brain, Check, Info, TrendingUp, Dumbbell, Activity, CircleDashed, Square, Triangle, User, ArrowUp, ArrowDown } from 'lucide-react';
+import { WorkoutSession, SessionExercise, WorkoutSet, Exercise, ExerciseCategory, WorkoutPlan, EffortLevel, UserProfile } from '../types';
+import { X, Plus, Save, Timer, ChevronDown, ChevronUp, Trash2, Play, Pause, RotateCcw, Brain, Check, Info, TrendingUp, Dumbbell, Activity, CircleDashed, Square, Triangle, User, ArrowUp, ArrowDown, Users, Sparkles, Loader2 } from 'lucide-react';
 import GripButton from './ui/GripButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import { cn } from '../lib/utils';
-import { getPostWorkoutAdvice } from '../services/geminiService';
+import GymMapper from './GymMapper';
+import { getPostWorkoutAdvice, suggestExerciseAlternative } from '../services/geminiService';
 import { analyzeSessionCompletion } from '../services/liaService';
 import { getEffortFeedback, getRestAdvice, getTechniqueCue, getProgressGoal, getImmediateLoadSuggestion } from '../services/smartCoachService';
 import { query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 
-export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNavigateToLibrary }: { sessionId?: string | null, plan?: WorkoutPlan | null, onSessionEnd: () => void, onNavigateToLibrary: (id: string) => void }) {
+export default function WorkoutSessionView({ profile, sessionId, plan, onSessionEnd, onNavigateToLibrary }: { profile: UserProfile | null, sessionId?: string | null, plan?: WorkoutPlan | null, onSessionEnd: () => void, onNavigateToLibrary: (id: string) => void }) {
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
   const [exercises, setExercises] = useState<SessionExercise[]>(() => {
     if (plan && plan.exercises) {
       return plan.exercises.map(pe => ({
         exerciseId: pe.exerciseId,
+        customName: pe.customName,
         sets: Array.from({ length: pe.targetSets }).map(() => ({
           weight: 0,
           reps: parseInt(pe.targetReps.split('-')[0]) || 0, // default to lower bound if range
@@ -33,6 +35,15 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNa
   const [showSummary, setShowSummary] = useState(false);
   const [postWorkoutAdvice, setPostWorkoutAdvice] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [isCrowded, setIsCrowded] = useState(false);
+  const [suggestingFor, setSuggestingFor] = useState<number | null>(null);
+  const [activeAlternative, setActiveAlternative] = useState<{
+    idx: number;
+    alternative: string;
+    reason: string;
+  } | null>(null);
+
+  const [showGymMapper, setShowGymMapper] = useState(false);
 
   const getExerciseBlueprint = (exercise: Exercise) => {
     // Specific blueprints for exercises based on ID
@@ -44,6 +55,37 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNa
     // Default Fallback
     return <Dumbbell size={20} className="text-neon" />;
   };
+
+  const handleSuggestAlternative = async (idx: number) => {
+    const ex = exercises[idx];
+    const originalName = ex.customName || EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId)?.name || "Esercizio";
+    
+    if (!profile?.gymInventory || profile.gymInventory.length === 0) {
+      toast.error("Mappa prima la tua palestra per ricevere alternative valide.");
+      return;
+    }
+
+    setSuggestingFor(idx);
+    try {
+      const inventory = profile.gymInventory.map(i => i.name);
+      const completed = exercises.filter((e, i) => i < idx).map(e => e.customName || EXERCISE_LIBRARY.find(el => el.id === e.exerciseId)?.name || "");
+      
+      const result = await suggestExerciseAlternative(originalName, inventory, completed, isCrowded);
+      
+      if (result) {
+        setActiveAlternative({
+          idx,
+          alternative: result.alternative,
+          reason: result.reason
+        });
+      }
+    } catch (err) {
+      toast.error("Errore nel suggerimento dell'IA");
+    } finally {
+      setSuggestingFor(null);
+    }
+  };
+
   const [pickerSearch, setPickerSearch] = useState('');
   const [pickerCategory, setPickerCategory] = useState<ExerciseCategory | null>(null);
   
@@ -217,8 +259,12 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNa
     
     if (isNowComplete) {
       const exerciseId = exercises[exerciseIndex].exerciseId;
-      const restTime = getRestAdvice(exerciseId, currentSet.effort);
-      startRest(restTime);
+      if (exerciseId !== 'AI_REPLACEMENT' && exerciseId !== 'CUSTOM') {
+        const restTime = getRestAdvice(exerciseId, currentSet.effort);
+        startRest(restTime);
+      } else {
+        startRest(90); // Default rest for AI/Custom exercises
+      }
     }
   };
 
@@ -274,7 +320,7 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNa
           <Brain className="text-black w-10 h-10" />
         </div>
         <h2 className="text-4xl font-black tracking-tighter italic uppercase mb-2">Analisi<br/>Completata</h2>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 mb-8 max-w-sm w-full shadow-2xl">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 mb-4 max-w-sm w-full shadow-2xl">
           {postWorkoutAdvice ? (
             <p className="text-zinc-300 font-medium leading-relaxed">
               {postWorkoutAdvice}
@@ -288,6 +334,14 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNa
             </div>
           )}
         </div>
+        
+        <button 
+          onClick={() => toast.info("Esportazione in corso...", { description: "I dati verranno inviati al tuo Google Sheets." })}
+          className="mb-8 text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2 hover:text-white transition-colors"
+        >
+          Esporta in Fogli <ChevronUp size={12} className="rotate-90" />
+        </button>
+
         <GripButton onClick={onSessionEnd} className="w-full max-w-sm">
           TORNA ALLA DASHBOARD
         </GripButton>
@@ -297,6 +351,12 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNa
 
   return (
     <div className="space-y-6">
+      <AnimatePresence>
+        {showGymMapper && (
+          <GymMapper profile={profile} onClose={() => setShowGymMapper(false)} />
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-3xl font-black tracking-tighter italic uppercase">
@@ -349,6 +409,36 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNa
         </button>
       </div>
 
+      <div className="flex items-center gap-4 bg-zinc-900/50 border border-white/5 p-4 rounded-3xl mb-4">
+        <Users size={18} className={cn("transition-colors", isCrowded ? "text-yellow-500" : "text-zinc-600")} />
+        <div className="flex-1">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Modalità Palestra Affollata</h4>
+          <p className="text-[8px] text-zinc-600 font-bold leading-tight mt-0.5">L'IA prediligerà alternative con manubri o a terra.</p>
+        </div>
+        <button 
+          onClick={() => setIsCrowded(!isCrowded)}
+          className={cn(
+            "w-12 h-6 rounded-full transition-all relative flex items-center px-1",
+            isCrowded ? "bg-yellow-500/20 border border-yellow-500/40" : "bg-zinc-800 border border-zinc-700"
+          )}
+        >
+          <motion.div 
+            animate={{ x: isCrowded ? 24 : 0 }}
+            className={cn("w-4 h-4 rounded-full", isCrowded ? "bg-yellow-500" : "bg-zinc-500")}
+          />
+        </button>
+      </div>
+      
+      {/* Bottoni Rapidi IA in sessione */}
+      <div className="flex gap-2">
+         <button 
+            onClick={() => setShowGymMapper(true)}
+            className="flex-1 py-3 bg-neon/10 border border-neon/20 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-neon active:scale-95 transition-all"
+         >
+           <Brain size={14} /> Mappa Palestra
+         </button>
+      </div>
+
       <div className="space-y-6">
         {exercises.map((ex, exIdx) => {
           const exerciseInfo = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId);
@@ -367,25 +457,33 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNa
             >
               <div className="p-4 bg-zinc-800/50 flex items-center justify-between gap-3 overflow-hidden">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-black uppercase tracking-tighter text-neon truncate leading-tight flex items-center gap-2">
-                    <button 
-                      onClick={() => onNavigateToLibrary(ex.exerciseId)}
-                      className="hover:underline hover:text-white transition-colors"
-                    >
-                      {exerciseInfo?.name.toUpperCase()}
-                    </button>
+                  <div className="flex flex-wrap items-center gap-3 mb-1">
+                    <h3 className="font-black uppercase tracking-tighter text-neon truncate leading-tight flex items-center gap-2">
+                      <button 
+                        onClick={() => onNavigateToLibrary(ex.exerciseId)}
+                        className="hover:underline hover:text-white transition-colors text-left truncate"
+                      >
+                        {ex.customName ? ex.customName.toUpperCase() : (exerciseInfo?.name.toUpperCase() || 'ESERCIZIO')}
+                      </button>
+                    </h3>
+                    
                     {restTimer !== null && (
                       <span className="text-[10px] bg-neon text-black px-1.5 py-0.5 rounded italic font-bold">
                         REST: {restTimer}s
                       </span>
                     )}
-                  </h3>
-                  {progressGoal && (
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <TrendingUp size={10} className="text-zinc-500" />
-                      <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest leading-none">Goal: {progressGoal.target}</span>
+
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <button 
+                        onClick={() => handleSuggestAlternative(exIdx)}
+                        disabled={suggestingFor !== null}
+                        className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-zinc-500 hover:text-neon transition-colors"
+                      >
+                        {suggestingFor === exIdx ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                        Alternativa
+                      </button>
                     </div>
-                  )}
+                  </div>
                 </div>
                 <button onClick={() => removeExercise(exIdx)} className="text-zinc-500 hover:text-red-500 flex-shrink-0">
                   <Trash2 size={16} />
@@ -519,10 +617,16 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNa
 
       <div className="grid grid-cols-2 gap-4 pt-4">
         <GripButton variant="secondary" onClick={() => setShowExercisePicker(true)} className="flex-1">
-          <Plus size={20} /> ESERCIZIO
+          <div className="relative w-full flex items-center justify-center">
+            <Plus size={18} className="absolute left-0 opacity-50" />
+            <span className="font-black italic tracking-wider">ESERCIZIO</span>
+          </div>
         </GripButton>
         <GripButton variant="accent" onClick={handleSave} disabled={isSaving || exercises.length === 0} className="flex-1">
-          <Save size={20} /> {isSaving ? 'SALVATAGGIO...' : 'FINISCI'}
+          <div className="relative w-full flex items-center justify-center">
+            <Save size={18} className="absolute left-0 opacity-50" />
+            <span className="font-black italic tracking-wider">{isSaving ? 'SALVATAGGIO...' : 'FINISCI'}</span>
+          </div>
         </GripButton>
       </div>
 
@@ -592,6 +696,59 @@ export default function WorkoutSessionView({ sessionId, plan, onSessionEnd, onNa
                 </button>
               ))}
             </div>
+          </motion.div>
+        )}
+
+        {/* AI Alternative Modal */}
+        {activeAlternative && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-zinc-900 border border-neon/30 rounded-3xl p-6 w-full max-w-sm relative shadow-2xl shadow-neon/10"
+            >
+              <button 
+                onClick={() => setActiveAlternative(null)}
+                className="absolute top-4 right-4 p-2 bg-zinc-800 text-zinc-400 rounded-full hover:text-white"
+              >
+                <X size={20} />
+              </button>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-neon/10 rounded-xl flex items-center justify-center text-neon">
+                  <Sparkles size={20} />
+                </div>
+                <h3 className="text-lg font-black uppercase tracking-tighter italic">Consiglio IA</h3>
+              </div>
+              
+              <h4 className="text-xl font-bold text-white mb-2 leading-tight uppercase tracking-tighter">{activeAlternative.alternative}</h4>
+              <p className="text-sm text-zinc-400 leading-relaxed mb-6 font-medium">
+                {activeAlternative.reason}
+              </p>
+              
+              {activeAlternative.alternative !== 'Nessuna alternativa disponibile' && (
+                <GripButton 
+                  onClick={() => {
+                    const newEx = [...exercises];
+                    newEx[activeAlternative.idx] = {
+                      ...newEx[activeAlternative.idx],
+                      customName: activeAlternative.alternative,
+                      exerciseId: 'AI_REPLACEMENT'
+                    };
+                    setExercises(newEx);
+                    setActiveAlternative(null);
+                  }}
+                  className="w-full text-xs"
+                >
+                  APPLICA VARIANTE
+                </GripButton>
+              )}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

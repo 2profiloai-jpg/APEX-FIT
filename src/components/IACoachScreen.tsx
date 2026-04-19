@@ -203,9 +203,9 @@ export default function IACoachScreen({ profile }: { profile: UserProfile | null
                    <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
                       <div className="text-[10px] font-black uppercase tracking-widest text-purple-300 mb-2">Lista della spesa / Ingredienti:</div>
                       {suggestedMeal.items.map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-white/5 p-2 rounded-xl text-xs">
-                          <span className="font-bold text-white">{item.name}</span>
-                          <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-lg text-[10px] uppercase font-black">{item.amount || 'q.b.'}</span>
+                        <div key={idx} className="flex justify-between items-center bg-white/5 p-2 rounded-xl text-xs gap-3">
+                          <span className="font-bold text-white truncate">{item.name}</span>
+                          <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-lg text-[10px] uppercase font-black flex-shrink-0">{item.amount || 'q.b.'}</span>
                         </div>
                       ))}
                    </div>
