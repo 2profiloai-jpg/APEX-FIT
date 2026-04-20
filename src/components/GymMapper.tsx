@@ -22,7 +22,7 @@ export default function GymMapper({ profile, onClose }: GymMapperProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
 
     const newBase64s: string[] = [];

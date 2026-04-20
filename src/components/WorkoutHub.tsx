@@ -21,6 +21,7 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
   const [activeSessionPlan, setActiveSessionPlan] = useState<WorkoutPlan | 'free' | null>(null);
   const [showGymMapper, setShowGymMapper] = useState(false);
   const [isGeneratingInstant, setIsGeneratingInstant] = useState(false);
+  const [showFocusPicker, setShowFocusPicker] = useState(false);
   
   useEffect(() => {
     if (requestedPlanId && plans.length > 0) {
@@ -472,31 +473,81 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
                 </GripButton>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <button 
+              <div className="space-y-4">
+                <GripButton 
                   disabled={isGeneratingInstant}
-                  onClick={() => handleInstantWorkout('Upper Body Mixed')}
-                  className="bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col gap-3 active:scale-95 transition-all text-left group"
+                  onClick={() => setShowFocusPicker(true)}
+                  className="w-full h-20 text-xl flex items-center justify-center gap-4 bg-white/5 border-white/10"
                 >
-                  <Zap size={20} className="text-neon" />
-                  <div>
-                    <span className="block text-[11px] font-black uppercase tracking-widest text-white italic">Instant Upper</span>
-                    <span className="text-[9px] text-zinc-600 font-bold uppercase truncate">IA Custom Gear</span>
-                  </div>
-                </button>
-                <button 
-                  disabled={isGeneratingInstant}
-                  onClick={() => handleInstantWorkout('Lower Body Focus')}
-                  className="bg-black/40 border border-white/5 p-4 rounded-2xl flex flex-col gap-3 active:scale-95 transition-all text-left group"
-                >
-                  <Activity size={20} className="text-neon" />
-                  <div>
-                    <span className="block text-[11px] font-black uppercase tracking-widest text-white italic">Instant Lower</span>
-                    <span className="text-[9px] text-zinc-600 font-bold uppercase truncate">IA Custom Gear</span>
-                  </div>
-                </button>
+                  <Zap size={28} className="text-neon" />
+                  GENERA ALLENAMENTO IA
+                </GripButton>
+                <p className="text-[10px] text-zinc-500 font-bold text-center uppercase tracking-widest">
+                  L'IA creerà una scheda basata sui tuoi macchinari disponibili
+                </p>
               </div>
             )}
+            
+            <AnimatePresence>
+              {showFocusPicker && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-6"
+                >
+                  <motion.div 
+                    initial={{ scale: 0.9, y: 30 }}
+                    animate={{ scale: 1, y: 0 }}
+                    className="bg-zinc-900 border border-white/10 rounded-[2.5rem] p-8 w-full max-w-sm relative"
+                  >
+                    <button 
+                      onClick={() => setShowFocusPicker(false)}
+                      className="absolute top-6 right-6 p-2 bg-zinc-800 rounded-full text-zinc-400"
+                    >
+                      <X size={20} />
+                    </button>
+
+                    <div className="mb-8 text-center pt-4">
+                      <div className="w-16 h-16 bg-neon/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-neon/30">
+                        <Brain size={32} className="text-neon" />
+                      </div>
+                      <h3 className="text-2xl font-black uppercase tracking-tighter italic">Cosa vuoi allenare?</h3>
+                      <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-2">Dimmelo e genererò la scheda ideale</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      {[
+                        { label: 'Total Body Mix', focus: 'Corpo Completo (Mix)' },
+                        { label: 'Parte Superiore', focus: 'Upper Body (Petto, Dorso, Spalle)' },
+                        { label: 'Parte Inferiore', focus: 'Lower Body (Gambe e Polpacci)' },
+                        { label: 'Push Day (Spinta)', focus: 'Push Day (Petto, Spalle, Tricipiti)' },
+                        { label: 'Pull Day (Trazione)', focus: 'Pull Day (Dorso, Bicipiti)' },
+                        { label: 'Addominali & Core', focus: 'Focus Core e Addome' }
+                      ].map((opt) => (
+                        <button 
+                          key={opt.label}
+                          onClick={() => {
+                            setShowFocusPicker(false);
+                            handleInstantWorkout(opt.focus);
+                          }}
+                          className="w-full py-5 px-6 rounded-2xl bg-white/[0.03] border border-white/5 text-left flex items-center justify-between hover:bg-neon/10 hover:border-neon/30 active:scale-95 transition-all group"
+                        >
+                          <span className="text-sm font-black uppercase tracking-tight italic group-hover:text-neon">{opt.label}</span>
+                          <ChevronRight size={18} className="text-zinc-700 group-hover:text-neon" />
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="mt-8">
+                       <p className="text-[10px] text-zinc-600 text-center font-bold uppercase leading-relaxed font-mono">
+                         Lia incrocerà i tuoi dati biometrici con la mappa della tua palestra.
+                       </p>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             {isGeneratingInstant && (
               <div className="flex items-center justify-center gap-3 py-3 bg-neon/10 rounded-2xl border border-neon/20">
