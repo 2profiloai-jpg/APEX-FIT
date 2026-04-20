@@ -29,6 +29,7 @@ import ExerciseLibrary from './components/ExerciseLibrary';
 import Profile from './components/Profile';
 import NutritionHub from './components/NutritionHub';
 import IACoachScreen from './components/IACoachScreen';
+import SmartNotificationManager from './components/SmartNotificationManager';
 import { initAI } from './services/geminiService';
 import { Apple } from 'lucide-react';
 
@@ -275,6 +276,7 @@ export default function App() {
       } as React.CSSProperties}
     >
       <Toaster position="top-center" expand={true} richColors theme="dark" />
+      <SmartNotificationManager profile={profile} />
       {/* Top Bar */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-black/40 backdrop-blur-2xl border-b border-white/5 z-50 px-4 flex items-center justify-between overflow-hidden">
         <div className="flex items-center gap-2">

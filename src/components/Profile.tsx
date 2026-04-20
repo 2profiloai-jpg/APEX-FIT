@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { isAIReady } from '../services/geminiService';
 import { cn } from '../lib/utils';
+import { notificationService } from '../services/notificationService';
 
 export default function Profile({ profile, user, aiStatus }: { profile: UserProfile | null, user: User, aiStatus: 'loading' | 'ready' | 'error' }) {
   // Biometric State
@@ -271,10 +272,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
       </motion.section>
 
       <div className="space-y-2">
-        <ProfileLink icon={<Award size={18} />} label="Traguardi" onClick={() => toast.info('Traguardi in arrivo presto!')} />
-        <ProfileLink icon={<Bell size={18} />} label="Notifiche" onClick={() => toast.info('Impostazioni notifiche in arrivo!')} />
-        <ProfileLink icon={<Shield size={18} />} label="Privacy e Sicurezza" onClick={() => toast.info('Privacy in arrivo!')} />
-        <ProfileLink icon={<Settings size={18} />} label="Preferenze" onClick={() => setShowPreferences(true)} />
+        <ProfileLink icon={<Settings size={18} />} label="Preferenze (Tema & Notifiche)" onClick={() => setShowPreferences(true)} />
       </div>
 
       {/* Preferences Modal */}
@@ -398,15 +396,61 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
                 </div>
               </section>
 
-              <section className="space-y-4 opacity-50 pointer-events-none">
+              <section className="space-y-4">
                 <div className="flex flex-col">
-                  <h4 className="font-black uppercase tracking-widest text-xs text-zinc-500 mb-1">Notifiche Push</h4>
-                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Promemoria allenamenti e pasti</p>
+                  <h4 className="font-black uppercase tracking-widest text-xs text-neon mb-1">Notifiche Smart</h4>
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Ricevi promemoria su calorie mancanti e allenamenti del giorno.</p>
                 </div>
-                <div className="h-12 bg-zinc-900 rounded-2xl border border-zinc-800 flex items-center justify-between px-4">
-                  <span className="text-sm font-bold text-zinc-400">Attiva Notifiche</span>
-                  <div className="w-10 h-6 bg-zinc-800 rounded-full"></div>
+                <div className="bg-black/20 p-4 rounded-2xl border border-white/5 flex items-center justify-between">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-bold text-zinc-300">Attiva Notifiche</span>
+                    <span className="text-[9px] text-zinc-500 font-black uppercase tracking-tighter">Richiede permesso del browser</span>
+                  </div>
+                  <motion.button 
+                    whileTap={{ scale: 0.9 }}
+                    onClick={async () => {
+                      const current = profile?.preferences?.pushNotifications;
+                      if (!current) {
+                        const granted = await notificationService.requestPermission();
+                        if (granted) {
+                          await updateDoc(doc(db, 'users', profile!.uid), {
+                            'preferences.pushNotifications': true
+                          });
+                          notificationService.notify("Apex Lift: Notifiche attivate!", {
+                            body: "Riceverai aggiornamenti importanti sui tuoi obiettivi."
+                          });
+                          toast.success("Notifiche attivate correttamente!");
+                        }
+                      } else {
+                        await updateDoc(doc(db, 'users', profile!.uid), {
+                          'preferences.pushNotifications': false
+                        });
+                        toast.info("Notifiche disattivate.");
+                      }
+                    }}
+                    className={cn(
+                      "w-12 h-6 rounded-full transition-all relative flex items-center px-1",
+                      profile?.preferences?.pushNotifications ? "bg-neon" : "bg-zinc-800"
+                    )}
+                  >
+                    <motion.div 
+                      animate={{ x: profile?.preferences?.pushNotifications ? 24 : 0 }}
+                      className="w-4 h-4 rounded-full bg-white shadow-lg"
+                    />
+                  </motion.button>
                 </div>
+                {profile?.preferences?.pushNotifications && (
+                  <button 
+                    onClick={() => {
+                      notificationService.notify("Test Notifica", {
+                        body: "Questa è una prova di come riceverai i tuoi promemoria."
+                      });
+                    }}
+                    className="w-full py-2 bg-white/5 rounded-xl text-[9px] font-black uppercase text-zinc-500 hover:text-white transition-all"
+                  >
+                    Invia notifica di prova
+                  </button>
+                )}
               </section>
             </div>
 
