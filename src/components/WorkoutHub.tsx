@@ -430,26 +430,26 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
         )}
       </AnimatePresence>
 
-      {/* LIA RADAR SECTION - EMERGENCY VISIBILITY */}
+      {/* LIA RADAR SECTION - COMPACT */}
       <section id="lia-gym-mapping" className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-neon via-blue-500 to-neon rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-        <div className="relative bg-zinc-900 border border-white/10 rounded-[2.2rem] p-6 overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-            <Zap size={80} className="text-neon" />
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-neon via-blue-500 to-neon rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+        <div className="relative bg-zinc-900 border border-white/5 rounded-[1.8rem] p-4 overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <Zap size={60} className="text-neon" />
           </div>
           
-          <div className="flex flex-col gap-6">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-neon rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(var(--neon-accent-rgb),0.4)]">
-                  <Brain size={32} className="text-black" />
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-neon rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(var(--neon-accent-rgb),0.3)]">
+                  <Brain size={22} className="text-black" />
                 </div>
-                <div>
-                  <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">Lia Gym IQ</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-2 h-2 rounded-full bg-neon animate-pulse" />
-                    <span className="text-[10px] text-neon font-black uppercase tracking-[0.2em]">
-                      {profile?.gymInventory?.length ? 'Sistema Online' : 'Configurazione Necessaria'}
+                <div className="flex flex-col">
+                  <h3 className="text-lg font-black italic uppercase tracking-tighter text-white leading-none">Lia Gym IQ</h3>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-neon animate-pulse flex-shrink-0 shadow-[0_0_8px_rgba(var(--neon-accent-rgb),0.6)]" />
+                    <span className="text-[7px] text-neon font-black uppercase tracking-[0.2em] whitespace-nowrap">
+                      {profile?.gymInventory?.length ? 'Sistema Online' : 'Configurazione'}
                     </span>
                   </div>
                 </div>
@@ -457,34 +457,31 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
               
               <button 
                 onClick={() => setShowGymMapper(true)}
-                className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white active:scale-90 transition-all"
+                className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white active:scale-95 transition-all flex-shrink-0"
               >
-                <Plus size={24} />
+                <Plus size={18} />
               </button>
             </div>
 
             {!profile?.gymInventory?.length ? (
-              <div className="space-y-4">
-                <p className="text-xs text-zinc-400 font-bold leading-relaxed pr-8">
-                  "Non posso aiutarti con le alternative IA finché non so quali macchinari hai in palestra. Mappali ora per sbloccare il vero potenziale."
+              <div className="space-y-3">
+                <p className="text-[9px] text-zinc-500 font-bold leading-tight uppercase tracking-widest">
+                  Mappa la tua palestra per sbloccare le schede.
                 </p>
-                <GripButton onClick={() => setShowGymMapper(true)} variant="primary" className="w-full h-16 text-lg">
-                  MAPPA PALESTRA ORA
+                <GripButton onClick={() => setShowGymMapper(true)} variant="primary" className="w-full h-11 text-xs">
+                  MAPPA ORA
                 </GripButton>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <GripButton 
                   disabled={isGeneratingInstant}
                   onClick={() => setShowFocusPicker(true)}
-                  className="w-full h-20 text-xl flex items-center justify-center gap-4 bg-white/5 border-white/10"
+                  className="w-full h-12 text-xs flex items-center justify-center gap-3 bg-white/5 border-white/10"
                 >
-                  <Zap size={28} className="text-neon" />
-                  GENERA ALLENAMENTO IA
+                  <Zap size={18} className="text-neon" />
+                  GENERA SCHEDA IA
                 </GripButton>
-                <p className="text-[10px] text-zinc-500 font-bold text-center uppercase tracking-widest">
-                  L'IA creerà una scheda basata sui tuoi macchinari disponibili
-                </p>
               </div>
             )}
             

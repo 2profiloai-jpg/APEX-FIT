@@ -357,56 +357,71 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
         )}
       </AnimatePresence>
 
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-3xl font-black tracking-tighter italic uppercase">
-            {plan ? plan.name : 'Sessione Attiva'}
+      <div className="flex flex-col gap-6 mb-8">
+        {/* Top Bar: Title and Close */}
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-3xl font-black tracking-tighter italic uppercase text-white leading-none pt-2">
+            {plan ? plan.name : 'Allenamento'}
           </h2>
-          <div className="flex items-center gap-4 mt-2">
-            <div className="flex items-center gap-2 text-neon text-xl font-black italic tracking-tighter neon-text">
-              <Timer size={20} /> {formatTime(timerSeconds)}
+          <button 
+            onClick={onSessionEnd} 
+            className="w-12 h-12 flex-shrink-0 bg-zinc-900 border border-white/5 rounded-full flex items-center justify-center text-zinc-500 hover:text-white active:scale-95 transition-all"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Dashboard: Timer and Rest Control */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Work Timer */}
+          <div className="bg-zinc-900 border border-white/5 rounded-3xl p-4 flex flex-col justify-between h-24">
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500">Tempo Totale</span>
+            <div className="flex items-center justify-between mt-auto">
+              <span className="text-2xl font-black italic text-neon tracking-tighter neon-text uppercase leading-none">
+                {formatTime(timerSeconds)}
+              </span>
+              <div className="flex gap-1">
+                <button 
+                  onClick={() => setIsTimerRunning(!isTimerRunning)}
+                  className="p-1.5 bg-white/5 rounded-lg text-zinc-400 hover:text-white"
+                >
+                  {isTimerRunning ? <Pause size={14} /> : <Play size={14} />}
+                </button>
+                <button 
+                  onClick={() => { setTimerSeconds(0); setIsTimerRunning(false); }}
+                  className="p-1.5 bg-white/5 rounded-lg text-zinc-400 hover:text-white"
+                >
+                  <RotateCcw size={14} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setIsTimerRunning(!isTimerRunning)}
-                className="p-1.5 bg-zinc-800 rounded-lg text-zinc-300 hover:text-white"
-              >
-                {isTimerRunning ? <Pause size={16} /> : <Play size={16} />}
-              </button>
-              <button 
-                onClick={() => { setTimerSeconds(0); setIsTimerRunning(false); }}
-                className="p-1.5 bg-zinc-800 rounded-lg text-zinc-300 hover:text-white"
-              >
-                <RotateCcw size={16} />
-              </button>
+          </div>
+
+          {/* Rest Control */}
+          <div className="bg-zinc-900 border border-white/5 rounded-3xl p-4 flex flex-col justify-between h-24 relative overflow-hidden">
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500">Recupero personalizzato</span>
+            <div className="mt-auto">
+              {restTimer !== null ? (
+                <div className="text-2xl font-black italic text-white tracking-tighter flex items-center gap-2 animate-pulse">
+                  <div className="w-2 h-2 rounded-full bg-neon" />
+                  {formatTime(restTimer)}
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  {[60, 90, 120].map(s => (
+                    <button 
+                      key={s}
+                      onClick={() => startRest(s)}
+                      className="flex-1 bg-white/5 text-zinc-400 text-[10px] font-black py-2 rounded-xl hover:bg-neon/10 hover:text-neon transition-all"
+                    >
+                      {s}s
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
-        
-        {/* Rest Timer UI */}
-        <div className="flex flex-col items-end">
-          {restTimer !== null ? (
-            <div className="bg-neon text-black px-4 py-2 rounded-2xl font-black text-xl animate-pulse">
-              REST: {formatTime(restTimer)}
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              {[60, 90, 120].map(s => (
-                <button 
-                  key={s}
-                  onClick={() => startRest(s)}
-                  className="bg-zinc-800 text-zinc-400 text-[10px] font-black px-3 py-2 rounded-xl hover:bg-zinc-700 hover:text-white transition-colors"
-                >
-                  {s}s
-                </button>
-              ))}
-            </div>
-          )}
-          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mt-1">Recupero</span>
-        </div>
-        <button onClick={onSessionEnd} className="p-2 bg-zinc-900 rounded-full text-zinc-500 hover:text-white ml-2">
-          <X size={24} />
-        </button>
       </div>
 
       <div className="flex items-center gap-4 bg-zinc-900/50 border border-white/5 p-4 rounded-3xl mb-4">
@@ -455,39 +470,38 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
               key={exIdx} 
               className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden max-w-full"
             >
-              <div className="p-4 bg-zinc-800/50 flex items-center justify-between gap-3 overflow-hidden">
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-3 mb-1">
-                    <h3 className="font-black uppercase tracking-tighter text-neon truncate leading-tight flex items-center gap-2">
-                      <button 
-                        onClick={() => onNavigateToLibrary(ex.exerciseId)}
-                        className="hover:underline hover:text-white transition-colors text-left truncate"
-                      >
-                        {ex.customName ? ex.customName.toUpperCase() : (exerciseInfo?.name.toUpperCase() || 'ESERCIZIO')}
-                      </button>
-                    </h3>
-                    
-                    {restTimer !== null && (
-                      <span className="text-[10px] bg-neon text-black px-1.5 py-0.5 rounded italic font-bold">
-                        REST: {restTimer}s
-                      </span>
-                    )}
-
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <button 
-                        onClick={() => handleSuggestAlternative(exIdx)}
-                        disabled={suggestingFor !== null}
-                        className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-zinc-500 hover:text-neon transition-colors"
-                      >
-                        {suggestingFor === exIdx ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                        Alternativa
-                      </button>
-                    </div>
-                  </div>
+              <div className="p-4 bg-zinc-800/10 border-b border-white/5 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <button 
+                    onClick={() => onNavigateToLibrary(ex.exerciseId)}
+                    className="text-lg font-black uppercase tracking-tighter text-neon hover:text-white transition-colors text-left truncate leading-tight flex-1"
+                  >
+                    {ex.customName ? ex.customName.toUpperCase() : (exerciseInfo?.name.toUpperCase() || 'ESERCIZIO')}
+                  </button>
+                  <button onClick={() => removeExercise(exIdx)} className="text-zinc-600 hover:text-red-500 transition-colors pt-1">
+                    <Trash2 size={16} />
+                  </button>
                 </div>
-                <button onClick={() => removeExercise(exIdx)} className="text-zinc-500 hover:text-red-500 flex-shrink-0">
-                  <Trash2 size={16} />
-                </button>
+                
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => handleSuggestAlternative(exIdx)}
+                    disabled={suggestingFor !== null}
+                    className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-neon transition-colors"
+                  >
+                    {suggestingFor === exIdx ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Alternativa
+                  </button>
+                  
+                  {restTimer !== null && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1 h-1 rounded-full bg-neon animate-ping" />
+                      <span className="text-[9px] font-black uppercase tracking-[0.1em] text-zinc-400">
+                        Recupero Attivo
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div className="p-4 space-y-4">
@@ -624,8 +638,7 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
         </GripButton>
         <GripButton variant="accent" onClick={handleSave} disabled={isSaving || exercises.length === 0} className="flex-1">
           <div className="relative w-full flex items-center justify-center">
-            <Save size={18} className="absolute left-0 opacity-50" />
-            <span className="font-black italic tracking-wider">{isSaving ? 'SALVATAGGIO...' : 'FINISCI'}</span>
+            <span className="font-black italic tracking-[0.1em] text-[10px]">{isSaving ? 'SALVATAGGIO...' : 'TERMINA ALLENAMENTO'}</span>
           </div>
         </GripButton>
       </div>

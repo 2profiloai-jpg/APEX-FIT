@@ -297,8 +297,6 @@ export default function App() {
             )}
           >
             <Brain size={20} className={cn("relative z-10", activeTab === 'coach' ? "" : "drop-shadow-[0_0_5px_rgba(var(--neon-accent-rgb),0.5)]")} />
-            {/* Notifica */}
-            <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-black z-20 group-hover:scale-125 transition-transform" />
             
             {/* Glow orbitale esterno quando inattivo */}
             {activeTab !== 'coach' && (
@@ -310,15 +308,8 @@ export default function App() {
             )}
           </motion.button>
           
-          <div className="flex items-center gap-4 ml-2">
-            <div className="flex flex-col items-end">
-              <div className="flex items-center gap-1.5 text-neon">
-                <Milk size={12} />
-                <span className="text-[9px] text-zinc-300 font-bold uppercase tracking-tight">Ricordati di bere</span>
-              </div>
-              <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-tighter">almeno 2 litri al giorno</span>
-            </div>
-            <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
+          <div className="flex items-center gap-3 ml-2">
+            <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)]">
               <img src={user.photoURL || ''} alt="Profile" referrerPolicy="no-referrer" />
             </div>
           </div>
