@@ -78,6 +78,20 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
     });
   };
 
+  const getLastPerformance = (exerciseId: string, customName?: string) => {
+    for (const session of recentSessions) {
+      if (session.id === sessionId) continue;
+      const exEntry = session.exercises.find(se => se.exerciseId === exerciseId || (se.customName && se.customName === customName));
+      if (exEntry && exEntry.sets?.length > 0) {
+        const validSets = exEntry.sets.filter(s => s.weight > 0 || s.reps > 0);
+        if (validSets.length > 0) {
+          return { date: session.startTime, sets: validSets };
+        }
+      }
+    }
+    return null;
+  };
+
   useEffect(() => {
     // Check for completed alternative tasks
     tasks.forEach(t => {
@@ -498,6 +512,7 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
         {exercises.map((ex, exIdx) => {
           const exerciseInfo = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId);
           const progressGoal = getProgressGoal(ex.exerciseId, recentSessions);
+          const lastPerformance = getLastPerformance(ex.exerciseId, ex.customName);
           
           if (!exerciseCues[ex.exerciseId] && exerciseInfo) {
             setExerciseCues(prev => ({ ...prev, [ex.exerciseId]: getTechniqueCue(ex.exerciseId) }));
@@ -545,9 +560,28 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
               </div>
               
               <div className="p-4 space-y-4">
+                {/* Last Performance History */}
+                {lastPerformance && (
+                  <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl overflow-x-auto hide-scrollbar">
+                    <div className="flex items-center gap-1.5 flex-shrink-0 text-zinc-400 border-r border-white/10 pr-3">
+                      <Timer size={14} className="text-zinc-500" />
+                      <span className="text-[9px] font-black uppercase tracking-widest leading-none">Ultima<br/>Volta</span>
+                    </div>
+                    <div className="flex gap-2 flex-grow min-w-max">
+                      {lastPerformance.sets.map((s, i) => (
+                        <div key={i} className="flex-shrink-0 bg-black/40 px-2.5 py-1.5 rounded-lg text-[10px] font-black text-zinc-300 border border-white/5 flex flex-col items-center justify-center min-w-[40px]">
+                          <span className="text-neon text-xs leading-none mb-0.5">{s.weight}<span className="text-[8px] text-zinc-500 uppercase">kg</span></span>
+                          <span className="leading-none text-zinc-400"><span className="text-zinc-500 font-normal">x</span>{s.reps}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* AI Technique Cue */}
                 {exerciseCues[ex.exerciseId] && (
                   <div className="flex gap-2 p-3 bg-neon/5 border border-neon/10 rounded-2xl">
+
                     <Brain size={14} className="text-neon flex-shrink-0" />
                     <p className="text-[10px] text-zinc-300 font-bold italic leading-tight">
                       <span className="text-neon uppercase not-italic mr-1">Coach:</span> 

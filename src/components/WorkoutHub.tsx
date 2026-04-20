@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
-import { WorkoutPlan, PlannedExercise, Exercise, ExerciseCategory, UserProfile } from '../types';
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, orderBy, limit } from 'firebase/firestore';
+import { WorkoutPlan, PlannedExercise, Exercise, ExerciseCategory, UserProfile, WorkoutSession } from '../types';
 import { Calendar, Plus, Play, Dumbbell, X, ChevronRight, Save, Activity, Brain, AlertCircle, Info, Loader2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { EXERCISE_LIBRARY } from './ExerciseLibrary';
@@ -70,27 +70,38 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [pickerCategory, setPickerCategory] = useState<ExerciseCategory | null>(null);
 
-  // Recovery of active session
+  const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
+
   useEffect(() => {
     const saved = localStorage.getItem('apex_active_session');
     if (saved) {
-      // If we have saved session data, jump directly to active session
       setActiveSessionPlan('free'); 
     }
   }, []);
 
   useEffect(() => {
     if (!auth.currentUser) return;
-    const q = query(
+    const qPlans = query(
       collection(db, 'users', auth.currentUser.uid, 'plans'),
       where('dayOfWeek', '==', selectedDay)
     );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubPlans = onSnapshot(qPlans, (snapshot) => {
       setPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkoutPlan)));
-    }, (error) => {
-      console.error('Firestore Error in WorkoutHub Plans:', error);
     });
-    return unsubscribe;
+
+    const qSessions = query(
+      collection(db, 'users', auth.currentUser.uid, 'sessions'),
+      orderBy('startTime', 'desc'),
+      limit(3)
+    );
+    const unsubSessions = onSnapshot(qSessions, (snapshot) => {
+      setRecentSessions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkoutSession)));
+    });
+
+    return () => {
+      unsubPlans();
+      unsubSessions();
+    };
   }, [selectedDay]);
 
   const openPlanBuilder = () => {
@@ -713,6 +724,27 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
           >
             <Dumbbell size={20} /> Inizia Sessione Libera
           </button>
+        </div>
+      )}
+
+      {/* Storico Recenti */}
+      {recentSessions.length > 0 && (
+        <div className="pt-10">
+          <h3 className="text-xl font-black italic uppercase mb-4 text-zinc-400 border-l-4 border-zinc-600 pl-4">Ultime Sessioni</h3>
+          <div className="space-y-3">
+            {recentSessions.map(session => (
+              <div key={session.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-black text-white italic tracking-widest uppercase">{session.planName || 'Sessione Libera'}</span>
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase">{new Date(session.startTime).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}</span>
+                </div>
+                <div className="flex items-center gap-4 text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
+                  <span>{session.exercises.length} Esercizi</span>
+                  <span>{Math.floor((session.duration || 0) / 60)} min</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

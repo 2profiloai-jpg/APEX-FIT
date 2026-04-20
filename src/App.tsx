@@ -289,7 +289,7 @@ export default function App() {
               className="flex items-center gap-2 bg-neon/10 px-2 py-1 rounded-full border border-neon/20 mr-2"
             >
               <div className="w-2 h-2 rounded-full bg-neon animate-pulse" />
-              <Brain size={12} className="text-neon animate-bounce" />
+              <Brain size={12} className="text-neon animate-pulse" />
               <span className="text-[8px] font-black uppercase text-neon tracking-widest hidden sm:inline">AI Elaborando...</span>
             </motion.div>
           )}
