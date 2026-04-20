@@ -548,6 +548,21 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
                     Alternativa
                   </button>
                   
+                  <button 
+                    onClick={() => {
+                      if (!lastPerformance) {
+                        toast.info("Nessuno storico", { description: "Completa questo esercizio in una sessione per vederne lo storico." });
+                      }
+                    }}
+                    className={cn(
+                      "flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] transition-colors",
+                      lastPerformance ? "text-neon" : "text-zinc-600 hover:text-zinc-400"
+                    )}
+                  >
+                    <Timer size={10} className={lastPerformance ? "text-neon" : ""} />
+                    Storico
+                  </button>
+
                   {restTimer !== null && (
                     <div className="flex items-center gap-1.5">
                       <div className="w-1 h-1 rounded-full bg-neon animate-ping" />
@@ -561,22 +576,22 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
               
               <div className="p-4 space-y-4">
                 {/* Last Performance History */}
-                {lastPerformance && (
-                  <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl overflow-x-auto hide-scrollbar">
-                    <div className="flex items-center gap-1.5 flex-shrink-0 text-zinc-400 border-r border-white/10 pr-3">
-                      <Timer size={14} className="text-zinc-500" />
-                      <span className="text-[9px] font-black uppercase tracking-widest leading-none">Ultima<br/>Volta</span>
-                    </div>
-                    <div className="flex gap-2 flex-grow min-w-max">
-                      {lastPerformance.sets.map((s, i) => (
-                        <div key={i} className="flex-shrink-0 bg-black/40 px-2.5 py-1.5 rounded-lg text-[10px] font-black text-zinc-300 border border-white/5 flex flex-col items-center justify-center min-w-[40px]">
-                          <span className="text-neon text-xs leading-none mb-0.5">{s.weight}<span className="text-[8px] text-zinc-500 uppercase">kg</span></span>
-                          <span className="leading-none text-zinc-400"><span className="text-zinc-500 font-normal">x</span>{s.reps}</span>
-                        </div>
-                      ))}
-                    </div>
+                <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-2xl overflow-x-auto hide-scrollbar">
+                  <div className="flex items-center gap-1.5 flex-shrink-0 text-zinc-400 border-r border-white/10 pr-3">
+                    <Timer size={14} className={lastPerformance ? "text-neon" : "text-zinc-600"} />
+                    <span className="text-[9px] font-black uppercase tracking-widest leading-none">Ultima<br/>Volta</span>
                   </div>
-                )}
+                  <div className="flex gap-2 flex-grow min-w-max">
+                    {lastPerformance ? lastPerformance.sets.map((s, i) => (
+                      <div key={i} className="flex-shrink-0 bg-black/40 px-2.5 py-1.5 rounded-lg text-[10px] font-black text-zinc-300 border border-white/5 flex flex-col items-center justify-center min-w-[40px]">
+                        <span className="text-neon text-xs leading-none mb-0.5">{s.weight}<span className="text-[8px] text-zinc-500 uppercase">kg</span></span>
+                        <span className="leading-none text-zinc-400"><span className="text-zinc-500 font-normal">x</span>{s.reps}</span>
+                      </div>
+                    )) : (
+                      <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest italic py-1">Nessun dato precedente</span>
+                    )}
+                  </div>
+                </div>
 
                 {/* AI Technique Cue */}
                 {exerciseCues[ex.exerciseId] && (
