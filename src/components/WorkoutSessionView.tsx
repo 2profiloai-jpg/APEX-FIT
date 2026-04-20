@@ -13,8 +13,10 @@ import { getPostWorkoutAdvice, suggestExerciseAlternative } from '../services/ge
 import { analyzeSessionCompletion } from '../services/liaService';
 import { getEffortFeedback, getRestAdvice, getTechniqueCue, getProgressGoal, getImmediateLoadSuggestion } from '../services/smartCoachService';
 import { query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { useBackgroundAI } from '../contexts/BackgroundAIContext';
 
 export default function WorkoutSessionView({ profile, sessionId, plan, onSessionEnd, onNavigateToLibrary }: { profile: UserProfile | null, sessionId?: string | null, plan?: WorkoutPlan | null, onSessionEnd: () => void, onNavigateToLibrary: (id: string) => void }) {
+  const { runExerciseAlternative, tasks, isTaskPending } = useBackgroundAI();
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
   const [exercises, setExercises] = useState<SessionExercise[]>(() => {
     if (plan && plan.exercises) {
@@ -36,7 +38,6 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
   const [postWorkoutAdvice, setPostWorkoutAdvice] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [isCrowded, setIsCrowded] = useState(false);
-  const [suggestingFor, setSuggestingFor] = useState<number | null>(null);
   const [activeAlternative, setActiveAlternative] = useState<{
     idx: number;
     alternative: string;
@@ -65,26 +66,30 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
       return;
     }
 
-    setSuggestingFor(idx);
-    try {
-      const inventory = profile.gymInventory.map(i => i.name);
-      const completed = exercises.filter((e, i) => i < idx).map(e => e.customName || EXERCISE_LIBRARY.find(el => el.id === e.exerciseId)?.name || "");
-      
-      const result = await suggestExerciseAlternative(originalName, inventory, completed, isCrowded);
-      
-      if (result) {
+    const inventory = profile.gymInventory.map(i => i.name);
+    const completed = exercises.filter((e, i) => i < idx).map(e => e.customName || EXERCISE_LIBRARY.find(el => el.id === e.exerciseId)?.name || "");
+    
+    await runExerciseAlternative({
+      originalName,
+      inventory,
+      completed,
+      isCrowded,
+      exerciseIdx: idx
+    });
+  };
+
+  useEffect(() => {
+    // Check for completed alternative tasks
+    tasks.forEach(t => {
+      if (t.type === 'exercise-alternative' && t.status === 'completed' && t.result) {
         setActiveAlternative({
-          idx,
-          alternative: result.alternative,
-          reason: result.reason
+          idx: t.metadata.exerciseIdx,
+          alternative: t.result.alternative,
+          reason: t.result.reason
         });
       }
-    } catch (err) {
-      toast.error("Errore nel suggerimento dell'IA");
-    } finally {
-      setSuggestingFor(null);
-    }
-  };
+    });
+  }, [tasks]);
 
   const [pickerSearch, setPickerSearch] = useState('');
   const [pickerCategory, setPickerCategory] = useState<ExerciseCategory | null>(null);
@@ -276,12 +281,45 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
     if (!auth.currentUser) return;
     setIsSaving(true);
     try {
+      // Clean undefined values from exercises to avoid Firestore errors
+      const sanitizedExercises = exercises.map(ex => {
+        const cleanedEx: any = {
+          exerciseId: ex.exerciseId,
+          sets: ex.sets.map(s => {
+            const cleanedSet: any = {
+              weight: s.weight,
+              reps: s.reps,
+              tag: s.tag
+            };
+            if (s.rpe !== undefined) cleanedSet.rpe = s.rpe;
+            if (s.effort !== undefined && s.effort !== "") cleanedSet.effort = s.effort;
+            if (s.completed !== undefined) cleanedSet.completed = s.completed;
+            return cleanedSet;
+          })
+        };
+        if (ex.customName) cleanedEx.customName = ex.customName;
+        return cleanedEx;
+      });
+
       const sessionData = {
         userId: auth.currentUser.uid,
         startTime: new Date().toISOString(),
         endTime: new Date().toISOString(),
-        exercises: exercises
+        exercises: sanitizedExercises
       };
+
+      // Prepare data for AI with readable names
+      const aiSessionData = {
+        ...sessionData,
+        exercises: sanitizedExercises.map(ex => {
+          const info = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId);
+          return {
+            ...ex,
+            exerciseName: ex.customName || info?.name || 'Esercizio'
+          };
+        })
+      };
+      
       const sessionDataForLIA = {
         id: 'new',
         ...sessionData
@@ -297,7 +335,7 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
       if (liaFeedback) {
         setPostWorkoutAdvice(liaFeedback.message);
       } else {
-        const advice = await getPostWorkoutAdvice(sessionData);
+        const advice = await getPostWorkoutAdvice(aiSessionData);
         setPostWorkoutAdvice(advice);
       }
       
@@ -486,10 +524,10 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
                 <div className="flex items-center gap-4">
                   <button 
                     onClick={() => handleSuggestAlternative(exIdx)}
-                    disabled={suggestingFor !== null}
+                    disabled={isTaskPending('exercise-alternative', 'exerciseIdx', exIdx)}
                     className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-neon transition-colors"
                   >
-                    {suggestingFor === exIdx ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    {isTaskPending('exercise-alternative', 'exerciseIdx', exIdx) ? <Loader2 size={10} className="animate-spin text-neon" /> : <Sparkles size={10} />}
                     Alternativa
                   </button>
                   

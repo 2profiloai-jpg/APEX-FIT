@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import ErrorBoundary from './components/ui/ErrorBoundary.tsx';
+import { BackgroundAIProvider } from './contexts/BackgroundAIContext.tsx';
 
 // Prevent default context menu (long-press popups like Google Search / Image search) on mobile
 window.addEventListener('contextmenu', (e) => {
@@ -25,7 +26,9 @@ if ('serviceWorker' in navigator) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <BackgroundAIProvider>
+        <App />
+      </BackgroundAIProvider>
     </ErrorBoundary>
   </StrictMode>,
 );

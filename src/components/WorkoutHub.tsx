@@ -8,20 +8,44 @@ import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import WorkoutSessionView from './WorkoutSessionView';
 import GymMapper from './GymMapper';
 import GripButton from './ui/GripButton';
+import { useBackgroundAI } from '../contexts/BackgroundAIContext';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 import { getPlanBalanceAnalysis, BalanceScore } from '../services/smartCoachService';
 import { generateInstantWorkout } from '../services/geminiService';
 
 export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, onNavigateToLibrary }: { profile: UserProfile | null, requestedPlanId?: string | null, onClearRequest?: () => void, onNavigateToLibrary: (id: string) => void }) {
+  const { runInstantWorkout, isTaskPending, tasks, clearTask } = useBackgroundAI();
   const weekDays = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
   const today = weekDays[new Date().getDay()];
   const [selectedDay, setSelectedDay] = useState<string>(today);
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [activeSessionPlan, setActiveSessionPlan] = useState<WorkoutPlan | 'free' | null>(null);
   const [showGymMapper, setShowGymMapper] = useState(false);
-  const [isGeneratingInstant, setIsGeneratingInstant] = useState(false);
   const [showFocusPicker, setShowFocusPicker] = useState(false);
+  
+  useEffect(() => {
+    // Listen for completed instant workout generation
+    const completedTask = tasks.find(t => t.type === 'instant-workout' && t.status === 'completed' && t.result);
+    if (completedTask && profile) {
+      const workout = completedTask.result;
+      const tempPlan: WorkoutPlan = {
+        id: 'instant-' + Date.now(),
+        userId: profile.uid,
+        name: workout.name || `Allenamento Personalizzato`,
+        date: new Date().toISOString().split('T')[0],
+        exercises: workout.exercises.map((ex: any) => ({
+          exerciseId: 'CUSTOM',
+          customName: ex.name,
+          targetSets: ex.sets || 3,
+          targetReps: ex.reps || '10-12',
+          targetEffort: 'MEDIO'
+        }))
+      };
+      setActiveSessionPlan(tempPlan);
+      clearTask(completedTask.id);
+    }
+  }, [tasks, profile, clearTask]);
   
   useEffect(() => {
     if (requestedPlanId && plans.length > 0) {
@@ -111,11 +135,23 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
     }
 
     try {
+      const sanitizedPlannedExercises = plannedExercises.map(pe => {
+        const cleaned: any = {
+          exerciseId: pe.exerciseId,
+          targetSets: pe.targetSets,
+          targetReps: pe.targetReps
+        };
+        if (pe.customName) cleaned.customName = pe.customName;
+        if (pe.targetRpe !== undefined) cleaned.targetRpe = pe.targetRpe;
+        if (pe.targetEffort !== undefined) cleaned.targetEffort = pe.targetEffort;
+        return cleaned;
+      });
+
       await addDoc(collection(db, 'users', auth.currentUser.uid, 'plans'), {
         userId: auth.currentUser.uid,
         name: planName,
         dayOfWeek: selectedDay,
-        exercises: plannedExercises
+        exercises: sanitizedPlannedExercises
       });
       toast.success('Scheda salvata con successo!');
       setIsBuildingPlan(false);
@@ -393,33 +429,14 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
       return;
     }
 
-    setIsGeneratingInstant(true);
-    try {
-      const inventoryNames = profile.gymInventory.map(i => i.name);
-      const workout = await generateInstantWorkout(focus, 45, inventoryNames);
-      if (workout) {
-        // Create a temporary plan for the session
-        const tempPlan: WorkoutPlan = {
-          id: 'instant-' + Date.now(),
-          userId: profile.uid,
-          name: workout.name,
-          date: new Date().toISOString().split('T')[0],
-          exercises: workout.exercises.map((ex: any) => ({
-            exerciseId: 'CUSTOM', // Placeholder
-            customName: ex.name, // We'll need to handle custom names in SessionView
-            targetSets: ex.sets,
-            targetReps: ex.reps,
-            targetEffort: 'MEDIO'
-          }))
-        };
-        setActiveSessionPlan(tempPlan);
-        toast.success("Allenamento generato su misura!");
-      }
-    } catch (err) {
-      toast.error("Errore nella generazione dell'IA");
-    } finally {
-      setIsGeneratingInstant(false);
-    }
+    const inventoryNames = profile.gymInventory.map(i => i.name);
+    await runInstantWorkout({
+      focus,
+      duration: 45,
+      inventory: inventoryNames
+    });
+    
+    setShowFocusPicker(false);
   };
 
   return (
@@ -524,14 +541,16 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
                       ].map((opt) => (
                         <button 
                           key={opt.label}
-                          onClick={() => {
-                            setShowFocusPicker(false);
-                            handleInstantWorkout(opt.focus);
-                          }}
-                          className="w-full py-5 px-6 rounded-2xl bg-white/[0.03] border border-white/5 text-left flex items-center justify-between hover:bg-neon/10 hover:border-neon/30 active:scale-95 transition-all group"
+                          onClick={() => handleInstantWorkout(opt.focus)}
+                          disabled={isTaskPending('instant-workout')}
+                          className="w-full py-5 px-6 rounded-2xl bg-white/[0.03] border border-white/5 text-left flex items-center justify-between hover:bg-neon/10 hover:border-neon/30 active:scale-95 transition-all group disabled:opacity-50"
                         >
                           <span className="text-sm font-black uppercase tracking-tight italic group-hover:text-neon">{opt.label}</span>
-                          <ChevronRight size={18} className="text-zinc-700 group-hover:text-neon" />
+                          {isTaskPending('instant-workout') ? (
+                            <Activity size={18} className="text-neon animate-spin" />
+                          ) : (
+                            <ChevronRight size={18} className="text-zinc-700 group-hover:text-neon" />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -546,7 +565,7 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
               )}
             </AnimatePresence>
             
-            {isGeneratingInstant && (
+            {isTaskPending('instant-workout') && (
               <div className="flex items-center justify-center gap-3 py-3 bg-neon/10 rounded-2xl border border-neon/20">
                 <Loader2 size={16} className="text-neon animate-spin" />
                 <span className="text-xs font-black uppercase tracking-[0.2em] text-neon">Analizzando biomeccanica...</span>

@@ -22,7 +22,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'sonner';
 
-// Components
+import { BackgroundAIProvider, useBackgroundAI } from './contexts/BackgroundAIContext';
 import Dashboard from './components/Dashboard';
 import WorkoutHub from './components/WorkoutHub';
 import ExerciseLibrary from './components/ExerciseLibrary';
@@ -33,6 +33,7 @@ import { initAI } from './services/geminiService';
 import { Apple } from 'lucide-react';
 
 export default function App() {
+  const { tasks } = useBackgroundAI();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'workout' | 'library' | 'nutrition' | 'profile' | 'coach'>('dashboard');
@@ -281,6 +282,17 @@ export default function App() {
           <span className="font-black tracking-tighter italic uppercase text-xl neon-text">Apex</span>
         </div>
         <div className="flex items-center gap-2">
+          {tasks.some(t => t.status === 'pending') && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-2 bg-neon/10 px-2 py-1 rounded-full border border-neon/20 mr-2"
+            >
+              <div className="w-2 h-2 rounded-full bg-neon animate-pulse" />
+              <Brain size={12} className="text-neon animate-bounce" />
+              <span className="text-[8px] font-black uppercase text-neon tracking-widest hidden sm:inline">AI Elaborando...</span>
+            </motion.div>
+          )}
           <motion.button 
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}

@@ -91,11 +91,11 @@ export const getStrategistAdvice = async (
     3. Ottimizzazione Workout (Sforzo): Analizza i livelli di sforzo recenti ('POCO', 'MEDIO', 'MOLTO', 'MOLTISSIMO').
     4. CONSTRAINT: NIENTE frasi motivazionali generiche. Sii analitico e diretto.
     
-    Ritorna solo JSON:
+    Ritorna JSON (NIENTE Markdown, solo testo pulito):
     {
       "readinessScore": number,
       "intensity": "Heavy" | "Technical" | "Deload",
-      "tip": "string"
+      "tip": "string (in ITALIANO, max 20 parole, no simboli)"
     }
   `;
 
@@ -109,7 +109,9 @@ export const getStrategistAdvice = async (
       }
     });
     
-    return JSON.parse(response.text || "{}");
+    const text = response.text || "{}";
+    const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanText);
   } catch (error: any) {
     console.error("Strategist Error:", error);
     if (error.message?.includes("429") || error.message?.includes("quota")) {
@@ -307,11 +309,14 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
     
     Analizza i dati (kg, reps, sforzo) e fornisci un feedback POST-ALLENAMENTO di massimo 3 frasi.
     Lo sforzo è indicato come: 'POCO' (troppo leggero), 'MEDIO' (ottimale), 'MOLTO' (alto), 'MOLTISSIMO' (cedimento/limite).
-    Regole:
-    1. Se lo sforzo è 'POCO' su molti set, consiglia esplicitamente di aumentare i carichi drasticamente la prossima volta.
-    2. Se lo sforzo è spesso 'MOLTISSIMO', consiglia di fare attenzione al recupero centrale.
-    3. Sii specifico su un esercizio se noti qualcosa di rilevante.
-    4. Niente saluti. Vai dritto al punto su COME e COSA cambiare la prossima volta.
+    
+    Regole CRITICHE:
+    1. Usa SEMPRE il nome completo dell'esercizio (campo 'exerciseName'). 
+    2. MAI usare codici come 's2', 'p1', 'g3' o 'exerciseId' nella risposta.
+    3. Se lo sforzo è 'POCO' su molti set, consiglia esplicitamente di aumentare i carichi drasticamente la prossima volta.
+    4. Se lo sforzo è spesso 'MOLTISSIMO', consiglia di fare attenzione al recupero centrale.
+    5. Sii specifico su un esercizio se noti qualcosa di rilevante.
+    6. Niente saluti. Vai dritto al punto su COME e COSA cambiare la prossima volta.
   `;
 
   try {
@@ -320,7 +325,8 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
       model: "gemini-3-flash-preview",
       contents: prompt,
     });
-    return response.text || "Ottimo allenamento completato.";
+    const text = (response.text || "Ottimo allenamento completato.").replace(/[*#_\-]/g, '').trim();
+    return text;
   } catch (error: any) {
     console.error("Post-Workout AI Error:", error);
     if (error.message?.includes("429") || error.message?.includes("quota")) {
@@ -340,9 +346,9 @@ export const analyzeGymEquipment = async (imagesBase64?: string | string[], text
     ${textInput ? `Testo fornito dall'utente: "${textInput}"` : 'Basati sulle immagini fornite. Ignora le persone, i riflessi e lo sfondo. Cerca con la massima attenzione ogni macchina, manubrio, panca o cavo visibile. Analizza TUTTE le foto fornite in un unico colpo.'}
     
     Per ogni macchina identificata con certezza, fornisci: 
-    1. Nome standard (es. "Lat Machine", "Leg Extension", "Multipower")
+    1. Nome standard in ITALIANO (es. "Lat Machine", "Leg Extension", "Squat Rack")
     2. Categoria (Petto, Schiena, Gambe, Spalle, Bicipiti, Tricipiti, Core, Cardio)
-    3. Muscoli Target (es. ["Gran Dorsale", "Bicipite Brachiale"])
+    3. Muscoli Target in ITALIANO (es. ["Gran Dorsale", "Bicipite Brachiale"])
     4. Tipo (Machine, Dumbbells, Barbell, Bodyweight, Cable)
     
     Ritorna solo JSON:
@@ -385,7 +391,9 @@ export const analyzeGymEquipment = async (imagesBase64?: string | string[], text
       contents: [{ role: 'user', parts }],
       config: { responseMimeType: "application/json" }
     });
-    return JSON.parse(response.text || "{}");
+    const text = response.text || "{}";
+    const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanText);
   } catch (error) {
     console.error("Gym Analysis Error:", error);
     throw error;
@@ -416,11 +424,11 @@ export const suggestExerciseAlternative = async (
     4. FALLBACK "NESSUNA ALTERNATIVA": Se non ci sono macchine mappate idonee per quel muscolo E non c'è un esercizio a corpo libero che possa sostituirlo in modo efficace, devi tassativamente restituire come alternative "Nessuna alternativa disponibile" e spiegare in reason che non ha mappato attrezzi idonei per quel gruppo muscolare.
     5. Non suggerire esercizi già completati.
     
-    Ritorna JSON:
+    Ritorna JSON (TESTO PULITO, NO MARKDOWN, NO SIMBOLI):
     {
-      "alternative": "Nome Esercizio (o 'Nessuna alternativa disponibile')",
-      "reason": "Spiegazione tecnica del perché o spiegazione del perché mancano attrezzi",
-      "videoTip": "Breve nota su come eseguire il movimento (lascia vuoto se nessuna alternativa)"
+      "alternative": "Nome Esercizio in ITALIANO (o 'Nessuna alternativa disponibile')",
+      "reason": "Spiegazione tecnica in ITALIANO (no asterischi, no simboli)",
+      "videoTip": "Breve nota in ITALIANO (no asterischi)"
     }
   `;
 
@@ -430,7 +438,9 @@ export const suggestExerciseAlternative = async (
       contents: prompt,
       config: { responseMimeType: "application/json" }
     });
-    return JSON.parse(response.text || "{}");
+    const text = response.text || "{}";
+    const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanText);
   } catch (error) {
     console.error("Alternative Suggestion Error:", error);
     return null;
@@ -447,17 +457,17 @@ export const generateInstantWorkout = async (
 
   const prompt = `
     Crea un allenamento istantaneo di ${timeMinutes} minuti focalizzato su: ${muscleFocus}.
-    Usa SOLO questa attrezzatura: ${inventory.join(', ')}.
+    Usa SOLO questa attrezzatura oppure Esercizi a Corpo Libero (Bodyweight): ${inventory.join(', ')}.
     
-    Ritorna JSON:
+    Ritorna JSON (Nomi e note in ITALIANO):
     {
       "name": "Titolo Allenamento",
       "exercises": [
         {
-          "name": "Nome Esercizio",
+          "name": "Nome Esercizio in ITALIANO",
           "sets": number,
-          "reps": "string",
-          "notes": "string"
+          "reps": "string (es. '10-12')",
+          "notes": "Breve consiglio tecnico in ITALIANO"
         }
       ]
     }
@@ -469,7 +479,9 @@ export const generateInstantWorkout = async (
       contents: prompt,
       config: { responseMimeType: "application/json" }
     });
-    return JSON.parse(response.text || "{}");
+    const text = response.text || "{}";
+    const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanText);
   } catch (error) {
     console.error("Instant Workout Error:", error);
     return null;

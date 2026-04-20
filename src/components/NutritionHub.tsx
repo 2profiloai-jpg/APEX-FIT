@@ -7,8 +7,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { parseFoodInput, suggestMealForRemainingMacros } from '../services/geminiService';
 import { cn } from '../lib/utils';
+import { useBackgroundAI } from '../contexts/BackgroundAIContext';
 
 export default function NutritionHub({ profile }: { profile: UserProfile | null }) {
+  const { runMealSuggestion, runFoodParse, getTask, clearTask, isTaskPending, tasks } = useBackgroundAI();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [meals, setMeals] = useState<{ [key: string]: { id: string, name: string, kcal: number, carbs?: number, protein?: number, fat?: number }[] }>({
     Colazione: [],
@@ -18,10 +20,8 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
   });
   const [newFood, setNewFood] = useState({ meal: '', name: '', amount: '', kcal: '', carbs: '', protein: '', fat: '' });
   const [isAdding, setIsAdding] = useState<string | null>(null);
-  const [parsingMeal, setParsingMeal] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ meal: string, dataUrl: string } | null>(null);
   const [suggestedMeal, setSuggestedMeal] = useState<{ text: string, items: any[] } | null>(null);
-  const [isSuggesting, setIsSuggesting] = useState(false);
 
   // Totals
   let totalKcal = 0;
@@ -66,6 +66,50 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
     });
     return () => unsubscribe();
   }, [profile?.uid, selectedDate]);
+
+  useEffect(() => {
+    // Sync suggested meal from background tasks if any
+    const taskId = `meal-${selectedDate}`;
+    const task = getTask(taskId);
+    if (task && task.status === 'completed') {
+      setSuggestedMeal(task.result);
+    } else {
+      setSuggestedMeal(null);
+    }
+  }, [selectedDate, getTask]);
+
+  useEffect(() => {
+    // Process completed food parsing tasks
+    const completedParseTasks = tasks.filter(t => t.type === 'food-parse' && t.status === 'completed' && t.metadata.date === selectedDate);
+    
+    if (completedParseTasks.length > 0) {
+      let updatedMeals = { ...meals };
+      let changed = false;
+
+      completedParseTasks.forEach(t => {
+        const meal = t.metadata.meal;
+        const result = t.result;
+        if (result && result.items && Array.isArray(result.items)) {
+          const newItems = result.items.map((item: any) => ({
+            id: (Date.now() + Math.random()).toString(),
+            name: item.name,
+            kcal: item.kcal,
+            carbs: item.carbs || 0,
+            protein: item.protein || 0,
+            fat: item.fat || 0
+          }));
+          updatedMeals[meal] = [...(updatedMeals[meal] || []), ...newItems];
+          changed = true;
+          clearTask(t.id);
+        }
+      });
+
+      if (changed) {
+        setMeals(updatedMeals);
+        saveMeals(updatedMeals);
+      }
+    }
+  }, [tasks, selectedDate, meals]);
 
   const saveMeals = async (updatedMeals: any) => {
     if (!profile?.uid) return;
@@ -118,39 +162,18 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
     const hasImage = selectedImage && selectedImage.meal === meal;
     if (!newFood.name.trim() && !hasImage) return;
     
-    setParsingMeal(meal);
-    try {
-      const imageToPass = hasImage ? selectedImage.dataUrl : undefined;
-      const result = await parseFoodInput(newFood.name, imageToPass);
-      if (result && result.items && Array.isArray(result.items)) {
-        const newItems = result.items.map((item: any) => ({
-          id: (Date.now() + Math.random()).toString(),
-          name: item.name,
-          kcal: item.kcal,
-          carbs: item.carbs || 0,
-          protein: item.protein || 0,
-          fat: item.fat || 0
-        }));
-        
-        const updatedMeals = { ...meals, [meal]: [...meals[meal], ...newItems] };
-        setMeals(updatedMeals);
-        await saveMeals(updatedMeals);
-        
-        if (newItems.length > 1) {
-          toast.success(`${newItems.length} alimenti aggiunti e divisi!`);
-        } else if (newItems.length === 1) {
-          toast.success(`${newItems[0].name} aggiunto!`);
-        }
-        
-        setIsAdding(null);
-        setNewFood({ meal: '', name: '', amount: '', kcal: '', carbs: '', protein: '', fat: '' });
-        setSelectedImage(null);
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Errore durante l'analisi");
-    } finally {
-      setParsingMeal(null);
-    }
+    const imageToPass = hasImage ? selectedImage.dataUrl : undefined;
+    
+    await runFoodParse({
+      meal,
+      input: newFood.name,
+      image: imageToPass,
+      date: selectedDate
+    });
+    
+    setIsAdding(null);
+    setNewFood({ meal: '', name: '', amount: '', kcal: '', carbs: '', protein: '', fat: '' });
+    setSelectedImage(null);
   };
 
   const addFood = async (meal: string) => {
@@ -253,38 +276,34 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
              
              <button 
                onClick={async () => {
-                 setIsSuggesting(true);
-                 try {
-                   const remKcal = Math.max(0, targetKcal - totalKcal);
-                   const remPro = Math.max(0, targetPro - totalProtein);
-                   const remCarb = Math.max(0, targetCarbs - totalCarbs);
-                   const remFat = Math.max(0, targetFat - totalFat);
-                   
-                   const pantry = profile?.preferences?.pantry || [];
-                   const portions = profile?.preferences?.typicalPortions || '';
-                   const favs: any[] = []; 
+                 const remKcal = Math.max(0, targetKcal - totalKcal);
+                 const remPro = Math.max(0, targetPro - totalProtein);
+                 const remCarb = Math.max(0, targetCarbs - totalCarbs);
+                 const remFat = Math.max(0, targetFat - totalFat);
+                 
+                 const eatenSummary = Object.entries(meals)
+                   .map(([name, list]) => `${name}: ${(list as any[]).length > 0 ? (list as any[]).map(i => i.name).join(', ') : 'Vuoto'}`)
+                   .join('\n');
 
-                   const eatenSummary = Object.entries(meals)
-                     .map(([name, list]) => `${name}: ${(list as any[]).length > 0 ? (list as any[]).map(i => i.name).join(', ') : 'Vuoto'}`)
-                     .join('\n');
+                 const workoutContext = `Oggi. Pasti già fatti: \n${eatenSummary}. \nConsidera l'orario attuale per suggerire se fare uno spuntino o passare direttamente alla cena.`;
 
-                   const workoutContext = `Oggi. Pasti già fatti: \n${eatenSummary}. \nConsidera l'orario attuale per suggerire se fare uno spuntino o passare direttamente alla cena.`;
-
-                   const suggestion = await suggestMealForRemainingMacros(remKcal, remPro, remCarb, remFat, pantry, favs, workoutContext, targetKcal, portions);
-                   setSuggestedMeal(suggestion);
-                 } catch (err: any) {
-                   toast.error(err.message || "Errore nel generare suggerimenti.");
-                 } finally {
-                   setIsSuggesting(false);
-                 }
+                 await runMealSuggestion({
+                   remKcal, remPro, remCarb, remFat,
+                   pantry: profile?.preferences?.pantry || [],
+                   favs: [], // favs not implemented yet
+                   context: workoutContext,
+                   targetKcal,
+                   portions: profile?.preferences?.typicalPortions || '',
+                   date: selectedDate
+                 });
                }}
-               disabled={isSuggesting}
+               disabled={isTaskPending('meal-suggestion', 'date', selectedDate)}
                className={cn(
                  "text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-xl transition-all flex items-center gap-2",
                  "bg-purple-500 text-black hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]" 
                )}
              >
-               {isSuggesting ? <Activity size={14} className="animate-spin" /> : 'Suggerisci pasto'}
+               {isTaskPending('meal-suggestion', 'date', selectedDate) ? <Activity size={14} className="animate-spin" /> : 'Suggerisci pasto'}
              </button>
            </div>
            
@@ -395,10 +414,10 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                         
                         <button 
                           onClick={() => handleAIFoodParse(meal)}
-                          disabled={parsingMeal === meal}
+                          disabled={isTaskPending('food-parse', 'meal', meal)}
                           className="flex-[2] p-4 bg-neon text-black rounded-xl font-black disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--neon-accent-rgb),0.4)] hover:bg-neon/80 transition-all active:scale-95"
                         >
-                          {parsingMeal === meal ? (
+                          {isTaskPending('food-parse', 'meal', meal) ? (
                             <Activity size={20} className="animate-spin" />
                           ) : (
                             <>
