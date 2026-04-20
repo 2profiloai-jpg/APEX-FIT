@@ -82,11 +82,13 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
     // Check for completed alternative tasks
     tasks.forEach(t => {
       if (t.type === 'exercise-alternative' && t.status === 'completed' && t.result) {
-        setActiveAlternative({
-          idx: t.metadata.exerciseIdx,
-          alternative: t.result.alternative,
-          reason: t.result.reason
-        });
+        if (t.metadata?.exerciseIdx !== undefined) {
+          setActiveAlternative({
+            idx: t.metadata.exerciseIdx,
+            alternative: t.result.alternative,
+            reason: t.result.reason
+          });
+        }
       }
     });
   }, [tasks]);
@@ -786,12 +788,14 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
                 <GripButton 
                   onClick={() => {
                     const newEx = [...exercises];
-                    newEx[activeAlternative.idx] = {
-                      ...newEx[activeAlternative.idx],
-                      customName: activeAlternative.alternative,
-                      exerciseId: 'AI_REPLACEMENT'
-                    };
-                    setExercises(newEx);
+                    if (newEx[activeAlternative.idx]) {
+                      newEx[activeAlternative.idx] = {
+                        ...newEx[activeAlternative.idx],
+                        customName: activeAlternative.alternative,
+                        exerciseId: 'AI_REPLACEMENT'
+                      };
+                      setExercises(newEx);
+                    }
                     setActiveAlternative(null);
                   }}
                   className="w-full text-xs"

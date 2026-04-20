@@ -30,12 +30,14 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
   let totalFat = 0;
 
   Object.values(meals).forEach((mealArray: any[]) => {
-    mealArray.forEach(item => {
-      totalKcal += item.kcal || 0;
-      totalCarbs += item.carbs || 0;
-      totalProtein += item.protein || 0;
-      totalFat += item.fat || 0;
-    });
+    if (Array.isArray(mealArray)) {
+      mealArray.forEach(item => {
+        totalKcal += item.kcal || 0;
+        totalCarbs += item.carbs || 0;
+        totalProtein += item.protein || 0;
+        totalFat += item.fat || 0;
+      });
+    }
   });
 
   // Calculate estimated target if custom is not set
@@ -80,14 +82,14 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
 
   useEffect(() => {
     // Process completed food parsing tasks
-    const completedParseTasks = tasks.filter(t => t.type === 'food-parse' && t.status === 'completed' && t.metadata.date === selectedDate);
+    const completedParseTasks = tasks.filter(t => t.type === 'food-parse' && t.status === 'completed' && t.metadata?.date === selectedDate);
     
     if (completedParseTasks.length > 0) {
       let updatedMeals = { ...meals };
       let changed = false;
 
       completedParseTasks.forEach(t => {
-        const meal = t.metadata.meal;
+        const meal = t.metadata?.meal;
         const result = t.result;
         if (result && result.items && Array.isArray(result.items)) {
           const newItems = result.items.map((item: any) => ({
@@ -207,7 +209,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
   };
 
   const handleAddSuggestedItems = async () => {
-    if (!suggestedMeal || !suggestedMeal.items.length) return;
+    if (!suggestedMeal || !Array.isArray(suggestedMeal.items) || !suggestedMeal.items.length) return;
     
     const updatedMeals = { ...meals };
 
@@ -312,7 +314,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                <div className="text-sm text-zinc-300 font-medium whitespace-pre-line bg-black/40 p-4 rounded-2xl border border-white/5 leading-relaxed shadow-inner">
                  {typeof suggestedMeal === 'string' ? suggestedMeal : suggestedMeal.text}
                  
-                 {typeof suggestedMeal !== 'string' && suggestedMeal.items.length > 0 && (
+                 {typeof suggestedMeal !== 'string' && suggestedMeal.items?.length > 0 && (
                    <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
                      <div className="text-[10px] font-black uppercase tracking-widest text-purple-300 mb-2">Lista della spesa / Ingredienti:</div>
                      {suggestedMeal.items.map((item, idx) => (
@@ -325,7 +327,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                  )}
                </div>
 
-               {typeof suggestedMeal !== 'string' && suggestedMeal.items.length > 0 && (
+               {typeof suggestedMeal !== 'string' && suggestedMeal.items?.length > 0 && (
                  <div className="flex flex-col gap-2">
                    <button 
                      onClick={() => handleAddSuggestedItems()}
@@ -409,7 +411,7 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                         <label className="flex-1 cursor-pointer p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
                           <Camera size={20} className="text-zinc-400" />
                           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Foto</span>
-                          <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, meal)} disabled={parsingMeal === meal} />
+                          <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, meal)} disabled={isTaskPending('food-parse', 'meal', meal)} />
                         </label>
                         
                         <button 

@@ -29,20 +29,26 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
     const completedTask = tasks.find(t => t.type === 'instant-workout' && t.status === 'completed' && t.result);
     if (completedTask && profile) {
       const workout = completedTask.result;
-      const tempPlan: WorkoutPlan = {
-        id: 'instant-' + Date.now(),
-        userId: profile.uid,
-        name: workout.name || `Allenamento Personalizzato`,
-        date: new Date().toISOString().split('T')[0],
-        exercises: workout.exercises.map((ex: any) => ({
-          exerciseId: 'CUSTOM',
-          customName: ex.name,
-          targetSets: ex.sets || 3,
-          targetReps: ex.reps || '10-12',
-          targetEffort: 'MEDIO'
-        }))
-      };
-      setActiveSessionPlan(tempPlan);
+      const exercisesArray = Array.isArray(workout?.exercises) ? workout.exercises : [];
+      
+      if (exercisesArray.length > 0) {
+        const tempPlan: WorkoutPlan = {
+          id: 'instant-' + Date.now(),
+          userId: profile.uid,
+          name: workout.name || `Allenamento Personalizzato`,
+          date: new Date().toISOString().split('T')[0],
+          exercises: exercisesArray.map((ex: any) => ({
+            exerciseId: 'CUSTOM',
+            customName: ex.name || 'Esercizio',
+            targetSets: ex.sets || 3,
+            targetReps: ex.reps || '10-12',
+            targetEffort: 'MEDIO'
+          }))
+        };
+        setActiveSessionPlan(tempPlan);
+      } else {
+        toast.error("Formato allenamento generato non valido.");
+      }
       clearTask(completedTask.id);
     }
   }, [tasks, profile, clearTask]);
@@ -492,7 +498,7 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
             ) : (
               <div className="space-y-2">
                 <GripButton 
-                  disabled={isGeneratingInstant}
+                  disabled={isTaskPending('instant-workout')}
                   onClick={() => setShowFocusPicker(true)}
                   className="w-full h-12 text-xs flex items-center justify-center gap-3 bg-white/5 border-white/10"
                 >
