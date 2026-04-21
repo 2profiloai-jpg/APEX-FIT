@@ -93,33 +93,36 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
     const completedParseTasks = tasks.filter(t => t.type === 'food-parse' && t.status === 'completed' && t.metadata?.date === selectedDate);
     
     if (completedParseTasks.length > 0) {
-      let updatedMeals = { ...meals };
-      let changed = false;
+      setMeals(prevMeals => {
+        let updatedMeals = { ...prevMeals };
+        let changed = false;
 
-      completedParseTasks.forEach(t => {
-        const meal = t.metadata?.meal;
-        const result = t.result;
-        if (result && result.items && Array.isArray(result.items)) {
-          const newItems = result.items.map((item: any) => ({
-            id: (Date.now() + Math.random()).toString(),
-            name: item.name,
-            kcal: item.kcal,
-            carbs: item.carbs || 0,
-            protein: item.protein || 0,
-            fat: item.fat || 0
-          }));
-          updatedMeals[meal] = [...(updatedMeals[meal] || []), ...newItems];
-          changed = true;
-          clearTask(t.id);
+        completedParseTasks.forEach(t => {
+          const meal = t.metadata?.meal;
+          const result = t.result;
+          if (result && result.items && Array.isArray(result.items)) {
+            const newItems = result.items.map((item: any) => ({
+              id: (Date.now() + Math.random()).toString(),
+              name: item.name,
+              kcal: Math.round(item.kcal),
+              carbs: Math.round(item.carbs || 0),
+              protein: Math.round(item.protein || 0),
+              fat: Math.round(item.fat || 0)
+            }));
+            updatedMeals[meal] = [...(updatedMeals[meal] || []), ...newItems];
+            changed = true;
+            clearTask(t.id);
+          }
+        });
+
+        if (changed) {
+          saveMeals(updatedMeals);
+          return updatedMeals;
         }
+        return prevMeals;
       });
-
-      if (changed) {
-        setMeals(updatedMeals);
-        saveMeals(updatedMeals);
-      }
     }
-  }, [tasks, selectedDate, meals]);
+  }, [tasks, selectedDate, clearTask]);
 
   const saveMeals = async (updatedMeals: any) => {
     if (!profile?.uid) return;
