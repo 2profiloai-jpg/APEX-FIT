@@ -274,6 +274,24 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
           <ChevronRight size={20} />
         </button>
       </div>
+
+      {/* Calories Overview Rectangles */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center space-y-1 relative overflow-hidden">
+          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Necessarie</span>
+          <div className="flex items-baseline gap-1">
+            <span className="text-3xl font-black text-white italic tracking-tighter">{targetKcal}</span>
+            <span className="text-[10px] font-bold text-zinc-600 uppercase">kcal</span>
+          </div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center space-y-1 relative overflow-hidden">
+          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Raggiunte</span>
+          <div className="flex items-baseline gap-1">
+            <span className="text-3xl font-black text-neon italic tracking-tighter neon-text">{totalKcal}</span>
+            <span className="text-[10px] font-bold text-zinc-600 uppercase">kcal</span>
+          </div>
+        </div>
+      </div>
       
       {/* Meals List */}
       <div className="space-y-4">

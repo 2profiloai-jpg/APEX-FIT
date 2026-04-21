@@ -5,7 +5,7 @@ import { collection, query, orderBy, limit, onSnapshot, doc, where, setDoc, getD
 import { Plus, Target, Calendar, Droplets, Activity, Zap, X, TrendingUp, ChevronLeft, ChevronRight, Brain, AlertTriangle, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ReferenceLine } from 'recharts';
 import { calculateBMR, calculateTDEE, calculateTargetKcal, calculateMacros, calculateBMI } from '../lib/calculations';
 import { cn } from '../lib/utils';
 import { WorkoutPlan, EffortLevel } from '../types';
@@ -198,6 +198,9 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
   const targetKcal = profile?.customTargets?.kcal || calculatedTargetKcal;
   const macros = calculateMacros(weight, targetKcal);
   const remainingKcal = Math.round(targetKcal - totalConsumed);
+  const progressPercent = targetKcal > 0 ? (totalConsumed / targetKcal) * 100 : 0;
+  const statusColor = progressPercent > 105 ? '#f97316' : progressPercent >= 95 ? '#22c55e' : 'var(--neon-accent)';
+  
   const bmi = calculateBMI(weight, height);
 
   const isProfileComplete = weight > 0 && height > 0 && age > 0;
@@ -314,12 +317,17 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           </div>
           <div className="bg-white/[0.03] border border-white/10 p-4 rounded-xl flex flex-col items-center justify-center relative overflow-hidden group">
             <span className="text-[7px] uppercase tracking-[0.25em] text-zinc-500 mb-1 font-black">Rimanenti</span>
-            <span className="text-xl font-black text-neon neon-text italic tracking-tighter leading-none">{remainingKcal}</span>
+            <span className={cn(
+              "text-xl font-black italic tracking-tighter leading-none transition-colors",
+              progressPercent >= 95 && progressPercent <= 105 ? "text-green-500" : 
+              progressPercent > 105 ? "text-orange-500" : "text-neon"
+            )}>{remainingKcal}</span>
             <div className="absolute bottom-0 left-0 h-1 bg-white/5 w-full">
               <motion.div 
-                className="h-full bg-neon"
+                className="h-full"
+                style={{ backgroundColor: statusColor }}
                 initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, (totalConsumed / targetKcal) * 100)}%` }}
+                animate={{ width: `${Math.min(100, progressPercent)}%` }}
                 transition={{ duration: 1.2, ease: "easeOut" }}
               />
             </div>
@@ -425,7 +433,6 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
           </div>
         </div>
 
-        {/* Dynamic Chart Container */}
         <div className="h-44 w-full mt-2 relative">
           {activeChart === 'trend' ? (
              nutritionHistory.length > 0 ? (
@@ -433,8 +440,8 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorKcal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--neon-accent)" stopOpacity={0.5} />
-                      <stop offset="95%" stopColor="var(--neon-accent)" stopOpacity={0} />
+                      <stop offset="5%" stopColor={statusColor} stopOpacity={0.5} />
+                      <stop offset="95%" stopColor={statusColor} stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <XAxis 
@@ -446,21 +453,30 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
                     tickMargin={10}
                     interval={chartRange === 7 ? 0 : 'preserveEnd'}
                   />
-                  <YAxis hide domain={['dataMin - 200', 'dataMax + 200']} />
+                  <YAxis 
+                    hide 
+                    domain={[0, (dataMax: number) => Math.max(targetKcal * 1.1, dataMax)]} 
+                  />
+                  <ReferenceLine 
+                    y={targetKcal} 
+                    stroke="#ffffff20" 
+                    strokeDasharray="3 3" 
+                    label={{ position: 'right', value: 'TARGET', fill: '#ffffff30', fontSize: 7, fontWeight: 'bold' }} 
+                  />
                   <Tooltip 
                     cursor={false}
                     contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px', color: '#fff', fontWeight: 'bold' }}
-                    itemStyle={{ color: 'var(--neon-accent)' }}
+                    itemStyle={{ color: statusColor }}
                     labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
                   />
                   <Area 
                     type="monotone" 
                     dataKey="kcal" 
-                    stroke="var(--neon-accent)" 
+                    stroke={statusColor} 
                     strokeWidth={2}
                     fillOpacity={1} 
                     fill="url(#colorKcal)" 
-                    activeDot={{ r: 4, fill: 'var(--neon-accent)', stroke: '#000', strokeWidth: 2 }}
+                    activeDot={{ r: 4, fill: statusColor, stroke: '#000', strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
