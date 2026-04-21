@@ -45,11 +45,16 @@ export function BackgroundAIProvider({ children }: { children: React.ReactNode }
   });
 
   useEffect(() => {
-    localStorage.setItem('apex_ai_tasks', JSON.stringify(tasks));
+    // Limit saved tasks to last 20 to avoid localStorage bloat on mobile
+    const savedTasks = tasks.length > 20 ? tasks.slice(-20) : tasks;
+    localStorage.setItem('apex_ai_tasks', JSON.stringify(savedTasks));
   }, [tasks]);
 
   const addTask = useCallback((task: Omit<AITask, 'status'>) => {
-    setTasks(prev => [...prev, { ...task, status: 'pending' }]);
+    setTasks(prev => {
+      const newTasks = [...prev, { ...task, status: 'pending' as const }];
+      return newTasks.length > 30 ? newTasks.slice(-30) : newTasks;
+    });
   }, []);
 
   const updateTask = useCallback((id: string, updates: Partial<AITask>) => {

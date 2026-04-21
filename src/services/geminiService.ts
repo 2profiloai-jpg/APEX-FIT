@@ -6,28 +6,29 @@ let aiReady = false;
 
 export const initAI = async () => {
   try {
-    // Correct API Key Format per Framework: React (Vite)
-    const apiKey = process.env.GEMINI_API_KEY;
+    let apiKey = "";
+    
+    // Attempt multiple sources for API key to ensure stability
+    try {
+      // @ts-ignore
+      const envKey = process.env.GEMINI_API_KEY;
+      if (envKey && envKey !== "undefined" && envKey !== "null") apiKey = envKey;
+    } catch (e) {}
+    
+    if (!apiKey) {
+      const meta = import.meta as any;
+      apiKey = meta.env?.VITE_GEMINI_API_KEY || meta.env?.GEMINI_API_KEY || "";
+    }
 
     if (apiKey && apiKey !== "undefined" && apiKey !== "null" && apiKey !== "") {
       ai = new GoogleGenAI({ apiKey });
       aiReady = true;
-      console.log("AI initialized successfully.");
+      console.log("AI initialized correctly.");
     } else {
-      // Fallback logic for various environments
-      const meta = import.meta as any;
-      const fallbackKey = meta?.env?.VITE_GEMINI_API_KEY || meta?.env?.GEMINI_API_KEY;
-      
-      if (fallbackKey) {
-        ai = new GoogleGenAI({ apiKey: fallbackKey });
-        aiReady = true;
-        console.log("AI initialized with fallback key.");
-      } else {
-        console.warn("GEMINI_API_KEY not found.");
-      }
+      console.warn("GEMINI_API_KEY initialization pending or missing.");
     }
   } catch (e) {
-    console.error("Failed to init AI:", e);
+    console.error("AI Initialization Error:", e);
   }
   return aiReady;
 };
@@ -70,17 +71,17 @@ export const getStrategistAdvice = async (
 
 export const parseFoodInput = async (input: string, imageBase64?: string) => {
   const aiClient = getAI();
-  if (!aiClient) throw new Error("Chiave API mancante.");
+  if (!aiClient) throw new Error("Servizio IA non pronto. Ricarica l'app.");
 
   const prompt = `
-    Sei un nutrizionista d'élite esperto del mercato ITALIANO. 
-    Analizza il pasto: "${input || 'Analizza immagine'}"
+    Sei un nutrizionista d'élite per il mercato ITALIANO.
+    Analizza questo pasto: "${input || 'Basati sull\'immagine'}"
     
     REGOLE:
-    1. Usa i database nutrizionali italiani (CREA/IEO). 
-    2. Calcola kcal e macro (Pro, Carbo, Grassi) basandoti sulle etichette italiane reali.
-    3. Se non specificato, stima porzioni medie italiane standard.
-    4. Sii estremamente preciso con la matematica: (Pro*4 + Carbo*4 + Grassi*9) deve essere uguale alle kcal.
+    1. Database: Usa CREA/IEO (Italia).
+    2. Precisione: Calcola kcal, carbs, protein, fat per ogni elemento.
+    3. Matematica: (Pro*4 + Carbo*4 + Fat*9) ≈ kcal.
+    4. Porzioni: Se non specificate, usa dosi standard italiane.
   `;
 
   const parts: any[] = [];
@@ -98,7 +99,7 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-3.1-pro-preview", // Use Pro for definitive parsing accuracy
+      model: "gemini-3-flash-preview", // Flash is faster and more stable for mobile connections
       contents: [{ role: 'user', parts }],
       config: {
         responseMimeType: "application/json",
@@ -126,11 +127,13 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
       }
     });
 
-    return JSON.parse(response.text || "{\"items\":[]}");
+    const parsed = JSON.parse(response.text || "{\"items\":[]}");
+    if (!parsed.items || !Array.isArray(parsed.items)) throw new Error("Dati non validi dall'IA.");
+    return parsed;
   } catch (error: any) {
     console.error("Food Parsing Error:", error);
-    if (error.message?.includes("429")) throw new Error("Limite IA raggiunto. Riprova tra poco.");
-    throw new Error("Impossibile analizzare il pasto. Verifica la connessione.");
+    if (error.message?.includes("429")) throw new Error("Troppe richieste. Aspetta un minuto.");
+    throw new Error("Errore nell'analisi. Verifica che la foto sia chiara.");
   }
 };
 
