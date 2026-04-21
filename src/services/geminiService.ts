@@ -1,54 +1,61 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { WorkoutSession, BiometricLog } from "../types";
 
-let ai: GoogleGenAI | null = null;
-let aiReady = false;
+// Dynamic initialization logic
+let aiInstance: GoogleGenAI | null = null;
 
-export const initAI = async () => {
+const getAI = () => {
+  if (aiInstance) return aiInstance;
+  
+  let apiKey = "";
   try {
-    let apiKey = "";
-    
-    // Attempt multiple sources for API key to ensure stability
-    try {
-      // @ts-ignore
-      const envKey = process.env.GEMINI_API_KEY;
-      if (envKey && envKey !== "undefined" && envKey !== "null") apiKey = envKey;
-    } catch (e) {}
-    
-    if (!apiKey) {
-      const meta = import.meta as any;
-      apiKey = meta.env?.VITE_GEMINI_API_KEY || meta.env?.GEMINI_API_KEY || "";
-    }
-
-    if (apiKey && apiKey !== "undefined" && apiKey !== "null" && apiKey !== "") {
-      ai = new GoogleGenAI({ apiKey });
-      aiReady = true;
-      console.log("AI initialized correctly.");
-    } else {
-      console.warn("GEMINI_API_KEY initialization pending or missing.");
-    }
+    // Standard AI Studio replacement
+    apiKey = (process?.env?.GEMINI_API_KEY) || "";
   } catch (e) {
-    console.error("AI Initialization Error:", e);
+    // Fallback
+    apiKey = "";
   }
-  return aiReady;
+
+  if (apiKey && apiKey !== "undefined" && apiKey !== "") {
+    aiInstance = new GoogleGenAI({ apiKey });
+    return aiInstance;
+  }
+  return null;
 };
 
-export const getAI = () => ai;
-export const isAIReady = () => aiReady;
+export const isAIReady = () => {
+  try {
+    const key = process.env.GEMINI_API_KEY;
+    return !!key && key !== "undefined" && key !== "";
+  } catch (e) {
+    return false;
+  }
+};
+
+export const initAI = async () => {
+  const ai = getAI();
+  if (!ai) {
+    console.warn("GEMINI_API_KEY pending or missing.");
+    return false;
+  }
+  console.log("AI system ready.");
+  return true;
+};
 
 export const getStrategistAdvice = async (
   history: WorkoutSession[],
   biometrics: BiometricLog,
   nutrition?: { consumed: number, target: number, goal: string }
 ) => {
-  const aiClient = getAI();
-  if (!aiClient) return { readinessScore: 75, intensity: "Technical", tip: "Attiva l'IA nelle impostazioni." };
+  const ai = getAI();
+  if (!ai) return { readinessScore: 75, intensity: "Technical", tip: "IA non pronta." };
 
-  const prompt = `Analizza: Biometria=${JSON.stringify(biometrics)}, Nutrition=${JSON.stringify(nutrition)}, History=${JSON.stringify(history.slice(-3))}. Fornisci JSON con readinessScore (num), intensity, tip (max 20 parole).`;
+  const prompt = `Analizza dati: ${JSON.stringify({ biometrics, nutrition, history: history.slice(-3) })}. 
+    Ritorna JSON: {"readinessScore": number, "intensity": "Heavy"|"Technical"|"Deload", "tip": string (max 20 parole, ITALIANO)}`;
 
   try {
-    const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+    const response = await ai.models.generateContent({
+      model: "gemini-flash-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -63,26 +70,21 @@ export const getStrategistAdvice = async (
         }
       }
     });
-    return JSON.parse(response.text || "{}");
+    let text = response.text || "{}";
+    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(text);
   } catch (error) {
-    return { readinessScore: 70, intensity: "Technical", tip: "Consulenza IA temporaneamente off." };
+    return { readinessScore: 75, intensity: "Technical", tip: "Analisi temporaneamente off." };
   }
 };
 
 export const parseFoodInput = async (input: string, imageBase64?: string) => {
-  const aiClient = getAI();
-  if (!aiClient) throw new Error("Servizio IA non pronto. Ricarica l'app.");
+  const ai = getAI();
+  if (!ai) throw new Error("Servizio IA non inizializzato. Controlla la chiave API.");
 
-  const prompt = `
-    Sei un nutrizionista d'élite per il mercato ITALIANO.
-    Analizza questo pasto: "${input || 'Basati sull\'immagine'}"
-    
-    REGOLE:
-    1. Database: Usa CREA/IEO (Italia).
-    2. Precisione: Calcola kcal, carbs, protein, fat per ogni elemento.
-    3. Matematica: (Pro*4 + Carbo*4 + Fat*9) ≈ kcal.
-    4. Porzioni: Se non specificate, usa dosi standard italiane.
-  `;
+  const prompt = `Analizza il pasto: "${input || 'Analizza immagine'}". 
+    Sei un nutrizionista italiano d'élite. Calcola calorie e macro (carbs, pro, fat).
+    Ritorna JSON con array "items".`;
 
   const parts: any[] = [];
   if (imageBase64) {
@@ -98,8 +100,8 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
   parts.push({ text: prompt });
 
   try {
-    const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview", // Flash is faster and more stable for mobile connections
+    const response = await ai.models.generateContent({
+      model: "gemini-flash-latest",
       contents: [{ role: 'user', parts }],
       config: {
         responseMimeType: "application/json",
@@ -127,13 +129,15 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
       }
     });
 
-    const parsed = JSON.parse(response.text || "{\"items\":[]}");
-    if (!parsed.items || !Array.isArray(parsed.items)) throw new Error("Dati non validi dall'IA.");
-    return parsed;
+    let text = response.text || "{}";
+    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const result = JSON.parse(text);
+    if (!result.items) throw new Error("Risposta incompleta dall'IA.");
+    return result;
   } catch (error: any) {
-    console.error("Food Parsing Error:", error);
-    if (error.message?.includes("429")) throw new Error("Troppe richieste. Aspetta un minuto.");
-    throw new Error("Errore nell'analisi. Verifica che la foto sia chiara.");
+    console.error("Meal analysis error:", error);
+    if (error.message?.includes("429")) throw new Error("Limite IA raggiunto. Attendi un istante.");
+    throw new Error(`Errore IA: ${error.message || 'Analisi non riuscita'}`);
   }
 };
 
@@ -148,14 +152,14 @@ export const suggestMealForRemainingMacros = async (
   targetKcal?: number,
   portionsContext?: string
 ): Promise<{ text: string, items: any[] }> => {
-  const aiClient = getAI();
-  if (!aiClient) throw new Error("AI non disponibile.");
+  const ai = getAI();
+  if (!ai) return { text: "IA non pronta.", items: [] };
 
-  const prompt = `Suggerisci un pasto. Macro mancanti: ${remainingKcal} kcal, ${remainingPro}g Pro, ${remainingCarbs}g Carbo, ${remainingFat}g Fat. Dispensa: ${pantryItems?.join(', ')}. Contesto: ${workoutContext}.`;
+  const prompt = `Suggerisci pasto: ${remainingKcal}kcal, ${remainingPro}g Pro, ${remainingCarbs}g Carb, ${remainingFat}g Fat. Dispensa: ${pantryItems?.join(', ')}. Target: ${targetKcal}. Portate: ${portionsContext}.`;
 
   try {
-    const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+    const response = await ai.models.generateContent({
+      model: "gemini-flash-latest",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -175,8 +179,7 @@ export const suggestMealForRemainingMacros = async (
                   carbs: { type: Type.NUMBER },
                   protein: { type: Type.NUMBER },
                   fat: { type: Type.NUMBER },
-                  amount: { type: Type.STRING },
-                  mealType: { type: Type.STRING }
+                  amount: { type: Type.STRING }
                 }
               }
             }
@@ -184,21 +187,21 @@ export const suggestMealForRemainingMacros = async (
         }
       }
     });
-    return JSON.parse(response.text || "{\"text\":\"\",\"items\":[]}");
+    let text = response.text || "{}";
+    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(text);
   } catch (error) {
-    return { text: "Suggerimento non disponibile.", items: [] };
+    return { text: "Errore suggerimento.", items: [] };
   }
 };
 
-
 export const getPostWorkoutAdvice = async (sessionData: any) => {
-  const aiClient = getAI();
-  if (!aiClient) return "Ottimo lavoro!";
-  const prompt = `Analizza questo allenamento e dai un feedback di 2 frasi: ${JSON.stringify(sessionData)}`;
+  const ai = getAI();
+  if (!ai) return "Ottimo lavoro!";
   try {
-    const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
+    const response = await ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: `Feedback per allenamento: ${JSON.stringify(sessionData)}`,
     });
     return (response.text || "").replace(/[*#_\-]/g, '').trim();
   } catch (error) {
@@ -206,10 +209,10 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
   }
 };
 
-export const analyzeGymEquipment = async (imagesBase64?: string | string[], textInput?: string) => {
-  const aiClient = getAI();
-  if (!aiClient) throw new Error("AI not ready");
-  const prompt = `Analizza l'attrezzatura presente. Ritorna JSON: {"equipment": [...]}`;
+export const analyzeGymEquipment = async (imagesBase64?: string | string[]) => {
+  const ai = getAI();
+  if (!ai) throw new Error("IA non pronta");
+  
   const parts: any[] = [];
   if (imagesBase64) {
     const arr = Array.isArray(imagesBase64) ? imagesBase64 : [imagesBase64];
@@ -224,14 +227,16 @@ export const analyzeGymEquipment = async (imagesBase64?: string | string[], text
       parts.push({ inlineData: { mimeType: mime, data } });
     }
   }
-  parts.push({ text: prompt });
+  parts.push({ text: "Quali macchinari vedi? Ritorna JSON: {\"equipment\": [...]}" });
+
   try {
-    const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+    const response = await ai.models.generateContent({
+      model: "gemini-flash-latest",
       contents: [{ role: 'user', parts }],
       config: { responseMimeType: "application/json" }
     });
-    const text = (response.text || "{}").replace(/```json/gi, '').replace(/```/g, '').trim();
+    let text = response.text || "{}";
+    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
     return JSON.parse(text);
   } catch (error) {
     throw error;
@@ -241,19 +246,20 @@ export const analyzeGymEquipment = async (imagesBase64?: string | string[], text
 export const suggestExerciseAlternative = async (
   currentExerciseName: string,
   inventory: string[],
-  completedExercises: string[],
+  completedExercises: string[] = [],
   isCrowded: boolean = false
 ) => {
-  const aiClient = getAI();
-  if (!aiClient) return null;
-  const prompt = `Trova alternativa per ${currentExerciseName}. Inventario: ${inventory.join(', ')}. Ritorna JSON {"alternative": string, "reason": string, "videoTip": string}`;
+  const ai = getAI();
+  if (!ai) return null;
+  const prompt = `Alternativa per ${currentExerciseName}. Attrezzatura: ${inventory.join(', ')}. JSON: {"alternative": string, "reason": string}`;
   try {
-    const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+    const response = await ai.models.generateContent({
+      model: "gemini-flash-latest",
       contents: prompt,
       config: { responseMimeType: "application/json" }
     });
-    const text = (response.text || "{}").replace(/```json/gi, '').replace(/```/g, '').trim();
+    let text = response.text || "{}";
+    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
     return JSON.parse(text);
   } catch (error) {
     return null;
@@ -265,16 +271,17 @@ export const generateInstantWorkout = async (
   timeMinutes: number,
   inventory: string[]
 ) => {
-  const aiClient = getAI();
-  if (!aiClient) return null;
-  const prompt = `Allenamento di ${timeMinutes} min su ${muscleFocus}. Inventario: ${inventory.join(', ')}. Ritorna JSON.`;
+  const ai = getAI();
+  if (!ai) return null;
+  const prompt = `Allenamento di ${timeMinutes} min per ${muscleFocus}. Attrezzatura: ${inventory.join(', ')}. JSON.`;
   try {
-    const response = await aiClient.models.generateContent({
-      model: "gemini-3-flash-preview",
+    const response = await ai.models.generateContent({
+      model: "gemini-flash-latest",
       contents: prompt,
       config: { responseMimeType: "application/json" }
     });
-    const text = (response.text || "{}").replace(/```json/gi, '').replace(/```/g, '').trim();
+    let text = response.text || "{}";
+    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
     return JSON.parse(text);
   } catch (error) {
     return null;

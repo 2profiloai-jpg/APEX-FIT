@@ -140,7 +140,7 @@ export function BackgroundAIProvider({ children }: { children: React.ReactNode }
       toast.success(`Analisi ${params.meal} completata!`);
     } catch (err: any) {
       updateTask(taskId, { status: 'failed', error: err.message });
-      toast.error(`Errore nell'analisi del pasto.`);
+      toast.error(`Analisi fallita: ${err.message || 'Errore sconosciuto'}`);
     }
 
     return taskId;
