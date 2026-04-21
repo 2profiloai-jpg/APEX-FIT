@@ -173,6 +173,11 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
     }
   }, [exercises, timerSeconds]);
 
+  const handleExit = () => {
+    localStorage.removeItem('apex_active_session');
+    onSessionEnd();
+  };
+
   // Handle Back Button
   useEffect(() => {
     window.history.pushState({ modal: 'activeSession' }, '');
@@ -180,12 +185,9 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
       if (showExercisePicker) {
         setShowExercisePicker(false);
       } else {
-        const confirmExit = window.confirm("Vuoi uscire dall'allenamento? I dati correnti verranno mantenuti in bozza.");
-        if (confirmExit) {
-          onSessionEnd();
-        } else {
-          window.history.pushState({ modal: 'activeSession' }, '');
-        }
+        // Se l'utente usa il tasto indietro del telefono, preserviamo il draft
+        // (comportamento standard per evitare chiusure accidentali)
+        onSessionEnd();
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -418,7 +420,7 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
             {plan ? plan.name : 'Allenamento'}
           </h2>
           <button 
-            onClick={onSessionEnd} 
+            onClick={handleExit} 
             className="w-12 h-12 flex-shrink-0 bg-zinc-900 border border-white/5 rounded-full flex items-center justify-center text-zinc-500 hover:text-white active:scale-95 transition-all"
           >
             <X size={24} />
@@ -544,7 +546,7 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
                     disabled={isTaskPending('exercise-alternative', 'exerciseIdx', exIdx)}
                     className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-neon transition-colors"
                   >
-                    {isTaskPending('exercise-alternative', 'exerciseIdx', exIdx) ? <Loader2 size={10} className="animate-spin text-neon" /> : <Sparkles size={10} />}
+                    {isTaskPending('exercise-alternative', 'exerciseIdx', exIdx) && <Loader2 size={10} className="animate-spin text-neon" />}
                     Alternativa
                   </button>
                   
@@ -710,7 +712,7 @@ export default function WorkoutSessionView({ profile, sessionId, plan, onSession
                   onClick={() => addSet(exIdx)}
                   className="w-full py-2 border border-white/5 rounded-xl text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:border-zinc-700 hover:text-zinc-300 transition-all bg-white/[0.02]"
                 >
-                  + AGGIUNGI SERIE
+                  AGGIUNGI SERIE
                 </button>
               </div>
             </motion.div>

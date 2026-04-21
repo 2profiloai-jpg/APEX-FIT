@@ -209,7 +209,7 @@ export const getPostWorkoutAdvice = async (sessionData: any) => {
   }
 };
 
-export const analyzeGymEquipment = async (imagesBase64?: string | string[]) => {
+export const analyzeGymEquipment = async (imagesBase64?: string | string[], textInput?: string) => {
   const ai = getAI();
   if (!ai) throw new Error("IA non pronta");
   
@@ -227,7 +227,12 @@ export const analyzeGymEquipment = async (imagesBase64?: string | string[]) => {
       parts.push({ inlineData: { mimeType: mime, data } });
     }
   }
-  parts.push({ text: "Quali macchinari vedi? Ritorna JSON: {\"equipment\": [...]}" });
+
+  const prompt = textInput 
+    ? `Mappa i seguenti macchinari o attrezzature: "${textInput}".`
+    : "Quali macchinari o attrezzature vedi nelle immagini?";
+
+  parts.push({ text: `${prompt} Ritorna JSON: {"equipment": [{"name": string, "category": string, "targetMuscles": string[], "equipmentType": "machine"|"dumbbell"|"barbell"|"other"}]}. Usa nomi tecnici italiani e categorizzali correttamente.` });
 
   try {
     const response = await ai.models.generateContent({
