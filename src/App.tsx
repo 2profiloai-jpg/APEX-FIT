@@ -100,6 +100,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const handleChangeTab = (e: any) => {
+      if (e.detail) {
+        setActiveTab(e.detail);
+      }
+    };
+    window.addEventListener('change-tab', handleChangeTab);
+    return () => window.removeEventListener('change-tab', handleChangeTab);
+  }, []);
+
+  useEffect(() => {
     let profileUnsubscribe: (() => void) | null = null;
 
     const authUnsubscribe = onAuthStateChanged(auth, async (user) => {

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { parseFoodInput, suggestMealForRemainingMacros } from '../services/geminiService';
 import { cn } from '../lib/utils';
 import { useBackgroundAI } from '../contexts/BackgroundAIContext';
+import { calculateBMR, calculateTDEE, calculateTargetKcal, calculateMacros } from '../lib/calculations';
 
 export default function NutritionHub({ profile }: { profile: UserProfile | null }) {
   const { runMealSuggestion, runFoodParse, getTask, clearTask, isTaskPending, tasks } = useBackgroundAI();
@@ -44,14 +45,21 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
   const weight = profile?.weight || 70;
   const height = profile?.height || 175;
   const age = profile?.age || 30;
-  const isFemale = profile?.gender === 'female';
-  const bmr = 10 * weight + 6.25 * height - 5 * age + (isFemale ? -161 : 5);
-  const activityMultiplier = profile?.activityLevel || 1.55;
-  const goalMult = profile?.goal === 'lose' ? 0.8 : profile?.goal === 'gain' ? 1.15 : 1;
-  const targetKcal = profile?.customTargets?.kcal || Math.round(bmr * activityMultiplier * goalMult);
-  const targetPro = profile?.customTargets?.protein || Math.round(weight * 2.2);
-  const targetFat = profile?.customTargets?.fat || Math.round((targetKcal * 0.25) / 9);
-  const targetCarbs = profile?.customTargets?.carbs || Math.round((targetKcal - (targetPro * 4) - (targetFat * 9)) / 4);
+  const gender = profile?.gender || 'male';
+  const activityLevel = profile?.activityLevel || 1.2;
+  const goal = profile?.goal || 'maintain';
+  const bodyFat = profile?.bodyFat;
+
+  const bmr = calculateBMR(weight, height, age, gender, bodyFat);
+  const tdee = calculateTDEE(bmr, activityLevel);
+  const calculatedTargetKcal = calculateTargetKcal(tdee, goal);
+  
+  const targetKcal = profile?.customTargets?.kcal || Math.round(calculatedTargetKcal);
+  const macros = calculateMacros(weight, targetKcal);
+
+  const targetPro = profile?.customTargets?.protein || macros.protein;
+  const targetFat = profile?.customTargets?.fat || macros.fat;
+  const targetCarbs = profile?.customTargets?.carbs || macros.carbs;
 
   useEffect(() => {
     if (!profile?.uid) return;

@@ -200,6 +200,8 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
   const remainingKcal = Math.round(targetKcal - totalConsumed);
   const bmi = calculateBMI(weight, height);
 
+  const isProfileComplete = weight > 0 && height > 0 && age > 0;
+
   // Helper per riempire le date vuote in modo che il grafico cambi asse X a seconda di chartRange
   const generateChartData = (range: number) => {
     const data = [];
@@ -291,7 +293,19 @@ export default function Dashboard({ profile, aiStatus }: { profile: UserProfile 
             <Target className="text-neon neon-led" size={16} />
             <h3 className="font-bold uppercase tracking-tighter text-xs italic neon-text">Hub Metabolico</h3>
           </div>
+          {!isProfileComplete && (
+            <span className="text-[8px] font-black text-red-500 animate-pulse uppercase tracking-widest border border-red-500/30 px-2 py-0.5 rounded">Profilo Incompleto</span>
+          )}
         </div>
+        
+        {!isProfileComplete && (
+          <div className="bg-red-500/5 border border-red-500/20 p-3 rounded-xl flex items-center gap-3">
+            <AlertTriangle className="text-red-500 shrink-0" size={16} />
+            <p className="text-[9px] text-zinc-400 font-bold uppercase leading-tight">
+              Inserisci i tuoi dati (Peso, Altezza, Età) nel <span className="text-white underline cursor-pointer" onClick={() => window.dispatchEvent(new CustomEvent('change-tab', { detail: 'profile' }))}>Profilo</span> per attivare il calcolo automatico.
+            </p>
+          </div>
+        )}
         
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-white/[0.03] border border-white/10 p-4 rounded-xl flex flex-col items-center justify-center relative overflow-hidden">

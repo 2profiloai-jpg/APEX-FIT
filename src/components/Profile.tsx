@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { isAIReady } from '../services/geminiService';
 import { cn } from '../lib/utils';
 import { notificationService } from '../services/notificationService';
+import { calculateBMR, calculateTDEE, calculateTargetKcal, calculateMacros } from '../lib/calculations';
 
 export default function Profile({ profile, user, aiStatus }: { profile: UserProfile | null, user: User, aiStatus: 'loading' | 'ready' | 'error' }) {
   // Biometric State
@@ -26,6 +27,10 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
   const [showPreferences, setShowPreferences] = useState(false);
   const [pantryText, setPantryText] = useState("");
   const [portionsText, setPortionsText] = useState("");
+
+  const bmrPreview = weight && height && age ? calculateBMR(weight, height, age, gender, bodyFat) : 0;
+  const tdeePreview = calculateTDEE(bmrPreview, activityLevel);
+  const targetKcalPreview = Math.round(calculateTargetKcal(tdeePreview, goal));
 
   useEffect(() => {
     if (profile) {
@@ -74,11 +79,10 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
     try {
       let newCustomTargets = profile.customTargets || undefined;
       if (customKcal > 0) {
+        const calculatedMacros = calculateMacros(weight, customKcal);
         newCustomTargets = {
           kcal: customKcal,
-          protein: Math.round(weight * 2.2), // Safe high protein
-          fat: Math.round((customKcal * 0.25) / 9), // 25% fats
-          carbs: Math.round((customKcal - (Math.round(weight * 2.2) * 4) - ((customKcal * 0.25))) / 4)
+          ...calculatedMacros
         };
       }
 
@@ -245,7 +249,7 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               value={customKcal || ''} 
               onChange={(e) => setCustomKcal(parseInt(e.target.value))}
               className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 font-bold text-white focus:ring-2 ring-neon/50 outline-none transition-all"
-              placeholder="Calcolo automatico..."
+              placeholder={targetKcalPreview > 0 ? `Suggerito: ${targetKcalPreview} kcal` : "Calcolo automatico..."}
             />
             {customKcal > 0 && (
               <button 
@@ -256,7 +260,12 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
               </button>
             )}
           </div>
-          <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mt-1 ml-1">Lascia vuoto per il calcolo IA/Parametri</p>
+          <div className="flex justify-between items-center mt-1 ml-1">
+            <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest italic">Lascia vuoto per il calcolo IA/Parametri</p>
+            {targetKcalPreview > 0 && !customKcal && (
+              <p className="text-[9px] text-neon font-black uppercase tracking-widest animate-pulse">Auto: {targetKcalPreview} Kcal</p>
+            )}
+          </div>
         </div>
 
         <motion.button 
