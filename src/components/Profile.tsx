@@ -280,8 +280,86 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         </motion.button>
       </motion.section>
 
+      {/* Quick Settings (Themes & Notifications) */}
+      <div className="space-y-4 mb-8">
+        <section className="space-y-4">
+          <div className="flex flex-col">
+            <h4 className="font-black uppercase tracking-widest text-[10px] text-zinc-500 mb-1">Notifiche Smart</h4>
+            <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest italic">Attiva i promemoria su calorie e allenamenti</p>
+          </div>
+          <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-neon/10 rounded-lg">
+                <Bell size={18} className="text-neon" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-white uppercase tracking-tight">Notifiche Push</span>
+                <span className="text-[8px] text-zinc-500 font-black tracking-widest uppercase">Smart Reminders</span>
+              </div>
+            </div>
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={async () => {
+                const current = profile?.preferences?.pushNotifications;
+                if (!current) {
+                  const granted = await notificationService.requestPermission();
+                  if (granted) {
+                    await updateDoc(doc(db, 'users', profile!.uid), {
+                      'preferences.pushNotifications': true
+                    });
+                    notificationService.notify("Apex Lift: Notifiche attivate!", {
+                      body: "Riceverai aggiornamenti importanti sui tuoi obiettivi."
+                    });
+                    toast.success("Notifiche attivate!");
+                  }
+                } else {
+                  await updateDoc(doc(db, 'users', profile!.uid), {
+                    'preferences.pushNotifications': false
+                  });
+                  toast.info("Notifiche disattivate.");
+                }
+              }}
+              className={cn(
+                "w-10 h-5 rounded-full transition-all relative flex items-center px-1",
+                profile?.preferences?.pushNotifications ? "bg-neon" : "bg-zinc-800"
+              )}
+            >
+              <motion.div 
+                animate={{ x: profile?.preferences?.pushNotifications ? 20 : 0 }}
+                className="w-3 h-3 rounded-full bg-white shadow-lg"
+              />
+            </motion.button>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex flex-col">
+            <h4 className="font-black uppercase tracking-widest text-[10px] text-zinc-500 mb-1 leading-none">Accento Neon</h4>
+          </div>
+          <div className="flex gap-2">
+            {[
+              { id: 'electric', hex: '#39ff14' },
+              { id: 'cyan', hex: '#00ffff' },
+              { id: 'sky', hex: '#0ea5e9' },
+              { id: 'violet', hex: '#bf00ff' },
+              { id: 'fuchsia', hex: '#ff00ff' }
+            ].map(c => (
+              <button 
+                key={c.id}
+                onClick={() => handleSaveTheme(c.id)}
+                className={cn(
+                  "flex-1 h-8 rounded-lg border transition-all",
+                  themeColor === c.id ? "border-white scale-110 shadow-lg shadow-white/10" : "border-white/5 opacity-40"
+                )}
+                style={{ backgroundColor: c.hex }}
+              />
+            ))}
+          </div>
+        </section>
+      </div>
+
       <div className="space-y-2">
-        <ProfileLink icon={<Settings size={18} />} label="Preferenze (Tema & Notifiche)" onClick={() => setShowPreferences(true)} />
+        <ProfileLink icon={<Settings size={18} />} label="Dispensa & Preferenze IA" onClick={() => setShowPreferences(true)} />
       </div>
 
       {/* Preferences Modal */}

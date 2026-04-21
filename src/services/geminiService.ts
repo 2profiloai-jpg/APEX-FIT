@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { WorkoutSession, BiometricLog } from "../types";
 
 let ai: GoogleGenAI | null = null;
@@ -41,7 +41,7 @@ export const initAI = async () => {
     if (apiKey && apiKey !== "undefined" && apiKey !== "null" && apiKey !== "") {
       ai = new GoogleGenAI({ apiKey });
       aiReady = true;
-      console.log("AI initialized successfully with stable model.");
+      console.log("AI initialized successfully.");
     } else {
       console.warn("GEMINI_API_KEY not found. AI features disabled.");
     }
@@ -85,23 +85,23 @@ export const getStrategistAdvice = async (
     Cronologia Recente:
     ${JSON.stringify(history.slice(-3))}
     
-    REGOLE FONDAMENTALI:
+    REGOLE FONDAMENTALI PER IL CONSIGLIO (tip):
     1. Analisi Scostamento Nutrizionale: Se c'è un forte scostamento tra calorie assunte e obiettivo, fallo notare.
     2. Bio-feedback: Usa i dati biometrici per consigliare idratazione, recupero o volume.
-    3. Ottimizzazione Workout: Analizza i livelli di sforzo recenti.
+    3. Ottimizzazione Workout (Sforzo): Analizza i livelli di sforzo recenti ('POCO', 'MEDIO', 'MOLTO', 'MOLTISSIMO').
     4. CONSTRAINT: NIENTE frasi motivazionali generiche. Sii analitico e diretto.
     
-    Ritorna JSON:
+    Ritorna JSON (NIENTE Markdown, solo testo pulito):
     {
       "readinessScore": number,
       "intensity": "Heavy" | "Technical" | "Deload",
-      "tip": "string (in ITALIANO, max 20 parole)"
+      "tip": "string (in ITALIANO, max 20 parole, no simboli)"
     }
   `;
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -109,10 +109,11 @@ export const getStrategistAdvice = async (
     });
     
     const text = response.text || "{}";
-    return JSON.parse(text);
+    const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanText);
   } catch (error: any) {
     console.error("Strategist Error:", error);
-    return { readinessScore: 70, intensity: "Technical", tip: "Analisi IA non disponibile al momento." };
+    return { readinessScore: 70, intensity: "Technical", tip: "Errore di connessione con l'IA." };
   }
 };
 
@@ -123,65 +124,75 @@ export const parseFoodInput = async (input: string, imageBase64?: string) => {
   }
 
   const prompt = `
-    Sei un nutrizionista clinico esperto del mercato ITALIANO. Calcola kcal e macro per gli alimenti indicati.
-    Pasto: "${input || 'Basati sull\'immagine'}"
+    Sei un nutrizionista clinico esperto del mercato ITALIANO e un database nutrizionale iper-preciso. Il tuo calcolo DEVE basarsi ESCLUSIVAMENTE sulle etichette dei prodotti reali venduti in ITALIA (Tabelle CREA, IEO, formule europee per le multinazionali). NON usare i vecchi database generici americani (es. USDA) per i prodotti commerciali preconfezionati, perché in Italia le ricette e il contenuto di zuccheri sono drasticamente diversi.
     
-    REGOLE:
-    1. Usa dati reali italiani (CREA/IEO).
-    2. Se non specificato, stima porzioni medie italiane.
-    3. (Carbo * 4) + (Pro * 4) + (Fat * 9) = Kcal.
+    Pasto inserito dall'utente: "${input || 'Nessun testo, basati solo sull\'immagine'}"
+    
+    ATTENZIONE SULLE QUANTITA' E LA MATEMATICA:
+    1. Regola del Mercato Italiano: Leggi grammi (g) o millilitri (ml). Valuta TUTTI i cibi e bevande confezionate secondo le etichette italiane odierne. Esempio ferreo: in Italia la Fanta è ormai senza zuccheri aggiunti, quindi se l'utente scrive "fanta da 330 ml" DEVI restituire 20 kcal, NON le 150-200 kcal della versione americana. Applica questo calcolo "reale e italiano" a tutti i brand e catene.
+    2. Usa una base di calcolo per 100g e moltiplica *esattamente* per la proporzione richiesta (es. 250g = 2.5).
+    3. I macronutrienti devono matematicamente combaciare con le kcal! Calcola prima le kcal italiane e poi i macro: (Carbo * 4) + (Pro * 4) + (Fat * 9) = Kcal totali. Tolleranza massima del 3-5% per arrotondamenti.
+    4. Se nessuna quantità è specificata, scegli porzioni umane medie per un pasto italiano tipico e DICHIARA la stima di peso usata nel nome (es. "Risotto (1 porzione media, ~80g a crudo)").
+
+    Dividi accuratamente gli elementi se presenti separatori (; , . - e, con).
+    
+    DEVI RITORNARE ESCLUSIVAMENTE UN OGGETTO JSON VALIDO.
+    Struttura esatta:
+    {
+      "items": [
+        {
+          "name": "Nome alimento 1",
+          "kcal": valore numerico preciso,
+          "carbs": valore numerico,
+          "protein": valore numerico,
+          "fat": valore numerico
+        }
+      ]
+    }
   `;
 
   const parts: any[] = [];
   if (imageBase64) {
-    let base64Data = imageBase64;
-    let mimeType = "image/jpeg";
-    if (imageBase64.startsWith('data:')) {
-      const partsArr = imageBase64.split(',');
-      mimeType = partsArr[0].split(':')[1].split(';')[0];
-      base64Data = partsArr[1];
-    }
-    parts.push({ inlineData: { mimeType, data: base64Data } });
+    try {
+      let mimeType = "image/jpeg";
+      let base64Data = imageBase64;
+      if (imageBase64.startsWith('data:')) {
+        const commaIndex = imageBase64.indexOf(',');
+        if (commaIndex !== -1) {
+          mimeType = imageBase64.substring(5, imageBase64.indexOf(';'));
+          base64Data = imageBase64.substring(commaIndex + 1);
+        }
+      }
+      parts.push({
+        inlineData: {
+          mimeType: mimeType || "image/jpeg",
+          data: base64Data
+        }
+      });
+    } catch (e) {}
   }
   parts.push({ text: prompt });
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts }],
       config: {
         responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ["items"],
-          properties: {
-            items: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ["name", "kcal", "carbs", "protein", "fat"],
-                properties: {
-                  name: { type: Type.STRING },
-                  kcal: { type: Type.NUMBER },
-                  carbs: { type: Type.NUMBER },
-                  protein: { type: Type.NUMBER },
-                  fat: { type: Type.NUMBER }
-                }
-              }
-            }
-          }
-        },
         temperature: 0.1
       }
     });
     
-    return JSON.parse(response.text || "{\"items\":[]}");
+    let text = response.text || "{}";
+    text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) text = jsonMatch[0];
+    const parsed = JSON.parse(text);
+    if (!parsed.items || !Array.isArray(parsed.items)) throw new Error("Formato non valido.");
+    return parsed;
   } catch (error: any) {
     console.error("Food Parsing Error:", error);
-    if (error.message?.includes("429") || error.message?.includes("quota")) {
-      throw new Error("Limite IA raggiunto. Riprova tra un minuto.");
-    }
-    throw new Error("Errore durante l'analisi del pasto con il nuovo modello.");
+    throw new Error(error.message || "Errore di connessione con l'IA.");
   }
 };
 
@@ -195,89 +206,74 @@ export const suggestMealForRemainingMacros = async (
   workoutContext?: string,
   targetKcal?: number,
   portionsContext?: string
-): Promise<{ text: string, items: any[] }> => {
+): Promise<{ text: string, items: { name: string, kcal: number, carbs: number, protein: number, fat: number }[] }> => {
   const aiClient = getAI();
-  if (!aiClient) throw new Error("AI not ready");
+  if (!aiClient) throw new Error("Chiave API mancante.");
+  
+  if (remainingKcal <= 50) return { text: "Hai raggiunto l'obiettivo!", items: [] };
 
   const pantryStr = pantryItems?.length ? pantryItems.join(', ') : 'Ingredienti comuni.';
+  const portionsStr = portionsContext ? `\n    - ABITUDINI: ${portionsContext}` : '';
+  
   const prompt = `
-    Suggerisci un pasto bilanciato per rimanere nei macro.
-    Kcal mancanti: ${remainingKcal}.
-    Dispensa: ${pantryStr}.
-    Contesto: ${workoutContext || 'Nessuno'}.
+    Sei un assistente nutrizionale d'élite.
+    Kcal mancanti oggi: ${Math.round(remainingKcal)} kcal${portionsStr}
+    Dispensa: ${pantryStr}
+    Contesto: ${workoutContext || 'Nessuno'}
     
-    Ritorna JSON con testo "text" (senza markdown) e un array "items" di alimenti strutturati (name, kcal, carbs, protein, fat, mealType).
+    REGOLE:
+    1. NO MARKDOWN. Solo testo pulito WhatsApp-style.
+    2. Suddividi in pasti mancanti.
+    3. Alla fine aggiungi [DATA] JSON [/DATA] con: [{"name": string, "amount": string, "kcal": number, "carbs": number, "protein": number, "fat": number, "mealType": string}].
   `;
 
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-3-flash-preview",
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ["text", "items"],
-          properties: {
-            text: { type: Type.STRING },
-            items: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ["name", "kcal", "carbs", "protein", "fat", "mealType"],
-                properties: {
-                  name: { type: Type.STRING },
-                  kcal: { type: Type.NUMBER },
-                  carbs: { type: Type.NUMBER },
-                  protein: { type: Type.NUMBER },
-                  fat: { type: Type.NUMBER },
-                  mealType: { type: Type.STRING }
-                }
-              }
-            }
-          }
-        }
-      }
     });
     
-    const parsed = JSON.parse(response.text || "{}");
-    return { text: parsed.text || "", items: parsed.items || [] };
-  } catch (error) {
-    console.error("Meal Suggestion Error:", error);
-    return { text: "Impossibile caricare suggerimenti al momento.", items: [] };
+    const fullText = response.text || "";
+    const dataRegex = /\[DATA\]([\s\S]*?)\[\/DATA\]/;
+    const match = fullText.match(dataRegex);
+    let items = [];
+    let cleanText = fullText.replace(dataRegex, '').trim().replace(/[*#_]/g, '');
+    if (match && match[1]) {
+      try {
+        items = JSON.parse(match[1].trim());
+      } catch (e) {}
+    }
+    return { text: cleanText, items };
+  } catch (error: any) {
+    throw new Error("Errore suggerimento.");
   }
 };
 
 export const getPostWorkoutAdvice = async (sessionData: any) => {
   const aiClient = getAI();
   if (!aiClient) return "Ottimo lavoro!";
-
-  const prompt = `Fornisci un feedback tecnico di 2-3 frasi per questo allenamento: ${JSON.stringify(sessionData)}`;
-
+  const prompt = `Analizza questo allenamento e dai un feedback di 2 frasi: ${JSON.stringify(sessionData)}`;
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-3-flash-preview",
       contents: prompt,
     });
-    return response.text?.replace(/[*#_\-]/g, '').trim() || "Allenamento salvato con successo.";
+    return (response.text || "").replace(/[*#_\-]/g, '').trim();
   } catch (error) {
-    return "Allenamento registrato correttamente.";
+    return "Allenamento salvato.";
   }
 };
 
 export const analyzeGymEquipment = async (imagesBase64?: string | string[], textInput?: string) => {
   const aiClient = getAI();
   if (!aiClient) throw new Error("AI not ready");
-
-  const prompt = `Analizza l'attrezzatura presente: ${textInput || ''}. Ritorna JSON list 'equipment'.`;
-
+  const prompt = `Analizza l'attrezzatura presente. Ritorna JSON: {"equipment": [...]}`;
   const parts: any[] = [];
   if (imagesBase64) {
     const arr = Array.isArray(imagesBase64) ? imagesBase64 : [imagesBase64];
     for (const img of arr) {
       if (!img) continue;
-      let data = img;
-      let mime = "image/jpeg";
+      let data = img, mime = "image/jpeg";
       if (img.startsWith('data:')) {
         const p = img.split(',');
         mime = p[0].split(':')[1].split(';')[0];
@@ -287,35 +283,15 @@ export const analyzeGymEquipment = async (imagesBase64?: string | string[], text
     }
   }
   parts.push({ text: prompt });
-
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts }],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            equipment: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  category: { type: Type.STRING },
-                  targetMuscles: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  equipmentType: { type: Type.STRING }
-                }
-              }
-            }
-          }
-        }
-      }
+      config: { responseMimeType: "application/json" }
     });
-    return JSON.parse(response.text || "{\"equipment\":[]}");
+    const text = (response.text || "{}").replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(text);
   } catch (error) {
-    console.error("Gym Analysis Error:", error);
     throw error;
   }
 };
@@ -328,27 +304,15 @@ export const suggestExerciseAlternative = async (
 ) => {
   const aiClient = getAI();
   if (!aiClient) return null;
-
-  const prompt = `Esercizio originale: ${currentExerciseName}. Inventario: ${inventory.join(', ')}. Suggerisci un'alternativa in JSON.`;
-
+  const prompt = `Trova alternativa per ${currentExerciseName}. Inventario: ${inventory.join(', ')}. Ritorna JSON {"alternative": string, "reason": string, "videoTip": string}`;
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-3-flash-preview",
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ["alternative", "reason", "videoTip"],
-          properties: {
-            alternative: { type: Type.STRING },
-            reason: { type: Type.STRING },
-            videoTip: { type: Type.STRING }
-          }
-        }
-      }
+      config: { responseMimeType: "application/json" }
     });
-    return JSON.parse(response.text || "{}");
+    const text = (response.text || "{}").replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(text);
   } catch (error) {
     return null;
   }
@@ -361,38 +325,15 @@ export const generateInstantWorkout = async (
 ) => {
   const aiClient = getAI();
   if (!aiClient) return null;
-
-  const prompt = `Allenamento di ${timeMinutes} min focalizzato su ${muscleFocus}. Solo attrezzatura: ${inventory.join(', ')}.`;
-
+  const prompt = `Allenamento di ${timeMinutes} min su ${muscleFocus}. Inventario: ${inventory.join(', ')}. Ritorna JSON.`;
   try {
     const response = await aiClient.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-3-flash-preview",
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ["name", "exercises"],
-          properties: {
-            name: { type: Type.STRING },
-            exercises: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: ["name", "sets", "reps", "notes"],
-                properties: {
-                  name: { type: Type.STRING },
-                  sets: { type: Type.NUMBER },
-                  reps: { type: Type.STRING },
-                  notes: { type: Type.STRING }
-                }
-              }
-            }
-          }
-        }
-      }
+      config: { responseMimeType: "application/json" }
     });
-    return JSON.parse(response.text || "{}");
+    const text = (response.text || "{}").replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(text);
   } catch (error) {
     return null;
   }
