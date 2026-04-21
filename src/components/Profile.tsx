@@ -127,8 +127,8 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
         
         <motion.div 
           whileHover={{ scale: 1.05 }}
-          className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${aiStatus === 'ready' ? 'bg-neon/10 text-neon border-neon/20' : aiStatus === 'loading' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-          <Brain size={14} />
+          className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${aiStatus === 'ready' ? 'bg-zinc-800 text-zinc-400 border-white/5' : aiStatus === 'loading' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+          <Brain size={14} className={aiStatus === 'ready' ? 'text-neon' : ''} />
           {aiStatus === 'ready' ? 'IA ATTIVA' : aiStatus === 'loading' ? 'CARICAMENTO IA...' : 'CHIAVE IA MANCANTE'}
         </motion.div>
       </motion.div>
@@ -329,31 +329,6 @@ export default function Profile({ profile, user, aiStatus }: { profile: UserProf
                 className="w-3 h-3 rounded-full bg-white shadow-lg"
               />
             </motion.button>
-          </div>
-        </section>
-
-        <section className="space-y-4">
-          <div className="flex flex-col">
-            <h4 className="font-black uppercase tracking-widest text-[10px] text-zinc-500 mb-1 leading-none">Accento Neon</h4>
-          </div>
-          <div className="flex gap-2">
-            {[
-              { id: 'electric', hex: '#39ff14' },
-              { id: 'cyan', hex: '#00ffff' },
-              { id: 'sky', hex: '#0ea5e9' },
-              { id: 'violet', hex: '#bf00ff' },
-              { id: 'fuchsia', hex: '#ff00ff' }
-            ].map(c => (
-              <button 
-                key={c.id}
-                onClick={() => handleSaveTheme(c.id)}
-                className={cn(
-                  "flex-1 h-8 rounded-lg border transition-all",
-                  themeColor === c.id ? "border-white scale-110 shadow-lg shadow-white/10" : "border-white/5 opacity-40"
-                )}
-                style={{ backgroundColor: c.hex }}
-              />
-            ))}
           </div>
         </section>
       </div>
