@@ -287,37 +287,50 @@ export default function NutritionHub({ profile }: { profile: UserProfile | null 
                </h3>
              </div>
              
-             <button 
-               onClick={async () => {
-                 const remKcal = Math.max(0, targetKcal - totalKcal);
-                 const remPro = Math.max(0, targetPro - totalProtein);
-                 const remCarb = Math.max(0, targetCarbs - totalCarbs);
-                 const remFat = Math.max(0, targetFat - totalFat);
-                 
-                 const eatenSummary = Object.entries(meals)
-                   .map(([name, list]) => `${name}: ${(list as any[]).length > 0 ? (list as any[]).map(i => i.name).join(', ') : 'Vuoto'}`)
-                   .join('\n');
+             {suggestedMeal ? (
+               <button 
+                 onClick={() => {
+                   setSuggestedMeal(null);
+                   clearTask(`meal-${selectedDate}`);
+                 }}
+                 className="w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-purple-300 hover:bg-purple-500/20 transition-all border border-purple-500/20 shadow-lg"
+                 title="Chiudi suggerimento"
+               >
+                 <X size={16} />
+               </button>
+             ) : (
+               <button 
+                 onClick={async () => {
+                   const remKcal = Math.max(0, targetKcal - totalKcal);
+                   const remPro = Math.max(0, targetPro - totalProtein);
+                   const remCarb = Math.max(0, targetCarbs - totalCarbs);
+                   const remFat = Math.max(0, targetFat - totalFat);
+                   
+                   const eatenSummary = Object.entries(meals)
+                     .map(([name, list]) => `${name}: ${(list as any[]).length > 0 ? (list as any[]).map(i => i.name).join(', ') : 'Vuoto'}`)
+                     .join('\n');
 
-                 const workoutContext = `Oggi. Pasti già fatti: \n${eatenSummary}. \nConsidera l'orario attuale per suggerire se fare uno spuntino o passare direttamente alla cena.`;
+                   const workoutContext = `Oggi. Pasti già fatti: \n${eatenSummary}. \nConsidera l'orario attuale per suggerire se fare uno spuntino o passare direttamente alla cena.`;
 
-                 await runMealSuggestion({
-                   remKcal, remPro, remCarb, remFat,
-                   pantry: profile?.preferences?.pantry || [],
-                   favs: [], // favs not implemented yet
-                   context: workoutContext,
-                   targetKcal,
-                   portions: profile?.preferences?.typicalPortions || '',
-                   date: selectedDate
-                 });
-               }}
-               disabled={isTaskPending('meal-suggestion', 'date', selectedDate)}
-               className={cn(
-                 "text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-xl transition-all flex items-center gap-2",
-                 "bg-purple-500 text-black hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]" 
-               )}
-             >
-               {isTaskPending('meal-suggestion', 'date', selectedDate) ? <Activity size={14} className="animate-spin" /> : 'Suggerisci pasto'}
-             </button>
+                   await runMealSuggestion({
+                     remKcal, remPro, remCarb, remFat,
+                     pantry: profile?.preferences?.pantry || [],
+                     favs: [], // favs not implemented yet
+                     context: workoutContext,
+                     targetKcal,
+                     portions: profile?.preferences?.typicalPortions || '',
+                     date: selectedDate
+                   });
+                 }}
+                 disabled={isTaskPending('meal-suggestion', 'date', selectedDate)}
+                 className={cn(
+                   "text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-xl transition-all flex items-center gap-2",
+                   "bg-purple-500 text-black hover:bg-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]" 
+                 )}
+               >
+                 {isTaskPending('meal-suggestion', 'date', selectedDate) ? <Activity size={14} className="animate-spin" /> : 'Suggerisci pasto'}
+               </button>
+             )}
            </div>
            
            {suggestedMeal && (
