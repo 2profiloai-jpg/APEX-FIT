@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, orderBy, limit, setDoc } from 'firebase/firestore';
 import { WorkoutPlan, PlannedExercise, Exercise, ExerciseCategory, UserProfile, WorkoutSession } from '../types';
-import { Calendar, Plus, Play, Dumbbell, X, ChevronRight, Save, Activity, Brain, AlertCircle, Info, Loader2, Zap } from 'lucide-react';
+import { Calendar, Plus, Play, Dumbbell, X, ChevronRight, Save, Activity, Brain, AlertCircle, Info, Loader2, Zap, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { EXERCISE_LIBRARY } from './ExerciseLibrary';
 import WorkoutSessionView from './WorkoutSessionView';
@@ -65,10 +65,14 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
   
   // Plan Builder State
   const [isBuildingPlan, setIsBuildingPlan] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [planName, setPlanName] = useState('');
   const [plannedExercises, setPlannedExercises] = useState<PlannedExercise[]>([]);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [pickerCategory, setPickerCategory] = useState<ExerciseCategory | null>(null);
+  const [previewExercise, setPreviewExercise] = useState<Exercise | null>(null);
+  const [loadVideo, setLoadVideo] = useState(false);
+  const [missedWorkout, setMissedWorkout] = useState<WorkoutPlan | null>(null);
 
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([]);
 
@@ -89,6 +93,12 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
       setPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkoutPlan)));
     });
 
+    // MISSING: Fetch ALL plans for missed workout check
+    const qAllPlans = query(collection(db, 'users', auth.currentUser.uid, 'plans'));
+    const unsubAllPlans = onSnapshot(qAllPlans, (snapshot) => {
+      setAllPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WorkoutPlan)));
+    });
+
     const qSessions = query(
       collection(db, 'users', auth.currentUser.uid, 'sessions'),
       orderBy('startTime', 'desc'),
@@ -100,12 +110,64 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
 
     return () => {
       unsubPlans();
+      unsubAllPlans();
       unsubSessions();
     };
   }, [selectedDay]);
 
-  const openPlanBuilder = () => {
+  // And also need to add allPlans state
+  const [allPlans, setAllPlans] = useState<WorkoutPlan[]>([]);
+  // ... and update the missed workout useEffect to use allPlans instead of plans
+
+
+  useEffect(() => {
+    if (!auth.currentUser || allPlans.length === 0) return;
+
+    const today = new Date();
+    const currentDayIndex = today.getDay(); // 0 (Sun) to 6 (Sat)
+    const daysMap: Record<string, number> = {
+      'Lunedì': 0, 'Martedì': 1, 'Mercoledì': 2, 'Giovedì': 3,
+      'Venerdì': 4, 'Sabato': 5, 'Domenica': 6
+    };
+
+    const normalizeDay = (idx: number) => (idx === 0 ? 6 : idx - 1); // Converting Sun=0 into Mon=0...Sun=6
+    const todayIndexNormalized = normalizeDay(currentDayIndex);
+
+    // Check days before today in the current week
+    const missed = allPlans.find(plan => {
+      if (!plan.dayOfWeek) return false;
+      const planDayNumNormalized = daysMap[plan.dayOfWeek];
+      
+      const isBeforeToday = planDayNumNormalized < todayIndexNormalized;
+      console.log(`Checking plan ${plan.name} (${plan.dayOfWeek}): beforeToday=${isBeforeToday}, todayNorm=${todayIndexNormalized}, planNorm=${planDayNumNormalized}`);
+      
+      if (isBeforeToday) {
+        // Check if a session for this plan exists in the last 7 days
+        const wasCompleted = recentSessions.some(session => 
+          session.planId === plan.id && 
+          new Date(session.startTime).getTime() > today.getTime() - 7 * 24 * 60 * 60 * 1000
+        );
+        console.log(`Checking session for ${plan.name}: wasCompleted=${wasCompleted}`);
+        return !wasCompleted;
+      }
+      return false;
+    });
+
+    setMissedWorkout(missed || null);
+  }, [allPlans, recentSessions]);
+
+  const openPlanBuilder = (plan?: WorkoutPlan) => {
     window.history.pushState({ modal: 'planBuilder' }, '');
+    if (plan) {
+      setEditingPlanId(plan.id);
+      setPlanName(plan.name);
+      setPlannedExercises(plan.exercises);
+      setSelectedDay(plan.dayOfWeek || selectedDay);
+    } else {
+      setEditingPlanId(null);
+      setPlanName('');
+      setPlannedExercises([]);
+    }
     setIsBuildingPlan(true);
   };
 
@@ -116,6 +178,8 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
 
   const closeExercisePicker = () => {
     setShowExercisePicker(false);
+    setPreviewExercise(null);
+    setLoadVideo(false);
     if (window.history.state?.modal === 'exercisePicker') {
       window.history.back();
     }
@@ -123,6 +187,9 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
 
   const closePlanBuilder = () => {
     setIsBuildingPlan(false);
+    setEditingPlanId(null);
+    setPlanName('');
+    setPlannedExercises([]);
     if (window.history.state?.modal === 'planBuilder') {
       window.history.back();
     }
@@ -130,7 +197,10 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
 
   useEffect(() => {
     const handlePopState = () => {
-      if (showExercisePicker) {
+      if (previewExercise) {
+        setPreviewExercise(null);
+        setLoadVideo(false);
+      } else if (showExercisePicker) {
         setShowExercisePicker(false);
       } else if (isBuildingPlan) {
         setIsBuildingPlan(false);
@@ -164,14 +234,23 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
         return cleaned;
       });
 
-      await addDoc(collection(db, 'users', auth.currentUser.uid, 'plans'), {
+      const planData = {
         userId: auth.currentUser.uid,
         name: planName,
         dayOfWeek: selectedDay,
         exercises: sanitizedPlannedExercises
-      });
-      toast.success('Scheda salvata con successo!');
+      };
+
+      if (editingPlanId) {
+        await setDoc(doc(db, 'users', auth.currentUser.uid, 'plans', editingPlanId), planData, { merge: true });
+        toast.success('Scheda aggiornata con successo!');
+      } else {
+        await addDoc(collection(db, 'users', auth.currentUser.uid, 'plans'), planData);
+        toast.success('Scheda salvata con successo!');
+      }
+
       setIsBuildingPlan(false);
+      setEditingPlanId(null);
       setPlanName('');
       setPlannedExercises([]);
     } catch (error) {
@@ -213,6 +292,11 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
 
   const balance = getPlanBalanceAnalysis(plannedExercises);
 
+  const getVideoId = (url?: string) => {
+    if (!url) return null;
+    return url.split('/').pop();
+  };
+
   if (activeSessionPlan) {
     return (
       <WorkoutSessionView 
@@ -234,7 +318,7 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
         </AnimatePresence>
         
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-black tracking-tighter italic uppercase">Crea Scheda</h2>
+          <h2 className="text-3xl font-black tracking-tighter italic uppercase">{editingPlanId ? 'Modifica Scheda' : 'Crea Scheda'}</h2>
           <button onClick={closePlanBuilder} className="p-2 bg-zinc-900 rounded-full text-zinc-400 hover:text-white">
             <X size={20} />
           </button>
@@ -264,7 +348,15 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
             return (
               <div key={idx} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-lg">{ex?.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-lg">{pe.customName || ex?.name || 'Esercizio'}</span>
+                    <button 
+                      onClick={() => ex && setPreviewExercise(ex)}
+                      className="text-zinc-500 hover:text-neon transition-colors"
+                    >
+                      <Info size={16} />
+                    </button>
+                  </div>
                   <button onClick={() => removePlannedExercise(idx)} className="text-red-400 hover:text-red-300">
                     <X size={20} />
                   </button>
@@ -422,16 +514,167 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
                 {EXERCISE_LIBRARY
                   .filter(ex => !pickerCategory || ex.category === pickerCategory)
                   .map(ex => (
-                  <div key={ex.id} onClick={() => addExerciseToPlan(ex)} className="glass p-4 rounded-2xl flex items-center justify-between active:scale-95 transition-all">
-                    <div>
+                  <div key={ex.id} className="glass p-4 rounded-2xl flex items-center justify-between transition-all">
+                    <div className="flex-1" onClick={() => addExerciseToPlan(ex)}>
                       <div className="font-black uppercase tracking-tighter text-sm italic">{ex.name}</div>
+                      <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-1">
+                        {ex.targetMuscles.join(', ')}
+                      </div>
                     </div>
-                    <div className="w-10 h-10 bg-neon/10 rounded-xl flex items-center justify-center border border-neon/20">
-                      <Plus className="text-neon" size={20} />
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewExercise(ex);
+                        }}
+                        className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white"
+                      >
+                        <Info size={20} />
+                      </button>
+                      <button 
+                        onClick={() => addExerciseToPlan(ex)}
+                        className="w-10 h-10 bg-neon/10 rounded-xl flex items-center justify-center border border-neon/20 active:scale-95 transition-all"
+                      >
+                        <Plus className="text-neon" size={20} />
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Global Preview Modal for Exercise details (accessible from builder and picker) */}
+        <AnimatePresence>
+          {previewExercise && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex flex-col justify-end sm:p-6"
+            >
+              <motion.div 
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="bg-zinc-900 border-t sm:border border-white/10 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 w-full max-w-lg mx-auto relative overflow-hidden max-h-[92vh] overflow-y-auto no-scrollbar"
+              >
+                {/* Mobile Handle */}
+                <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-6 sm:hidden" />
+                
+                <div className="absolute top-0 right-0 w-32 h-32 bg-neon/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                
+                <button 
+                  onClick={() => {
+                    setPreviewExercise(null);
+                    setLoadVideo(false);
+                  }}
+                  className="absolute top-6 sm:top-10 right-6 p-2.5 bg-zinc-800/80 rounded-full text-zinc-400 hover:text-white z-10 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+
+                <div className="mb-6 mt-2 sm:mt-4">
+                  <div className="text-neon text-[10px] font-black uppercase tracking-[0.2em] mb-2">{previewExercise.category}</div>
+                  <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter italic leading-none pr-10">{previewExercise.name}</h3>
+                  {previewExercise.type && (
+                    <div className="mt-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
+                      <Activity size={12} className="text-neon" />
+                      <span>Focus: {previewExercise.type}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Video Player Module - Optimized for mobile aspect ratio */}
+                {previewExercise.videoUrl && (
+                  <div className="mb-6">
+                    <div className="w-full aspect-video bg-zinc-950 rounded-2xl overflow-hidden border border-white/5 relative group shadow-2xl">
+                      {loadVideo ? (
+                        <iframe 
+                          key={previewExercise.id}
+                          src={`${previewExercise.videoUrl.replace('youtube.com', 'youtube-nocookie.com')}?autoplay=1&playsinline=1&rel=0&modestbranding=1`}
+                          className="w-full h-full border-0"
+                          title={previewExercise.name}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                          allowFullScreen
+                        ></iframe>
+                      ) : (
+                        <div 
+                          onClick={() => setLoadVideo(true)}
+                          className="w-full h-full cursor-pointer relative flex items-center justify-center p-2"
+                        >
+                          <img 
+                            src={`https://img.youtube.com/vi/${getVideoId(previewExercise.videoUrl)}/mqdefault.jpg`}
+                            alt={previewExercise.name}
+                            className="w-full h-full object-cover opacity-50 group-hover:opacity-70 transition-all duration-300 rounded-xl"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                          <motion.div 
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            className="absolute w-14 h-14 bg-neon rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(var(--neon-accent-rgb),0.6)] z-10"
+                          >
+                            <Play size={28} className="text-black fill-current ml-1" />
+                          </motion.div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-3">Muscoli Target</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {previewExercise.targetMuscles.map(m => (
+                        <span key={m} className="px-3 py-1.5 bg-white/5 border border-white/5 rounded-xl text-[10px] font-bold text-zinc-300 uppercase tracking-wider">
+                          {m}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {previewExercise.instructions && (
+                    <div className="bg-white/[0.02] rounded-2xl p-4 border border-white/5">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">Esecuzione</h4>
+                      <p className="text-xs text-zinc-400 leading-relaxed font-medium">
+                        {previewExercise.instructions}
+                      </p>
+                    </div>
+                  )}
+
+                  {previewExercise.proNote && (
+                    <div className="bg-neon/5 border border-neon/10 rounded-2xl p-4 flex gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-neon/10 flex items-center justify-center flex-shrink-0">
+                        <Brain size={18} className="text-neon" />
+                      </div>
+                      <div>
+                        <h5 className="text-[10px] font-black uppercase tracking-widest text-neon mb-1">AI Pro Tip</h5>
+                        <p className="text-[11px] text-zinc-300 font-bold leading-normal">
+                          {previewExercise.proNote}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-8 pb-8 sm:pb-4">
+                  <button 
+                    onClick={() => {
+                      addExerciseToPlan(previewExercise);
+                      setPreviewExercise(null);
+                      setLoadVideo(false);
+                    }}
+                    className="w-full py-4.5 bg-neon text-black font-black uppercase italic tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-3 active:scale-95 shadow-[0_10px_20px_rgba(var(--neon-accent-rgb),0.2)]"
+                  >
+                    <Plus size={20} />
+                    <span className="text-[11px]">Aggiungi alla Scheda</span>
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -595,6 +838,34 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
       <div>
         <h2 className="text-4xl font-black tracking-tighter italic uppercase mb-8 border-l-4 border-neon pl-4">Programmazione</h2>
         
+        {/* Missed Workout Recovery Alert */}
+        <AnimatePresence>
+          {missedWorkout && selectedDay === today && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-8 p-1 rounded-[2rem] bg-gradient-to-r from-orange-500/20 via-orange-500/10 to-transparent border border-orange-500/20"
+            >
+              <div className="bg-zinc-900/40 backdrop-blur-xl rounded-[1.8rem] p-5 flex items-center gap-4">
+                <div className="w-12 h-12 bg-orange-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="text-orange-500" size={24} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-orange-500/70 mb-1">Recupero Suggerito</div>
+                  <h4 className="text-sm font-black uppercase tracking-tighter italic leading-tight">Recupero allenamento di {missedWorkout.dayOfWeek}</h4>
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase mt-0.5">{missedWorkout.name}</p>
+                </div>
+                <button 
+                  onClick={() => setActiveSessionPlan(missedWorkout)}
+                  className="px-4 py-2.5 bg-orange-500 text-black text-[10px] font-black uppercase italic rounded-xl hover:bg-orange-400 transition-colors shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+                >
+                  Recupera
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
         {selectedDay === today && plans.length > 0 && (
           <div className="mb-6">
             <div />
@@ -679,9 +950,18 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => handleDeletePlan(plan.id)} className="text-zinc-600 hover:text-red-400">
-                    <X size={20} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => openPlanBuilder(plan)} 
+                      className="p-2 bg-white/5 rounded-lg text-zinc-400 hover:text-neon hover:bg-neon/10 transition-colors"
+                      title="Modifica"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button onClick={() => handleDeletePlan(plan.id)} className="text-zinc-600 hover:text-red-400 p-2 bg-white/5 rounded-lg transition-colors">
+                      <X size={16} />
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="space-y-2 mb-6">
@@ -689,7 +969,7 @@ export default function WorkoutHub({ profile, requestedPlanId, onClearRequest, o
                     const exerciseDetails = EXERCISE_LIBRARY.find(e => e.id === ex.exerciseId);
                     return (
                       <div key={i} className="text-sm text-zinc-400 flex justify-between">
-                        <span>{exerciseDetails?.name || 'Esercizio'}</span>
+                        <span>{ex.customName || exerciseDetails?.name || 'Esercizio'}</span>
                         <span>{ex.targetSets}x{ex.targetReps}</span>
                       </div>
                     );

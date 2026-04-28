@@ -86,6 +86,7 @@ export interface WorkoutPlan {
   userId: string;
   name: string;
   date: string; // YYYY-MM-DD
+  dayOfWeek?: string;
   exercises: PlannedExercise[];
 }
 
